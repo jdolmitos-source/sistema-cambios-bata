@@ -3,7 +3,6 @@ import {
   getAuth, 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
-  sendPasswordResetEmail,
   onAuthStateChanged, 
   signOut 
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -66,6 +65,7 @@ const modalLogin = document.getElementById("modal-login");
 const modalRegister = document.getElementById("modal-register");
 const modalProfile = document.getElementById("modal-profile");
 const modalMinuta = document.getElementById("modal-minuta");
+const modalResumen = document.getElementById("modal-resumen-reporte");
 
 document.getElementById("btn-show-login").onclick = () => modalLogin.classList.remove("hidden");
 document.getElementById("btn-show-register").onclick = () => modalRegister.classList.remove("hidden");
@@ -75,41 +75,42 @@ document.getElementById("close-profile").onclick = () => modalProfile.classList.
 if (document.getElementById("close-minuta")) {
   document.getElementById("close-minuta").onclick = () => modalMinuta.classList.add("hidden");
 }
+if (document.getElementById("close-modal-resumen")) {
+  document.getElementById("close-modal-resumen").onclick = () => modalResumen.classList.add("hidden");
+}
 
-// Reset de Contraseña por Correo y WhatsApp
+// Reset de Contraseña Directo a WhatsApp sin Correo
 document.getElementById("btn-forgot-pass").onclick = async () => {
   const email = document.getElementById("login-email").value.trim();
   if (!email) {
-    alert("Por favor ingresa tu correo electrónico en la casilla para poder enviarte el enlace de restablecimiento.");
+    alert("Ingresa tu correo electrónico en la casilla para buscar tu número de celular registrado.");
     return;
   }
 
   try {
-    // 1. Enviar correo oficial de Firebase Auth
-    await sendPasswordResetEmail(auth, email);
-
-    // 2. Intentar buscar el teléfono en Firestore para notificar por WhatsApp
-    try {
-      const snap = await getDocs(collection(db, "usuarios"));
-      let usuarioEncontrado = null;
-      snap.forEach(d => {
-        const u = d.data();
-        if ((u.email || "").toLowerCase() === email.toLowerCase()) {
-          usuarioEncontrado = u;
-        }
-      });
-
-      if (usuarioEncontrado && usuarioEncontrado.celular) {
-        const msg = encodeURIComponent(`🔒 *SISTEMA BATA BOLIVIA*\nHola ${usuarioEncontrado.nombre}, se ha generado un enlace de restablecimiento de contraseña para tu cuenta (${email}).\nPor favor revisa tu correo para cambiar la clave.`);
-        window.open(`https://wa.me/591${usuarioEncontrado.celular}?text=${msg}`, "_blank");
-      } else {
-        alert(`Se ha enviado un enlace para restablecer tu contraseña a: ${email}`);
+    const snap = await getDocs(collection(db, "usuarios"));
+    let usuarioEncontrado = null;
+    snap.forEach(d => {
+      const u = d.data();
+      if ((u.email || "").toLowerCase() === email.toLowerCase()) {
+        usuarioEncontrado = u;
       }
-    } catch (errDb) {
-      alert(`Enlace de restablecimiento enviado correctamente al correo: ${email}`);
+    });
+
+    if (usuarioEncontrado && usuarioEncontrado.celular) {
+      const msg = encodeURIComponent(
+        `🔐 *SOLICITUD DE RESET DE CONTRASEÑA - BATA BOLIVIA*\n\n` +
+        `👤 *Usuario:* ${usuarioEncontrado.nombre}\n` +
+        `📧 *Correo:* ${email}\n` +
+        `📱 *Celular:* +591 ${usuarioEncontrado.celular}\n\n` +
+        `_Solicito el restablecimiento directo de mi contraseña de acceso._`
+      );
+      window.open(`https://wa.me/591${usuarioEncontrado.celular}?text=${msg}`, "_blank");
+    } else {
+      alert(`No se encontró un usuario registrado con el correo: ${email}`);
     }
   } catch (err) {
-    alert("Error al solicitar reseteo: " + err.message);
+    alert("Error al procesar reseteo: " + err.message);
   }
 };
 
@@ -139,11 +140,11 @@ document.getElementById("form-update-profile").onsubmit = async (e) => {
     modalProfile.classList.add("hidden");
     alert("Perfil actualizado correctamente.");
   } catch (err) {
-    alert("Error al actualizar: " + err.message);
+    alert("Error: " + err.message);
   }
 };
 
-// Registro de Usuario
+// Registro
 document.getElementById("form-register").onsubmit = async (e) => {
   e.preventDefault();
   const name = document.getElementById("reg-name").value.trim();
@@ -167,7 +168,7 @@ document.getElementById("form-register").onsubmit = async (e) => {
     modalRegister.classList.add("hidden");
   } catch (err) {
     if (err.code === "auth/email-already-in-use") {
-      alert("Este correo ya se encuentra registrado en Firebase Auth. Si el usuario fue eliminado de la tabla, debes ingresar a la consola de Firebase > Authentication y eliminar el usuario de la lista para permitir crear una cuenta nueva.");
+      alert("Este correo ya está registrado en Firebase Auth. Si fue eliminado, debes borrarlo también en Authentication de Firebase.");
     } else {
       alert("Error de registro: " + err.message);
     }
@@ -213,6 +214,7 @@ function actualizarHeaderUsuario() {
     document.getElementById("menu-btn-usuarios").classList.add("hidden");
   }
 
+  // Visibilidad exclusiva de la Minuta solo para Jefe de Desarrollo
   const btnMinutaMenu = document.getElementById("menu-btn-minuta");
   const btnMinutaHeader = document.getElementById("btn-open-minuta-header");
   if (btnMinutaMenu && btnMinutaHeader) {
@@ -245,7 +247,7 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// Menús de Navegación
+// Menús
 const viewCambios = document.getElementById("view-cambios");
 const viewInforme = document.getElementById("view-informe");
 const viewUsuarios = document.getElementById("view-usuarios");
@@ -300,7 +302,7 @@ window.filtrarPorSubmenu = (estado) => {
   renderTabla();
 };
 
-// Super Admin: Gestión y Asignación de Roles
+// Panel Super Admin: Listar y Asignar Roles
 async function cargarListaUsuariosAdmin() {
   const tbody = document.getElementById("table-users-body");
   tbody.innerHTML = "";
@@ -349,7 +351,7 @@ window.cambiarRolUsuario = async (userId, nuevoRol) => {
 };
 
 window.eliminarUsuarioDoc = async (id, nombre, email) => {
-  if (confirm(`¿Eliminar al usuario ${nombre}? Para borrar su cuenta por completo y permitir registrar este correo de cero, recuerda borrarlo también de la lista de Authentication en la consola de Firebase.`)) {
+  if (confirm(`¿Eliminar al usuario ${nombre}?`)) {
     await deleteDoc(doc(db, "usuarios", id));
     cargarListaUsuariosAdmin();
   }
@@ -371,7 +373,7 @@ async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro =
 
     usuariosSnap.forEach(d => {
       const u = d.data();
-      const coincideRol = !rolFiltro || u.rol === rolFiltro || (rolFiltro === "Desarrollo de producto - Técnico" && u.rol.includes("Técnico"));
+      const coincideRol = !rolFiltro || u.rol === rolFiltro || (rolFiltro === "Desarrollo de producto - Técnico" && (u.rol || "").includes("Técnico"));
 
       if (u.celular && coincideRol) {
         count++;
@@ -407,7 +409,7 @@ document.getElementById("btn-close-whatsapp-modal").onclick = () => {
   document.getElementById("modal-whatsapp").classList.add("hidden");
 };
 
-// Envío de Minuta por el Jefe de Desarrollo
+// Envío de Minuta (Jefe de Desarrollo)
 if (document.getElementById("form-minuta")) {
   document.getElementById("form-minuta").onsubmit = async (e) => {
     e.preventDefault();
@@ -426,7 +428,7 @@ if (document.getElementById("form-minuta")) {
   };
 }
 
-// Crear Solicitud de Cambio
+// Crear Solicitud de Cambio (con campo Semana)
 const modalNewChange = document.getElementById("modal-new-change");
 document.getElementById("btn-open-new-change").onclick = () => modalNewChange.classList.remove("hidden");
 document.getElementById("modal-btn-close").onclick = () => modalNewChange.classList.add("hidden");
@@ -434,12 +436,14 @@ document.getElementById("modal-btn-cancel").onclick = () => modalNewChange.class
 
 document.getElementById("form-new-change").onsubmit = async (e) => {
   e.preventDefault();
+  const semana = document.getElementById("change-semana").value.trim();
   const proyecto = document.getElementById("change-project").value.trim();
   const articulo = document.getElementById("change-article").value.trim();
   const boxCambio = document.getElementById("change-box").value.trim();
 
   try {
     await addDoc(collection(db, "solicitudes_cambios"), {
+      semana,
       proyecto,
       articulo,
       boxCambio,
@@ -447,7 +451,7 @@ document.getElementById("form-new-change").onsubmit = async (e) => {
       solicitanteRol: userData.rol,
       solicitanteId: currentUser.uid,
       estado: "En proceso",
-      progreso: 20,
+      fechaRealizado: null,
       validadoCostos: false,
       fechaCreacion: new Date().toISOString(),
       ultimaEdicion: null,
@@ -460,7 +464,7 @@ document.getElementById("form-new-change").onsubmit = async (e) => {
     abrirModalWhatsApp({
       titulo: "Solicitud Registrada",
       subtitulo: "Notificar solicitud creada al equipo:",
-      mensajeTexto: `👞 *NUEVA SOLICITUD DE CAMBIO - BATA BOLIVIA*\n\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n👤 *Solicitado por:* ${userData.nombre} (${userData.rol})\n📝 *Cambio:* ${boxCambio}\n\n_Revisar en el Sistema de Gestión de Cambios Bata_`
+      mensajeTexto: `👞 *NUEVA SOLICITUD DE CAMBIO - BATA BOLIVIA*\n\n📅 *${semana}*\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n👤 *Solicitado por:* ${userData.nombre} (${userData.rol})\n📝 *Cambio:* ${boxCambio}\n\n_Revisar en el Sistema de Gestión de Cambios Bata_`
     });
   } catch (err) {
     alert("Error: " + err.message);
@@ -476,7 +480,7 @@ function escucharCambios() {
 }
 
 function formatearFecha(iso) {
-  if (!iso) return "";
+  if (!iso) return "—";
   const d = new Date(iso);
   return d.toLocaleDateString("es-BO", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
@@ -507,10 +511,10 @@ function renderTabla() {
       textoBox += `<br><span class="text-[10px] text-gray-400 italic"> (editado: ${formatearFecha(item.ultimaEdicion)})</span>`;
     }
 
-    // Permisos: Solo Técnicos, Jefes y Super Admin pueden mover estados
+    // Permisos: Modificar Estado (Técnicos, Jefes y Super Admin)
     const esDesarrollo = (userData.rol || "").includes("Desarrollo") || esSuperAdmin();
+    // Permisos: Validación de Costos (Exclusivo Costos y Super Admin)
     const esCostos = userData.rol === "Costos" || esSuperAdmin();
-    const progresoVal = item.progreso !== undefined ? item.progreso : (item.estado === "Realizado" ? 100 : 25);
 
     let estadoHTML = "";
     if (esDesarrollo) {
@@ -521,7 +525,7 @@ function renderTabla() {
             <option value="Realizado" ${item.estado === "Realizado" ? "selected" : ""}>Realizado</option>
             <option value="Retrasado" ${item.estado === "Retrasado" ? "selected" : ""}>Retrasado</option>
           </select>
-          <button onclick="window.guardarCambioEstado('${item.id}', '${item.proyecto}', '${item.articulo}')" title="Guardar y Notificar a Costos" class="bg-gray-100 hover:bg-[#D61B28] hover:text-white text-gray-600 p-1.5 rounded-lg text-xs transition cursor-pointer">
+          <button onclick="window.guardarCambioEstado('${item.id}', '${item.proyecto}', '${item.articulo}', '${item.semana || ''}')" title="Guardar y Notificar a Costos" class="bg-gray-100 hover:bg-[#D61B28] hover:text-white text-gray-600 p-1.5 rounded-lg text-xs transition cursor-pointer">
             <i class="fa-solid fa-floppy-disk"></i>
           </button>
         </div>
@@ -531,25 +535,12 @@ function renderTabla() {
       estadoHTML = `<span class="border ${estilo} px-3 py-1 rounded-lg font-bold text-xs">${item.estado}</span>`;
     }
 
-    let progresoHTML = "";
-    if (esDesarrollo) {
-      progresoHTML = `
-        <div class="flex items-center justify-center space-x-1">
-          <input type="number" min="0" max="100" value="${progresoVal}" 
-                 onchange="window.actualizarProgreso('${item.id}', this.value)"
-                 class="w-14 px-1.5 py-0.5 border border-gray-300 rounded font-bold text-center text-xs focus:ring-1 focus:ring-[#D61B28]">
-          <span class="font-bold text-gray-500">%</span>
-        </div>
-      `;
-    } else {
-      progresoHTML = `
-        <div class="w-full bg-gray-200 rounded-full h-2 max-w-[65px] mx-auto overflow-hidden">
-          <div class="bg-[#D61B28] h-2 rounded-full" style="width: ${progresoVal}%"></div>
-        </div>
-        <span class="text-[10px] font-bold text-gray-500 block text-center mt-0.5">${progresoVal}%</span>
-      `;
-    }
+    // Columna Fecha Realizado en vez de porcentaje
+    const fechaRealizadoHTML = item.fechaRealizado 
+      ? `<span class="font-bold text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200">${formatearFecha(item.fechaRealizado)}</span>`
+      : `<span class="text-gray-300 text-[11px]">—</span>`;
 
+    // Validación Costos (Casilla Exclusiva para Costos)
     let costosHTML = "";
     if (item.estado === "Realizado") {
       if (item.validadoCostos) {
@@ -563,10 +554,10 @@ function renderTabla() {
       } else {
         costosHTML = `
           <div class="flex items-center justify-center space-x-1">
-            <input type="checkbox" ${!esCostos ? "disabled" : ""} 
+            <input type="checkbox" ${!esCostos ? "disabled title='Solo el usuario de Costos puede validar'" : ""} 
                    onchange="window.confirmarValidacionCostos('${item.id}', '${item.proyecto}', '${item.articulo}', this)"
                    class="h-4 w-4 accent-[#D61B28] rounded border-gray-300 cursor-${esCostos ? 'pointer' : 'not-allowed'}">
-            <span class="text-[11px] text-gray-400">Confirmar</span>
+            <span class="text-[11px] ${esCostos ? 'text-gray-600 font-semibold' : 'text-gray-300'}">Confirmar</span>
           </div>
         `;
       }
@@ -575,6 +566,7 @@ function renderTabla() {
     }
 
     tr.innerHTML = `
+      <td class="p-3 font-semibold text-gray-500 border-r border-gray-100">${item.semana || 'Sem —'}</td>
       <td class="p-3.5 font-bold text-gray-800 border-r border-gray-100">${item.proyecto}</td>
       <td class="p-3.5 font-mono text-gray-600 border-r border-gray-100">${item.articulo}</td>
       <td class="p-3.5 text-gray-700 border-r border-gray-100">
@@ -584,20 +576,24 @@ function renderTabla() {
         </button>
       </td>
       <td class="p-3.5 text-center border-r border-gray-100 whitespace-nowrap">${estadoHTML}</td>
-      <td class="p-3.5 text-center border-r border-gray-100 whitespace-nowrap">${progresoHTML}</td>
+      <td class="p-3.5 text-center border-r border-gray-100 whitespace-nowrap">${fechaRealizadoHTML}</td>
       <td class="p-3.5 text-center whitespace-nowrap">${costosHTML}</td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-// Guardar Estado (Desarrollo -> Costos)
-window.guardarCambioEstado = async (id, proyecto, articulo) => {
+// Guardar Estado (Desarrollo -> Estampa Fecha y Notifica a Costos)
+window.guardarCambioEstado = async (id, proyecto, articulo, semana) => {
   const select = document.getElementById(`sel-estado-${id}`);
   const nuevoEstado = select.value;
 
   const updatePayload = { estado: nuevoEstado };
-  if (nuevoEstado === "Realizado") updatePayload.progreso = 100;
+  if (nuevoEstado === "Realizado") {
+    updatePayload.fechaRealizado = new Date().toISOString();
+  } else {
+    updatePayload.fechaRealizado = null;
+  }
 
   await updateDoc(doc(db, "solicitudes_cambios", id), updatePayload);
 
@@ -605,7 +601,7 @@ window.guardarCambioEstado = async (id, proyecto, articulo) => {
     abrirModalWhatsApp({
       titulo: "Proyecto Realizado",
       subtitulo: "Enviar alerta a los usuarios de Costos para su validación:",
-      mensajeTexto: `👟 *PROYECTO REALIZADO - REQUERIMIENTO DE COSTOS*\n\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n✅ *Estado:* Realizado por Desarrollo de Producto (${userData.nombre})\n\n_Por favor ingresar al sistema para validar los costos asociados._`,
+      mensajeTexto: `👟 *PROYECTO REALIZADO - REQUERIMIENTO DE COSTOS*\n\n📅 *${semana}*\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n✅ *Estado:* Realizado por Desarrollo de Producto (${userData.nombre})\n\n_Por favor ingresar al sistema para validar los costos asociados._`,
       rolFiltro: "Costos"
     });
   } else {
@@ -613,9 +609,9 @@ window.guardarCambioEstado = async (id, proyecto, articulo) => {
   }
 };
 
-// Confirmación Costos (Costos -> Calidad)
+// Validación Exclusiva de Costos (Costos -> Calidad)
 window.confirmarValidacionCostos = async (id, proyecto, articulo, checkboxElem) => {
-  const confirma = confirm(`¿Estás seguro de validar los costos del proyecto "${proyecto}"? Una vez confirmado quedará bloqueado de forma permanente.`);
+  const confirma = confirm(`¿Estás seguro de validar los costos del proyecto "${proyecto}"? Una vez confirmado quedará bloqueado.`);
   if (!confirma) {
     checkboxElem.checked = false;
     return;
@@ -641,11 +637,6 @@ window.desbloquearValidacionCostos = async (id) => {
   }
 };
 
-window.actualizarProgreso = async (id, nuevoProgreso) => {
-  const val = Math.min(100, Math.max(0, parseInt(nuevoProgreso) || 0));
-  await updateDoc(doc(db, "solicitudes_cambios", id), { progreso: val });
-};
-
 window.editarTextoBox = async (id, textoActual) => {
   const nuevoTexto = prompt("Modificar cambios a realizar:", textoActual);
   if (nuevoTexto !== null && nuevoTexto.trim() !== "" && nuevoTexto !== textoActual) {
@@ -656,7 +647,7 @@ window.editarTextoBox = async (id, textoActual) => {
   }
 };
 
-// Informes
+// ==================== INFORME, TORRES Y GENERADOR RESUMEN ====================
 function renderInformeView() {
   document.getElementById("metric-total").textContent = solicitudes.length;
   document.getElementById("metric-proceso").textContent = solicitudes.filter(s => s.estado === "En proceso").length;
@@ -691,7 +682,62 @@ function renderInformeView() {
     actualizarGraficoTorres();
   };
 
+  document.getElementById("btn-generar-informe-resumen").onclick = generarModalInformeResumen;
+
   actualizarGraficoTorres();
+}
+
+function generarModalInformeResumen() {
+  const seleccionados = Array.from(document.querySelectorAll(".report-chk:checked")).map(c => c.value);
+  if (seleccionados.length === 0) {
+    alert("Selecciona al menos un proyecto para generar el informe.");
+    return;
+  }
+
+  const items = solicitudes.filter(s => seleccionados.includes(s.proyecto));
+  const contenedor = document.getElementById("reporte-resumen-contenido");
+
+  let html = `
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse border border-gray-200 text-xs">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="p-2 border">Semana</th>
+            <th class="p-2 border">Proyecto</th>
+            <th class="p-2 border">Artículo</th>
+            <th class="p-2 border">Descripción de Cambios</th>
+            <th class="p-2 border">Solicitante</th>
+            <th class="p-2 border text-center">Estado</th>
+            <th class="p-2 border text-center">Fecha Realizado</th>
+            <th class="p-2 border text-center">Validación Costos</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  items.forEach(it => {
+    html += `
+      <tr class="border-b">
+        <td class="p-2 border font-semibold">${it.semana || '—'}</td>
+        <td class="p-2 border font-bold text-gray-800">${it.proyecto}</td>
+        <td class="p-2 border font-mono">${it.articulo}</td>
+        <td class="p-2 border text-gray-700">${it.boxCambio}</td>
+        <td class="p-2 border">${it.solicitanteNombre} <span class="text-[10px] text-gray-400">(${it.solicitanteRol})</span></td>
+        <td class="p-2 border text-center font-bold ${it.estado === 'Realizado' ? 'text-green-600' : (it.estado === 'Retrasado' ? 'text-red-600' : 'text-orange-600')}">${it.estado}</td>
+        <td class="p-2 border text-center">${formatearFecha(it.fechaRealizado)}</td>
+        <td class="p-2 border text-center font-bold ${it.validadoCostos ? 'text-green-600' : 'text-gray-400'}">${it.validadoCostos ? 'Validado' : 'Pendiente'}</td>
+      </tr>
+    `;
+  });
+
+  html += `
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  contenedor.innerHTML = html;
+  modalResumen.classList.remove("hidden");
 }
 
 function actualizarGraficoTorres() {
@@ -711,9 +757,9 @@ function actualizarGraficoTorres() {
       return;
     }
 
-    const sumaAvance = items.reduce((acc, curr) => acc + (curr.progreso !== undefined ? curr.progreso : (curr.estado === "Realizado" ? 100 : 25)), 0);
-    const promedio = Math.round(sumaAvance / items.length);
-    dataProgreso.push(promedio);
+    const realizados = items.filter(s => s.estado === "Realizado").length;
+    const porcentajeRealizados = Math.round((realizados / items.length) * 100);
+    dataProgreso.push(porcentajeRealizados);
 
     const tieneRetraso = items.some(s => s.estado === "Retrasado");
     const todosRealizados = items.every(s => s.estado === "Realizado");
@@ -738,7 +784,7 @@ function actualizarGraficoTorres() {
     data: {
       labels: labels,
       datasets: [{
-        label: "% Avance Ponderado",
+        label: "% Solicitudes Realizadas",
         data: dataProgreso,
         backgroundColor: backgroundColors,
         borderColor: borderColors,
@@ -754,7 +800,7 @@ function actualizarGraficoTorres() {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: (ctx) => ` Progreso: ${ctx.raw}%`
+            label: (ctx) => ` Realizado: ${ctx.raw}%`
           }
         }
       },
