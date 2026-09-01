@@ -72,34 +72,41 @@ document.getElementById("btn-show-register").onclick = () => modalRegister.class
 document.getElementById("close-login").onclick = () => modalLogin.classList.add("hidden");
 document.getElementById("close-register").onclick = () => modalRegister.classList.add("hidden");
 document.getElementById("close-profile").onclick = () => modalProfile.classList.add("hidden");
-document.getElementById("close-minuta").onclick = () => modalMinuta.classList.add("hidden");
+if (document.getElementById("close-minuta")) {
+  document.getElementById("close-minuta").onclick = () => modalMinuta.classList.add("hidden");
+}
 
-// Reset de Contraseña Directo por WhatsApp
+// Reset de Contraseña por Correo y WhatsApp
 document.getElementById("btn-forgot-pass").onclick = async () => {
   const email = document.getElementById("login-email").value.trim();
   if (!email) {
-    alert("Ingresa tu correo en la casilla para buscar tu número de celular y enviarte la notificación por WhatsApp.");
+    alert("Por favor ingresa tu correo electrónico en la casilla para poder enviarte el enlace de restablecimiento.");
     return;
   }
 
   try {
-    const snap = await getDocs(collection(db, "usuarios"));
-    let usuarioEncontrado = null;
-    snap.forEach(d => {
-      const u = d.data();
-      if ((u.email || "").toLowerCase() === email.toLowerCase()) {
-        usuarioEncontrado = u;
-      }
-    });
-
-    // Enviar correo nativo de Firebase
+    // 1. Enviar correo oficial de Firebase Auth
     await sendPasswordResetEmail(auth, email);
 
-    if (usuarioEncontrado && usuarioEncontrado.celular) {
-      const msg = encodeURIComponent(`🔒 *SISTEMA BATA BOLIVIA*\nHola ${usuarioEncontrado.nombre}, se ha generado tu solicitud de restablecimiento de contraseña para el correo: ${email}.\nRevisa el enlace enviado a tu bandeja de correo para cambiarla.`);
-      window.open(`https://wa.me/591${usuarioEncontrado.celular}?text=${msg}`, "_blank");
-    } else {
-      alert(`Enlace de restablecimiento enviado a ${email}.`);
+    // 2. Intentar buscar el teléfono en Firestore para notificar por WhatsApp
+    try {
+      const snap = await getDocs(collection(db, "usuarios"));
+      let usuarioEncontrado = null;
+      snap.forEach(d => {
+        const u = d.data();
+        if ((u.email || "").toLowerCase() === email.toLowerCase()) {
+          usuarioEncontrado = u;
+        }
+      });
+
+      if (usuarioEncontrado && usuarioEncontrado.celular) {
+        const msg = encodeURIComponent(`🔒 *SISTEMA BATA BOLIVIA*\nHola ${usuarioEncontrado.nombre}, se ha generado un enlace de restablecimiento de contraseña para tu cuenta (${email}).\nPor favor revisa tu correo para cambiar la clave.`);
+        window.open(`https://wa.me/591${usuarioEncontrado.celular}?text=${msg}`, "_blank");
+      } else {
+        alert(`Se ha enviado un enlace para restablecer tu contraseña a: ${email}`);
+      }
+    } catch (errDb) {
+      alert(`Enlace de restablecimiento enviado correctamente al correo: ${email}`);
     }
   } catch (err) {
     alert("Error al solicitar reseteo: " + err.message);
@@ -132,11 +139,11 @@ document.getElementById("form-update-profile").onsubmit = async (e) => {
     modalProfile.classList.add("hidden");
     alert("Perfil actualizado correctamente.");
   } catch (err) {
-    alert("Error: " + err.message);
+    alert("Error al actualizar: " + err.message);
   }
 };
 
-// Registro
+// Registro de Usuario
 document.getElementById("form-register").onsubmit = async (e) => {
   e.preventDefault();
   const name = document.getElementById("reg-name").value.trim();
@@ -159,7 +166,11 @@ document.getElementById("form-register").onsubmit = async (e) => {
     });
     modalRegister.classList.add("hidden");
   } catch (err) {
-    alert("Error de registro: " + err.message);
+    if (err.code === "auth/email-already-in-use") {
+      alert("Este correo ya se encuentra registrado en Firebase Auth. Si el usuario fue eliminado de la tabla, debes ingresar a la consola de Firebase > Authentication y eliminar el usuario de la lista para permitir crear una cuenta nueva.");
+    } else {
+      alert("Error de registro: " + err.message);
+    }
   }
 };
 
@@ -193,9 +204,8 @@ function actualizarHeaderUsuario() {
     avatarIcon.classList.remove("hidden");
   }
 
-  // Permisos especiales
   const esAdmin = esSuperAdmin();
-  const esJefe = userData.rol === "Jefe Desarrollo" || esAdmin;
+  const esJefe = userData.rol === "Desarrollo de producto - Jefe" || esAdmin;
 
   if (esAdmin) {
     document.getElementById("menu-btn-usuarios").classList.remove("hidden");
@@ -203,12 +213,16 @@ function actualizarHeaderUsuario() {
     document.getElementById("menu-btn-usuarios").classList.add("hidden");
   }
 
-  if (esJefe) {
-    document.getElementById("menu-btn-minuta").classList.remove("hidden");
-    document.getElementById("btn-open-minuta-header").classList.remove("hidden");
-  } else {
-    document.getElementById("menu-btn-minuta").classList.add("hidden");
-    document.getElementById("btn-open-minuta-header").classList.add("hidden");
+  const btnMinutaMenu = document.getElementById("menu-btn-minuta");
+  const btnMinutaHeader = document.getElementById("btn-open-minuta-header");
+  if (btnMinutaMenu && btnMinutaHeader) {
+    if (esJefe) {
+      btnMinutaMenu.classList.remove("hidden");
+      btnMinutaHeader.classList.remove("hidden");
+    } else {
+      btnMinutaMenu.classList.add("hidden");
+      btnMinutaHeader.classList.add("hidden");
+    }
   }
 }
 
@@ -231,7 +245,7 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// Menús
+// Menús de Navegación
 const viewCambios = document.getElementById("view-cambios");
 const viewInforme = document.getElementById("view-informe");
 const viewUsuarios = document.getElementById("view-usuarios");
@@ -242,7 +256,7 @@ const menuBtnMinuta = document.getElementById("menu-btn-minuta");
 
 function resetMenuStyles() {
   [menuBtnCambios, menuBtnInforme, menuBtnUsuarios].forEach(b => {
-    b.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-gray-600 hover:bg-gray-100 transition cursor-pointer";
+    if (b) b.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-gray-600 hover:bg-gray-100 transition cursor-pointer";
   });
   viewCambios.classList.add("hidden");
   viewInforme.classList.add("hidden");
@@ -269,11 +283,13 @@ menuBtnUsuarios.onclick = () => {
   cargarListaUsuariosAdmin();
 };
 
-// Abrir Modal Minuta
-menuBtnMinuta.onclick = () => modalMinuta.classList.remove("hidden");
-document.getElementById("btn-open-minuta-header").onclick = () => modalMinuta.classList.remove("hidden");
+if (menuBtnMinuta) {
+  menuBtnMinuta.onclick = () => modalMinuta.classList.remove("hidden");
+}
+if (document.getElementById("btn-open-minuta-header")) {
+  document.getElementById("btn-open-minuta-header").onclick = () => modalMinuta.classList.remove("hidden");
+}
 
-// Submenús de Filtro
 window.filtrarPorSubmenu = (estado) => {
   filtroSubmenuActivo = estado;
   const subtitle = document.getElementById("view-subtitle-filter");
@@ -284,7 +300,7 @@ window.filtrarPorSubmenu = (estado) => {
   renderTabla();
 };
 
-// Panel Super Admin: Listar y Cambiar Roles
+// Super Admin: Gestión y Asignación de Roles
 async function cargarListaUsuariosAdmin() {
   const tbody = document.getElementById("table-users-body");
   tbody.innerHTML = "";
@@ -310,8 +326,9 @@ async function cargarListaUsuariosAdmin() {
           <option value="Costos" ${u.rol === 'Costos' ? 'selected' : ''}>Costos</option>
           <option value="Compras" ${u.rol === 'Compras' ? 'selected' : ''}>Compras</option>
           <option value="Producción" ${u.rol === 'Producción' ? 'selected' : ''}>Producción</option>
-          <option value="Técnico Desarrollo" ${u.rol === 'Técnico Desarrollo' ? 'selected' : ''}>Desarrollo - Técnico</option>
-          <option value="Jefe Desarrollo" ${u.rol === 'Jefe Desarrollo' ? 'selected' : ''}>Desarrollo - Jefe</option>
+          <option value="Desarrollo de producto" ${u.rol === 'Desarrollo de producto' ? 'selected' : ''}>Desarrollo de producto (General)</option>
+          <option value="Desarrollo de producto - Técnico" ${u.rol === 'Desarrollo de producto - Técnico' ? 'selected' : ''}>Desarrollo - Técnico</option>
+          <option value="Desarrollo de producto - Jefe" ${u.rol === 'Desarrollo de producto - Jefe' ? 'selected' : ''}>Desarrollo - Jefe</option>
         </select>
       </td>
       <td class="p-3 text-center">
@@ -328,17 +345,17 @@ async function cargarListaUsuariosAdmin() {
 
 window.cambiarRolUsuario = async (userId, nuevoRol) => {
   await updateDoc(doc(db, "usuarios", userId), { rol: nuevoRol });
-  alert("Rol actualizado correctamente.");
+  alert("Rol asignado correctamente.");
 };
 
 window.eliminarUsuarioDoc = async (id, nombre, email) => {
-  if (confirm(`¿Eliminar usuario ${nombre} (${email})? Podrás volver a registrar este correo cuando lo necesites.`)) {
+  if (confirm(`¿Eliminar al usuario ${nombre}? Para borrar su cuenta por completo y permitir registrar este correo de cero, recuerda borrarlo también de la lista de Authentication en la consola de Firebase.`)) {
     await deleteDoc(doc(db, "usuarios", id));
     cargarListaUsuariosAdmin();
   }
 };
 
-// Modal WhatsApp Dinámico
+// Modal WhatsApp
 async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro = null }) {
   const modalWA = document.getElementById("modal-whatsapp");
   const listContainer = document.getElementById("whatsapp-contacts-list");
@@ -354,7 +371,7 @@ async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro =
 
     usuariosSnap.forEach(d => {
       const u = d.data();
-      const coincideRol = !rolFiltro || u.rol === rolFiltro;
+      const coincideRol = !rolFiltro || u.rol === rolFiltro || (rolFiltro === "Desarrollo de producto - Técnico" && u.rol.includes("Técnico"));
 
       if (u.celular && coincideRol) {
         count++;
@@ -377,7 +394,7 @@ async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro =
     });
 
     if (count === 0) {
-      listContainer.innerHTML = `<p class="p-3 text-center text-gray-400 text-xs">No hay usuarios registrados con celular para el grupo (${rolFiltro || 'General'}).</p>`;
+      listContainer.innerHTML = `<p class="p-3 text-center text-gray-400 text-xs">No hay usuarios con celular registrados para ${rolFiltro || 'el grupo'}.</p>`;
     }
 
     modalWA.classList.remove("hidden");
@@ -390,22 +407,24 @@ document.getElementById("btn-close-whatsapp-modal").onclick = () => {
   document.getElementById("modal-whatsapp").classList.add("hidden");
 };
 
-// Enviar Minuta de Cambios (Jefe de Desarrollo)
-document.getElementById("form-minuta").onsubmit = async (e) => {
-  e.preventDefault();
-  const titulo = document.getElementById("minuta-title").value.trim();
-  const detalle = document.getElementById("minuta-box").value.trim();
+// Envío de Minuta por el Jefe de Desarrollo
+if (document.getElementById("form-minuta")) {
+  document.getElementById("form-minuta").onsubmit = async (e) => {
+    e.preventDefault();
+    const titulo = document.getElementById("minuta-title").value.trim();
+    const detalle = document.getElementById("minuta-box").value.trim();
 
-  modalMinuta.classList.add("hidden");
-  document.getElementById("form-minuta").reset();
+    modalMinuta.classList.add("hidden");
+    document.getElementById("form-minuta").reset();
 
-  abrirModalWhatsApp({
-    titulo: "Minuta de Cambios (Plan Piloto)",
-    subtitulo: "Enviar minuta técnica a los Técnicos de Desarrollo:",
-    mensajeTexto: `📋 *MINUTA DE CAMBIOS - PLAN PILOTO*\n*Bata Bolivia / Desarrollo de Producto*\n\n📌 *Asunto:* ${titulo}\n👤 *Emitido por:* ${userData.nombre} (Jefe Desarrollo)\n\n📝 *DETALLE DE CAMBIOS:*\n${detalle}\n\n_Por favor proceder con las modificaciones técnicas correspondientes._`,
-    rolFiltro: "Técnico Desarrollo"
-  });
-};
+    abrirModalWhatsApp({
+      titulo: "Minuta de Cambios (Plan Piloto)",
+      subtitulo: "Enviar minuta a los Técnicos de Desarrollo:",
+      mensajeTexto: `📋 *MINUTA DE CAMBIOS - PLAN PILOTO*\n*Bata Bolivia / Desarrollo de Producto*\n\n📌 *Asunto:* ${titulo}\n👤 *Emitido por:* ${userData.nombre} (Jefe Desarrollo)\n\n📝 *DETALLE DE CAMBIOS:*\n${detalle}\n\n_Proceder con los ajustes técnicos solicitados._`,
+      rolFiltro: "Desarrollo de producto - Técnico"
+    });
+  };
+}
 
 // Crear Solicitud de Cambio
 const modalNewChange = document.getElementById("modal-new-change");
@@ -488,8 +507,8 @@ function renderTabla() {
       textoBox += `<br><span class="text-[10px] text-gray-400 italic"> (editado: ${formatearFecha(item.ultimaEdicion)})</span>`;
     }
 
-    // Permisos: Técnico de Desarrollo, Jefe de Desarrollo y Super Admin
-    const esDesarrollo = userData.rol === "Técnico Desarrollo" || userData.rol === "Jefe Desarrollo" || esSuperAdmin();
+    // Permisos: Solo Técnicos, Jefes y Super Admin pueden mover estados
+    const esDesarrollo = (userData.rol || "").includes("Desarrollo") || esSuperAdmin();
     const esCostos = userData.rol === "Costos" || esSuperAdmin();
     const progresoVal = item.progreso !== undefined ? item.progreso : (item.estado === "Realizado" ? 100 : 25);
 
