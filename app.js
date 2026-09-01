@@ -10,12 +10,12 @@ import {
   getFirestore, 
   collection, 
   addDoc, 
-  getDocs,
-  getDoc,
+  getDocs, 
+  getDoc, 
   doc, 
   setDoc, 
   updateDoc, 
-  deleteDoc,
+  deleteDoc, 
   onSnapshot, 
   query, 
   orderBy, 
@@ -41,7 +41,6 @@ let userData = null;
 let solicitudes = [];
 let chartInstance = null;
 
-// Conversión de archivo de imagen a Base64
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
   if (!file) return resolve(null);
   const reader = new FileReader();
@@ -50,7 +49,14 @@ const fileToBase64 = (file) => new Promise((resolve, reject) => {
   reader.onerror = error => reject(error);
 });
 
-// Portada y Modales
+// Comprobar si es Super Admin (Daniel Olmos)
+function esSuperAdmin() {
+  if (!userData) return false;
+  const nombreLimpio = (userData.nombre || "").trim().toLowerCase();
+  return nombreLimpio === "daniel olmos" || (userData.email || "").toLowerCase().includes("olmos");
+}
+
+// Modales Portada
 const welcomeContainer = document.getElementById("welcome-container");
 const appContainer = document.getElementById("app-container");
 const modalLogin = document.getElementById("modal-login");
@@ -63,7 +69,7 @@ document.getElementById("close-login").onclick = () => modalLogin.classList.add(
 document.getElementById("close-register").onclick = () => modalRegister.classList.add("hidden");
 document.getElementById("close-profile").onclick = () => modalProfile.classList.add("hidden");
 
-// Abrir Edición de Perfil
+// Perfil
 document.getElementById("btn-edit-profile").onclick = () => {
   if (!userData) return;
   document.getElementById("prof-name").value = userData.nombre || "";
@@ -71,7 +77,6 @@ document.getElementById("btn-edit-profile").onclick = () => {
   modalProfile.classList.remove("hidden");
 };
 
-// Guardar Actualización de Perfil
 document.getElementById("form-update-profile").onsubmit = async (e) => {
   e.preventDefault();
   const name = document.getElementById("prof-name").value.trim();
@@ -88,13 +93,13 @@ document.getElementById("form-update-profile").onsubmit = async (e) => {
     userData = { ...userData, ...updateData };
     actualizarHeaderUsuario();
     modalProfile.classList.add("hidden");
-    alert("Perfil actualizado correctamente");
+    alert("Perfil actualizado");
   } catch (err) {
     alert("Error al actualizar: " + err.message);
   }
 };
 
-// Registro de Usuario
+// Registro
 document.getElementById("form-register").onsubmit = async (e) => {
   e.preventDefault();
   const name = document.getElementById("reg-name").value.trim();
@@ -117,7 +122,7 @@ document.getElementById("form-register").onsubmit = async (e) => {
     });
     modalRegister.classList.add("hidden");
   } catch (err) {
-    alert("Error de registro: " + err.message);
+    alert("Error: " + err.message);
   }
 };
 
@@ -130,7 +135,7 @@ document.getElementById("form-login").onsubmit = async (e) => {
     await signInWithEmailAndPassword(auth, email, pass);
     modalLogin.classList.add("hidden");
   } catch (err) {
-    alert("Credenciales incorrectas o usuario no registrado.");
+    alert("Credenciales incorrectas");
   }
 };
 
@@ -151,15 +156,14 @@ function actualizarHeaderUsuario() {
     avatarIcon.classList.remove("hidden");
   }
 
-  // Si es Super Usuario, habilitar menú de administración de usuarios
-  if (userData.rol === "Super Usuario") {
+  // Activar botón exclusivo para Daniel Olmos
+  if (esSuperAdmin()) {
     document.getElementById("menu-btn-usuarios").classList.remove("hidden");
   } else {
     document.getElementById("menu-btn-usuarios").classList.add("hidden");
   }
 }
 
-// Observador de Sesión
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     currentUser = user;
@@ -216,7 +220,7 @@ menuBtnUsuarios.onclick = () => {
   cargarListaUsuariosAdmin();
 };
 
-// Cargar y Eliminar Usuarios (Solo Super Usuario)
+// Panel Super Admin (Daniel Olmos)
 async function cargarListaUsuariosAdmin() {
   const tbody = document.getElementById("table-users-body");
   tbody.innerHTML = "";
@@ -242,7 +246,7 @@ async function cargarListaUsuariosAdmin() {
           <button onclick="window.eliminarUsuarioDoc('${docU.id}', '${u.nombre}')" class="text-red-600 hover:text-red-800 font-bold text-xs">
             <i class="fa-solid fa-trash"></i> Eliminar
           </button>
-        ` : '<span class="text-gray-400 text-[10px]">(Tú)</span>'}
+        ` : '<span class="text-gray-400 text-[10px] font-bold">Admin Principal</span>'}
       </td>
     `;
     tbody.appendChild(tr);
@@ -250,7 +254,7 @@ async function cargarListaUsuariosAdmin() {
 }
 
 window.eliminarUsuarioDoc = async (id, nombre) => {
-  if (confirm(`¿Estás seguro de eliminar al usuario ${nombre}?`)) {
+  if (confirm(`¿Deseas eliminar permanentemente al usuario ${nombre}?`)) {
     await deleteDoc(doc(db, "usuarios", id));
     cargarListaUsuariosAdmin();
   }
@@ -262,7 +266,6 @@ document.getElementById("btn-open-new-change").onclick = () => modalNewChange.cl
 document.getElementById("modal-btn-close").onclick = () => modalNewChange.classList.add("hidden");
 document.getElementById("modal-btn-cancel").onclick = () => modalNewChange.classList.add("hidden");
 
-// Enviar WhatsApp
 async function prepararNotificacionWhatsApp(proyecto, articulo, cambio) {
   const modalWA = document.getElementById("modal-whatsapp");
   const listContainer = document.getElementById("whatsapp-contacts-list");
@@ -301,7 +304,7 @@ async function prepararNotificacionWhatsApp(proyecto, articulo, cambio) {
     });
     modalWA.classList.remove("hidden");
   } catch (error) {
-    console.error("Error al preparar WhatsApp:", error);
+    console.error(error);
   }
 }
 
@@ -309,7 +312,7 @@ document.getElementById("btn-close-whatsapp-modal").onclick = () => {
   document.getElementById("modal-whatsapp").classList.add("hidden");
 };
 
-// Registrar Solicitud
+// Crear Solicitud
 document.getElementById("form-new-change").onsubmit = async (e) => {
   e.preventDefault();
   const proyecto = document.getElementById("change-project").value.trim();
@@ -325,6 +328,7 @@ document.getElementById("form-new-change").onsubmit = async (e) => {
       solicitanteRol: userData.rol,
       solicitanteId: currentUser.uid,
       estado: "En proceso",
+      progreso: 15, // Progreso inicial por defecto
       validadoCostos: false,
       fechaCreacion: new Date().toISOString(),
       ultimaEdicion: null,
@@ -339,7 +343,6 @@ document.getElementById("form-new-change").onsubmit = async (e) => {
   }
 };
 
-// Escuchar Solicitudes
 function escucharCambios() {
   const q = query(collection(db, "solicitudes_cambios"), orderBy("timestamp", "desc"));
   onSnapshot(q, (snapshot) => {
@@ -375,9 +378,11 @@ function renderTabla() {
       textoBox += `<br><span class="text-[10px] text-gray-400 italic"> (editado: ${formatearFecha(item.ultimaEdicion)})</span>`;
     }
 
-    const esDesarrollo = userData.rol === "Desarrollo de producto" || userData.rol === "Super Usuario";
-    const esCostos = userData.rol === "Costos" || userData.rol === "Super Usuario";
+    const esDesarrollo = userData.rol === "Desarrollo de producto" || esSuperAdmin();
+    const esCostos = userData.rol === "Costos" || esSuperAdmin();
+    const progresoVal = item.progreso !== undefined ? item.progreso : (item.estado === "Realizado" ? 100 : 25);
 
+    // Estado HTML
     let estadoHTML = "";
     if (esDesarrollo) {
       estadoHTML = `
@@ -392,6 +397,27 @@ function renderTabla() {
       estadoHTML = `<span class="border ${estilo} px-3 py-1 rounded-lg font-bold text-xs">${item.estado}</span>`;
     }
 
+    // Progreso % HTML (Editable solo por Desarrollo de producto)
+    let progresoHTML = "";
+    if (esDesarrollo) {
+      progresoHTML = `
+        <div class="flex items-center justify-center space-x-1">
+          <input type="number" min="0" max="100" value="${progresoVal}" 
+                 onchange="window.actualizarProgreso('${item.id}', this.value)"
+                 class="w-14 px-1.5 py-0.5 border border-gray-300 rounded font-bold text-center text-xs focus:ring-1 focus:ring-[#D61B28]">
+          <span class="font-bold text-gray-500">%</span>
+        </div>
+      `;
+    } else {
+      progresoHTML = `
+        <div class="w-full bg-gray-200 rounded-full h-2.5 max-w-[70px] mx-auto overflow-hidden">
+          <div class="bg-[#D61B28] h-2.5 rounded-full" style="width: ${progresoVal}%"></div>
+        </div>
+        <span class="text-[10px] font-bold text-gray-500 block text-center mt-0.5">${progresoVal}%</span>
+      `;
+    }
+
+    // Validación Costos
     let costosHTML = "";
     if (item.estado === "Realizado") {
       costosHTML = `
@@ -413,6 +439,7 @@ function renderTabla() {
         </button>
       </td>
       <td class="p-3.5 text-center border-r border-gray-100 whitespace-nowrap">${estadoHTML}</td>
+      <td class="p-3.5 text-center border-r border-gray-100 whitespace-nowrap">${progresoHTML}</td>
       <td class="p-3.5 text-center whitespace-nowrap">${costosHTML}</td>
     `;
     tbody.appendChild(tr);
@@ -420,7 +447,14 @@ function renderTabla() {
 }
 
 window.actualizarEstado = async (id, nuevoEstado) => {
-  await updateDoc(doc(db, "solicitudes_cambios", id), { estado: nuevoEstado });
+  const updatePayload = { estado: nuevoEstado };
+  if (nuevoEstado === "Realizado") updatePayload.progreso = 100;
+  await updateDoc(doc(db, "solicitudes_cambios", id), updatePayload);
+};
+
+window.actualizarProgreso = async (id, nuevoProgreso) => {
+  const val = Math.min(100, Math.max(0, parseInt(nuevoProgreso) || 0));
+  await updateDoc(doc(db, "solicitudes_cambios", id), { progreso: val });
 };
 
 window.validarCostos = async (id, checkValue) => {
@@ -437,15 +471,22 @@ window.editarTextoBox = async (id, textoActual) => {
   }
 };
 
-// Informes
+// ==================== INFORME Y GRÁFICA DE TORRES ====================
 function renderInformeView() {
+  // 1. Actualizar Tarjetas de Métricas
+  document.getElementById("metric-total").textContent = solicitudes.length;
+  document.getElementById("metric-proceso").textContent = solicitudes.filter(s => s.estado === "En proceso").length;
+  document.getElementById("metric-realizado").textContent = solicitudes.filter(s => s.estado === "Realizado").length;
+  document.getElementById("metric-retrasado").textContent = solicitudes.filter(s => s.estado === "Retrasado").length;
+
+  // 2. Generar lista de proyectos
   const container = document.getElementById("report-project-selection-list");
   container.innerHTML = "";
   const proyectosUnicos = [...new Set(solicitudes.map(s => s.proyecto))];
 
   proyectosUnicos.forEach((proy) => {
     const div = document.createElement("div");
-    div.className = "flex items-center space-x-2 bg-gray-50 p-2 rounded-lg border border-gray-100";
+    div.className = "flex items-center space-x-2 bg-gray-50 p-2 rounded-xl border border-gray-100";
     div.innerHTML = `
       <input type="checkbox" value="${proy}" checked class="report-chk h-4 w-4 accent-[#D61B28]">
       <span class="text-xs font-semibold text-gray-700">${proy}</span>
@@ -456,27 +497,57 @@ function renderInformeView() {
   document.querySelectorAll(".report-chk").forEach(chk => {
     chk.onchange = actualizarGraficoTorres;
   });
+
+  document.getElementById("btn-select-all").onclick = () => {
+    document.querySelectorAll(".report-chk").forEach(c => c.checked = true);
+    actualizarGraficoTorres();
+  };
+
+  document.getElementById("btn-deselect-all").onclick = () => {
+    document.querySelectorAll(".report-chk").forEach(c => c.checked = false);
+    actualizarGraficoTorres();
+  };
+
   actualizarGraficoTorres();
 }
 
-document.getElementById("report-filter-status").onchange = actualizarGraficoTorres;
-
 function actualizarGraficoTorres() {
-  const filtroEstado = document.getElementById("report-filter-status").value;
   const seleccionados = Array.from(document.querySelectorAll(".report-chk:checked")).map(c => c.value);
 
-  const itemsFiltrados = solicitudes.filter(s => {
-    const coincideProyecto = seleccionados.includes(s.proyecto);
-    const coincideEstado = filtroEstado === "todos" || s.estado === filtroEstado;
-    return coincideProyecto && coincideEstado;
-  });
-
+  // Calcular el progreso promedio por proyecto
   const labels = seleccionados;
-  const porcentajes = labels.map(p => {
-    const delProy = itemsFiltrados.filter(s => s.proyecto === p);
-    if (delProy.length === 0) return 0;
-    const realizados = delProy.filter(s => s.estado === "Realizado").length;
-    return Math.round((realizados / delProy.length) * 100);
+  const dataProgreso = [];
+  const backgroundColors = [];
+  const borderColors = [];
+
+  labels.forEach(proy => {
+    const items = solicitudes.filter(s => s.proyecto === proy);
+    if (items.length === 0) {
+      dataProgreso.push(0);
+      backgroundColors.push("rgba(214, 27, 40, 0.7)");
+      borderColors.push("#D61B28");
+      return;
+    }
+
+    // Promedio de % de avance de los cambios de este proyecto
+    const sumaAvance = items.reduce((acc, curr) => acc + (curr.progreso !== undefined ? curr.progreso : (curr.estado === "Realizado" ? 100 : 25)), 0);
+    const promedio = Math.round(sumaAvance / items.length);
+    dataProgreso.push(promedio);
+
+    // Color según estado predominante
+    const tieneRetraso = items.some(s => s.estado === "Retrasado");
+    const todosRealizados = items.every(s => s.estado === "Realizado");
+
+    if (todosRealizados) {
+      backgroundColors.push("rgba(34, 197, 94, 0.8)"); // Verde
+      borderColors.push("#16a34a");
+    } else if (tieneRetraso) {
+      backgroundColors.push("rgba(239, 68, 68, 0.85)"); // Rojo Retrasado
+      borderColors.push("#dc2626");
+    } else {
+      backgroundColors.push("rgba(249, 115, 22, 0.8)"); // Naranja En Proceso
+      borderColors.push("#ea580c");
+    }
   });
 
   const ctx = document.getElementById("chartAvance").getContext("2d");
@@ -487,20 +558,39 @@ function actualizarGraficoTorres() {
     data: {
       labels: labels,
       datasets: [{
-        label: "% Avance Realizado",
-        data: porcentajes,
-        backgroundColor: "rgba(214, 27, 40, 0.85)",
-        borderColor: "#D61B28",
-        borderWidth: 1,
+        label: "% Avance Ponderado",
+        data: dataProgreso,
+        backgroundColor: backgroundColors,
+        borderColor: borderColors,
+        borderWidth: 1.5,
         borderRadius: 8,
-        barPercentage: 0.4
+        barPercentage: 0.45
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ` Progreso: ${ctx.raw}%`
+          }
+        }
+      },
       scales: {
-        y: { beginAtZero: true, max: 100, ticks: { callback: v => v + "%" } }
+        y: {
+          beginAtZero: true,
+          max: 100,
+          ticks: {
+            stepSize: 20,
+            callback: v => v + "%"
+          },
+          grid: { color: "rgba(0, 0, 0, 0.05)" }
+        },
+        x: {
+          grid: { display: false }
+        }
       }
     }
   });
