@@ -3,6 +3,7 @@ import {
   getAuth, 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
+  sendPasswordResetEmail,
   onAuthStateChanged, 
   signOut 
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -39,6 +40,7 @@ const db = getFirestore(app);
 let currentUser = null;
 let userData = null;
 let solicitudes = [];
+let filtroSubmenuActivo = "todos";
 let chartInstance = null;
 
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
@@ -49,14 +51,14 @@ const fileToBase64 = (file) => new Promise((resolve, reject) => {
   reader.onerror = error => reject(error);
 });
 
-// Comprobar si es Super Admin (Daniel Olmos)
+// Comprobar Super Admin (Daniel Olmos)
 function esSuperAdmin() {
   if (!userData) return false;
   const nombreLimpio = (userData.nombre || "").trim().toLowerCase();
   return nombreLimpio === "daniel olmos" || (userData.email || "").toLowerCase().includes("olmos");
 }
 
-// Modales Portada
+// Modales y Controles
 const welcomeContainer = document.getElementById("welcome-container");
 const appContainer = document.getElementById("app-container");
 const modalLogin = document.getElementById("modal-login");
@@ -68,6 +70,21 @@ document.getElementById("btn-show-register").onclick = () => modalRegister.class
 document.getElementById("close-login").onclick = () => modalLogin.classList.add("hidden");
 document.getElementById("close-register").onclick = () => modalRegister.classList.add("hidden");
 document.getElementById("close-profile").onclick = () => modalProfile.classList.add("hidden");
+
+// Recuperación de Contraseña
+document.getElementById("btn-forgot-pass").onclick = async () => {
+  const email = document.getElementById("login-email").value.trim();
+  if (!email) {
+    alert("Por favor ingresa tu correo electrónico en el campo superior para enviarte el enlace de restablecimiento.");
+    return;
+  }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    alert(`Se ha enviado un correo a ${email} para restablecer tu contraseña. Revisa tu bandeja de entrada o spam.`);
+  } catch (err) {
+    alert("Error al enviar correo de recuperación: " + err.message);
+  }
+};
 
 // Perfil
 document.getElementById("btn-edit-profile").onclick = () => {
@@ -93,7 +110,7 @@ document.getElementById("form-update-profile").onsubmit = async (e) => {
     userData = { ...userData, ...updateData };
     actualizarHeaderUsuario();
     modalProfile.classList.add("hidden");
-    alert("Perfil actualizado");
+    alert("Perfil actualizado correctamente.");
   } catch (err) {
     alert("Error al actualizar: " + err.message);
   }
@@ -122,7 +139,7 @@ document.getElementById("form-register").onsubmit = async (e) => {
     });
     modalRegister.classList.add("hidden");
   } catch (err) {
-    alert("Error: " + err.message);
+    alert("Error de registro: " + err.message);
   }
 };
 
@@ -135,7 +152,7 @@ document.getElementById("form-login").onsubmit = async (e) => {
     await signInWithEmailAndPassword(auth, email, pass);
     modalLogin.classList.add("hidden");
   } catch (err) {
-    alert("Credenciales incorrectas");
+    alert("Credenciales incorrectas o usuario no registrado.");
   }
 };
 
@@ -156,7 +173,6 @@ function actualizarHeaderUsuario() {
     avatarIcon.classList.remove("hidden");
   }
 
-  // Activar botón exclusivo para Daniel Olmos
   if (esSuperAdmin()) {
     document.getElementById("menu-btn-usuarios").classList.remove("hidden");
   } else {
@@ -193,7 +209,7 @@ const menuBtnUsuarios = document.getElementById("menu-btn-usuarios");
 
 function resetMenuStyles() {
   [menuBtnCambios, menuBtnInforme, menuBtnUsuarios].forEach(b => {
-    b.className = "w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm text-gray-600 hover:bg-gray-100 transition";
+    b.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-gray-600 hover:bg-gray-100 transition cursor-pointer";
   });
   viewCambios.classList.add("hidden");
   viewInforme.classList.add("hidden");
@@ -203,21 +219,34 @@ function resetMenuStyles() {
 menuBtnCambios.onclick = () => {
   resetMenuStyles();
   viewCambios.classList.remove("hidden");
-  menuBtnCambios.className = "w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition bg-red-50 text-[#D61B28]";
+  menuBtnCambios.className = "w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition bg-red-50 text-[#D61B28] cursor-pointer";
 };
 
 menuBtnInforme.onclick = () => {
   resetMenuStyles();
   viewInforme.classList.remove("hidden");
-  menuBtnInforme.className = "w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition bg-red-50 text-[#D61B28]";
+  menuBtnInforme.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs transition bg-red-50 text-[#D61B28] cursor-pointer";
   renderInformeView();
 };
 
 menuBtnUsuarios.onclick = () => {
   resetMenuStyles();
   viewUsuarios.classList.remove("hidden");
-  menuBtnUsuarios.className = "w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition bg-red-50 text-[#D61B28]";
+  menuBtnUsuarios.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs transition bg-red-50 text-[#D61B28] cursor-pointer";
   cargarListaUsuariosAdmin();
+};
+
+// Submenús de Filtro de Cambios
+window.filtrarPorSubmenu = (estado) => {
+  filtroSubmenuActivo = estado;
+  const subtitle = document.getElementById("view-subtitle-filter");
+  
+  if (estado === "todos") subtitle.textContent = "Mostrando todos los registros";
+  else if (estado === "En proceso") subtitle.textContent = "Filtrando: Cambios en proceso";
+  else if (estado === "Realizado") subtitle.textContent = "Filtrando: Cambios realizados";
+  else if (estado === "Retrasado") subtitle.textContent = "Filtrando: Cambios retrasados";
+
+  renderTabla();
 };
 
 // Panel Super Admin (Daniel Olmos)
@@ -243,7 +272,7 @@ async function cargarListaUsuariosAdmin() {
       <td class="p-3"><span class="bg-red-50 text-[#D61B28] px-2 py-0.5 rounded font-bold text-[10px]">${u.rol}</span></td>
       <td class="p-3 text-center">
         ${docU.id !== currentUser.uid ? `
-          <button onclick="window.eliminarUsuarioDoc('${docU.id}', '${u.nombre}')" class="text-red-600 hover:text-red-800 font-bold text-xs">
+          <button onclick="window.eliminarUsuarioDoc('${docU.id}', '${u.nombre}', '${u.email}')" class="text-red-600 hover:text-red-800 font-bold text-xs cursor-pointer">
             <i class="fa-solid fa-trash"></i> Eliminar
           </button>
         ` : '<span class="text-gray-400 text-[10px] font-bold">Admin Principal</span>'}
@@ -253,9 +282,10 @@ async function cargarListaUsuariosAdmin() {
   });
 }
 
-window.eliminarUsuarioDoc = async (id, nombre) => {
-  if (confirm(`¿Deseas eliminar permanentemente al usuario ${nombre}?`)) {
+window.eliminarUsuarioDoc = async (id, nombre, email) => {
+  if (confirm(`¿Deseas eliminar permanentemente al usuario ${nombre} (${email})?`)) {
     await deleteDoc(doc(db, "usuarios", id));
+    alert(`Usuario ${nombre} eliminado de la base de datos.`);
     cargarListaUsuariosAdmin();
   }
 };
@@ -266,27 +296,28 @@ document.getElementById("btn-open-new-change").onclick = () => modalNewChange.cl
 document.getElementById("modal-btn-close").onclick = () => modalNewChange.classList.add("hidden");
 document.getElementById("modal-btn-cancel").onclick = () => modalNewChange.classList.add("hidden");
 
-async function prepararNotificacionWhatsApp(proyecto, articulo, cambio) {
+// Notificación de WhatsApp Dinámica con Filtro por Rol
+async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro = null }) {
   const modalWA = document.getElementById("modal-whatsapp");
   const listContainer = document.getElementById("whatsapp-contacts-list");
+  document.getElementById("wa-modal-title").textContent = titulo;
+  document.getElementById("wa-modal-desc").textContent = subtitulo;
   listContainer.innerHTML = "";
 
-  const mensajeTexto = encodeURIComponent(
-    `👞 *SOLICITUD DE CAMBIO - BATA BOLIVIA*\n\n` +
-    `📌 *Proyecto:* ${proyecto}\n` +
-    `🔢 *Artículo:* ${articulo}\n` +
-    `👤 *Solicitante:* ${userData.nombre} (${userData.rol})\n` +
-    `📝 *Cambio:* ${cambio}\n\n` +
-    `_Gestión de Cambios Bata_`
-  );
+  const encodedMsg = encodeURIComponent(mensajeTexto);
 
   try {
     const usuariosSnap = await getDocs(collection(db, "usuarios"));
+    let count = 0;
+
     usuariosSnap.forEach(d => {
       const u = d.data();
-      if (u.celular) {
+      const coincideRol = !rolFiltro || u.rol === rolFiltro;
+
+      if (u.celular && coincideRol) {
+        count++;
         const item = document.createElement("a");
-        item.href = `https://wa.me/591${u.celular}?text=${mensajeTexto}`;
+        item.href = `https://wa.me/591${u.celular}?text=${encodedMsg}`;
         item.target = "_blank";
         item.className = "flex items-center justify-between p-2.5 bg-gray-50 hover:bg-green-50 rounded-xl border border-gray-200 transition text-gray-800";
         item.innerHTML = `
@@ -302,6 +333,11 @@ async function prepararNotificacionWhatsApp(proyecto, articulo, cambio) {
         listContainer.appendChild(item);
       }
     });
+
+    if (count === 0) {
+      listContainer.innerHTML = `<p class="p-3 text-center text-gray-400 text-xs">No hay usuarios registrados con celular en la sección solicitada (${rolFiltro || 'General'}).</p>`;
+    }
+
     modalWA.classList.remove("hidden");
   } catch (error) {
     console.error(error);
@@ -312,7 +348,7 @@ document.getElementById("btn-close-whatsapp-modal").onclick = () => {
   document.getElementById("modal-whatsapp").classList.add("hidden");
 };
 
-// Crear Solicitud
+// Crear Nueva Solicitud
 document.getElementById("form-new-change").onsubmit = async (e) => {
   e.preventDefault();
   const proyecto = document.getElementById("change-project").value.trim();
@@ -328,7 +364,7 @@ document.getElementById("form-new-change").onsubmit = async (e) => {
       solicitanteRol: userData.rol,
       solicitanteId: currentUser.uid,
       estado: "En proceso",
-      progreso: 15, // Progreso inicial por defecto
+      progreso: 20,
       validadoCostos: false,
       fechaCreacion: new Date().toISOString(),
       ultimaEdicion: null,
@@ -337,7 +373,12 @@ document.getElementById("form-new-change").onsubmit = async (e) => {
 
     document.getElementById("form-new-change").reset();
     modalNewChange.classList.add("hidden");
-    prepararNotificacionWhatsApp(proyecto, articulo, boxCambio);
+
+    abrirModalWhatsApp({
+      titulo: "Solicitud Registrada",
+      subtitulo: "Notificar solicitud creada al equipo:",
+      mensajeTexto: `👞 *NUEVA SOLICITUD DE CAMBIO - BATA BOLIVIA*\n\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n👤 *Solicitado por:* ${userData.nombre} (${userData.rol})\n📝 *Cambio:* ${boxCambio}\n\n_Revisar en el Sistema de Gestión de Cambios Bata_`
+    });
   } catch (err) {
     alert("Error: " + err.message);
   }
@@ -363,13 +404,18 @@ function renderTabla() {
   tbody.innerHTML = "";
   const empty = document.getElementById("table-empty-state");
 
-  if (solicitudes.length === 0) {
+  const itemsFiltrados = solicitudes.filter(item => {
+    if (filtroSubmenuActivo === "todos") return true;
+    return item.estado === filtroSubmenuActivo;
+  });
+
+  if (itemsFiltrados.length === 0) {
     empty.classList.remove("hidden");
     return;
   }
   empty.classList.add("hidden");
 
-  solicitudes.forEach((item) => {
+  itemsFiltrados.forEach((item) => {
     const tr = document.createElement("tr");
     tr.className = "hover:bg-gray-50/80 transition border-b border-gray-100";
 
@@ -382,22 +428,27 @@ function renderTabla() {
     const esCostos = userData.rol === "Costos" || esSuperAdmin();
     const progresoVal = item.progreso !== undefined ? item.progreso : (item.estado === "Realizado" ? 100 : 25);
 
-    // Estado HTML
+    // Selector de Estado para Desarrollo de Producto
     let estadoHTML = "";
     if (esDesarrollo) {
       estadoHTML = `
-        <select onchange="window.actualizarEstado('${item.id}', this.value)" class="border border-orange-200 text-orange-600 bg-orange-50 font-semibold rounded-lg px-2 py-1 text-xs focus:ring-1 focus:ring-[#D61B28]">
-          <option value="En proceso" ${item.estado === "En proceso" ? "selected" : ""}>En proceso</option>
-          <option value="Realizado" ${item.estado === "Realizado" ? "selected" : ""}>Realizado</option>
-          <option value="Retrasado" ${item.estado === "Retrasado" ? "selected" : ""}>Retrasado</option>
-        </select>
+        <div class="flex items-center space-x-1.5">
+          <select id="sel-estado-${item.id}" class="border border-orange-200 text-orange-600 bg-orange-50 font-semibold rounded-lg px-2 py-1 text-xs focus:ring-1 focus:ring-[#D61B28]">
+            <option value="En proceso" ${item.estado === "En proceso" ? "selected" : ""}>En proceso</option>
+            <option value="Realizado" ${item.estado === "Realizado" ? "selected" : ""}>Realizado</option>
+            <option value="Retrasado" ${item.estado === "Retrasado" ? "selected" : ""}>Retrasado</option>
+          </select>
+          <button onclick="window.guardarCambioEstado('${item.id}', '${item.proyecto}', '${item.articulo}')" title="Guardar Estado y Notificar a Costos" class="bg-gray-100 hover:bg-[#D61B28] hover:text-white text-gray-600 p-1.5 rounded-lg text-xs transition">
+            <i class="fa-solid fa-floppy-disk"></i>
+          </button>
+        </div>
       `;
     } else {
       const estilo = item.estado === "Realizado" ? "border-green-200 text-green-700 bg-green-50" : (item.estado === "Retrasado" ? "border-red-200 text-red-700 bg-red-50" : "border-orange-200 text-orange-600 bg-orange-50");
       estadoHTML = `<span class="border ${estilo} px-3 py-1 rounded-lg font-bold text-xs">${item.estado}</span>`;
     }
 
-    // Progreso % HTML (Editable solo por Desarrollo de producto)
+    // Progreso %
     let progresoHTML = "";
     if (esDesarrollo) {
       progresoHTML = `
@@ -410,21 +461,34 @@ function renderTabla() {
       `;
     } else {
       progresoHTML = `
-        <div class="w-full bg-gray-200 rounded-full h-2.5 max-w-[70px] mx-auto overflow-hidden">
-          <div class="bg-[#D61B28] h-2.5 rounded-full" style="width: ${progresoVal}%"></div>
+        <div class="w-full bg-gray-200 rounded-full h-2 max-w-[65px] mx-auto overflow-hidden">
+          <div class="bg-[#D61B28] h-2 rounded-full" style="width: ${progresoVal}%"></div>
         </div>
         <span class="text-[10px] font-bold text-gray-500 block text-center mt-0.5">${progresoVal}%</span>
       `;
     }
 
-    // Validación Costos
+    // Validación Costos (Checkbox Bloqueable con Confirmación)
     let costosHTML = "";
     if (item.estado === "Realizado") {
-      costosHTML = `
-        <input type="checkbox" ${item.validadoCostos ? "checked" : ""} ${!esCostos ? "disabled" : ""} 
-               onchange="window.validarCostos('${item.id}', this.checked)"
-               class="h-4 w-4 accent-[#D61B28] rounded border-gray-300 cursor-${esCostos ? 'pointer' : 'not-allowed'}">
-      `;
+      if (item.validadoCostos) {
+        costosHTML = `
+          <div class="flex items-center justify-center space-x-1 text-green-700 font-bold text-xs">
+            <i class="fa-solid fa-circle-check text-green-600"></i>
+            <span>Validado</span>
+            ${esSuperAdmin() ? `<button onclick="window.desbloquearValidacionCostos('${item.id}')" class="text-red-500 hover:text-red-700 text-[10px] ml-1" title="Desbloquear como Super Admin"><i class="fa-solid fa-unlock"></i></button>` : ''}
+          </div>
+        `;
+      } else {
+        costosHTML = `
+          <div class="flex items-center justify-center space-x-1">
+            <input type="checkbox" ${!esCostos ? "disabled" : ""} 
+                   onchange="window.confirmarValidacionCostos('${item.id}', '${item.proyecto}', '${item.articulo}', this)"
+                   class="h-4 w-4 accent-[#D61B28] rounded border-gray-300 cursor-${esCostos ? 'pointer' : 'not-allowed'}">
+            <span class="text-[11px] text-gray-400">Confirmar</span>
+          </div>
+        `;
+      }
     } else {
       costosHTML = `<input type="checkbox" disabled class="h-4 w-4 text-gray-300 rounded border-gray-200 opacity-40">`;
     }
@@ -446,19 +510,59 @@ function renderTabla() {
   });
 }
 
-window.actualizarEstado = async (id, nuevoEstado) => {
+// Guardar Estado desde Desarrollo de Producto y Notificar a Costos
+window.guardarCambioEstado = async (id, proyecto, articulo) => {
+  const select = document.getElementById(`sel-estado-${id}`);
+  const nuevoEstado = select.value;
+
   const updatePayload = { estado: nuevoEstado };
   if (nuevoEstado === "Realizado") updatePayload.progreso = 100;
+
   await updateDoc(doc(db, "solicitudes_cambios", id), updatePayload);
+
+  if (nuevoEstado === "Realizado") {
+    abrirModalWhatsApp({
+      titulo: "Proyecto Realizado",
+      subtitulo: "Enviar alerta a los usuarios de Costos para su validación:",
+      mensajeTexto: `👟 *PROYECTO REALIZADO - REQUERIMIENTO DE COSTOS*\n\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n✅ *Estado:* Realizado por Desarrollo de Producto (${userData.nombre})\n\n_Por favor ingresar al sistema para validar los costos asociados._`,
+      rolFiltro: "Costos"
+    });
+  } else {
+    alert("Estado actualizado correctamente.");
+  }
+};
+
+// Confirmación de Validación de Costos y Notificación a Calidad
+window.confirmarValidacionCostos = async (id, proyecto, articulo, checkboxElem) => {
+  const confirma = confirm(`¿Estás seguro de validar los costos del proyecto "${proyecto}"? Una vez confirmado no se podrá desmarcar.`);
+  if (!confirma) {
+    checkboxElem.checked = false;
+    return;
+  }
+
+  await updateDoc(doc(db, "solicitudes_cambios", id), {
+    validadoCostos: true,
+    fechaValidacionCostos: new Date().toISOString(),
+    validadorCostosNombre: userData.nombre
+  });
+
+  abrirModalWhatsApp({
+    titulo: "Costos Validados",
+    subtitulo: "Enviar notificación a los usuarios de Calidad:",
+    mensajeTexto: `📋 *VALIDACIÓN DE COSTOS COMPLETADA - ALERTA CALIDAD*\n\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n💰 *Costos:* Validados por ${userData.nombre} (Costos)\n\n_El proyecto ya cuenta con validación técnica y económica._`,
+    rolFiltro: "Calidad"
+  });
+};
+
+window.desbloquearValidacionCostos = async (id) => {
+  if (confirm("¿Desbloquear validación de costos? (Acción de Super Admin)")) {
+    await updateDoc(doc(db, "solicitudes_cambios", id), { validadoCostos: false });
+  }
 };
 
 window.actualizarProgreso = async (id, nuevoProgreso) => {
   const val = Math.min(100, Math.max(0, parseInt(nuevoProgreso) || 0));
   await updateDoc(doc(db, "solicitudes_cambios", id), { progreso: val });
-};
-
-window.validarCostos = async (id, checkValue) => {
-  await updateDoc(doc(db, "solicitudes_cambios", id), { validadoCostos: checkValue });
 };
 
 window.editarTextoBox = async (id, textoActual) => {
@@ -471,15 +575,13 @@ window.editarTextoBox = async (id, textoActual) => {
   }
 };
 
-// ==================== INFORME Y GRÁFICA DE TORRES ====================
+// Informe y Torres
 function renderInformeView() {
-  // 1. Actualizar Tarjetas de Métricas
   document.getElementById("metric-total").textContent = solicitudes.length;
   document.getElementById("metric-proceso").textContent = solicitudes.filter(s => s.estado === "En proceso").length;
   document.getElementById("metric-realizado").textContent = solicitudes.filter(s => s.estado === "Realizado").length;
   document.getElementById("metric-retrasado").textContent = solicitudes.filter(s => s.estado === "Retrasado").length;
 
-  // 2. Generar lista de proyectos
   const container = document.getElementById("report-project-selection-list");
   container.innerHTML = "";
   const proyectosUnicos = [...new Set(solicitudes.map(s => s.proyecto))];
@@ -514,7 +616,6 @@ function renderInformeView() {
 function actualizarGraficoTorres() {
   const seleccionados = Array.from(document.querySelectorAll(".report-chk:checked")).map(c => c.value);
 
-  // Calcular el progreso promedio por proyecto
   const labels = seleccionados;
   const dataProgreso = [];
   const backgroundColors = [];
@@ -529,23 +630,21 @@ function actualizarGraficoTorres() {
       return;
     }
 
-    // Promedio de % de avance de los cambios de este proyecto
     const sumaAvance = items.reduce((acc, curr) => acc + (curr.progreso !== undefined ? curr.progreso : (curr.estado === "Realizado" ? 100 : 25)), 0);
     const promedio = Math.round(sumaAvance / items.length);
     dataProgreso.push(promedio);
 
-    // Color según estado predominante
     const tieneRetraso = items.some(s => s.estado === "Retrasado");
     const todosRealizados = items.every(s => s.estado === "Realizado");
 
     if (todosRealizados) {
-      backgroundColors.push("rgba(34, 197, 94, 0.8)"); // Verde
+      backgroundColors.push("rgba(34, 197, 94, 0.8)");
       borderColors.push("#16a34a");
     } else if (tieneRetraso) {
-      backgroundColors.push("rgba(239, 68, 68, 0.85)"); // Rojo Retrasado
+      backgroundColors.push("rgba(239, 68, 68, 0.85)");
       borderColors.push("#dc2626");
     } else {
-      backgroundColors.push("rgba(249, 115, 22, 0.8)"); // Naranja En Proceso
+      backgroundColors.push("rgba(249, 115, 22, 0.8)");
       borderColors.push("#ea580c");
     }
   });
