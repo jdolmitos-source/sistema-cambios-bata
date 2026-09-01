@@ -10,7 +10,6 @@ import {
   getFirestore, 
   collection, 
   addDoc, 
-  getDocs,
   getDoc,
   doc, 
   setDoc, 
@@ -21,7 +20,6 @@ import {
   serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// Credenciales oficiales de tu proyecto Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDCKYflkU3rbMGqdudZzS3RP6uqrHBHIhQ",
   authDomain: "sistema-de-cambios-bata.firebaseapp.com",
@@ -32,30 +30,28 @@ const firebaseConfig = {
   measurementId: "G-0XXGS651PJ"
 };
 
-// Inicializar Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Estado de la aplicación
 let currentUser = null;
 let userData = null;
 let solicitudes = [];
 let chartInstance = null;
 
-// Elementos de la Portada y Modales
+// Modales Portada
 const welcomeContainer = document.getElementById("welcome-container");
 const appContainer = document.getElementById("app-container");
 const modalLogin = document.getElementById("modal-login");
 const modalRegister = document.getElementById("modal-register");
 
-document.getElementById("btn-show-login").addEventListener("click", () => modalLogin.classList.remove("hidden"));
-document.getElementById("btn-show-register").addEventListener("click", () => modalRegister.classList.remove("hidden"));
-document.getElementById("close-login").addEventListener("click", () => modalLogin.classList.add("hidden"));
-document.getElementById("close-register").addEventListener("click", () => modalRegister.classList.add("hidden"));
+document.getElementById("btn-show-login").onclick = () => modalLogin.classList.remove("hidden");
+document.getElementById("btn-show-register").onclick = () => modalRegister.classList.remove("hidden");
+document.getElementById("close-login").onclick = () => modalLogin.classList.add("hidden");
+document.getElementById("close-register").onclick = () => modalRegister.classList.add("hidden");
 
-// Registro de Usuario con Rol
-document.getElementById("form-register").addEventListener("submit", async (e) => {
+// Registro
+document.getElementById("form-register").onsubmit = async (e) => {
   e.preventDefault();
   const name = document.getElementById("reg-name").value.trim();
   const email = document.getElementById("reg-email").value.trim();
@@ -74,10 +70,10 @@ document.getElementById("form-register").addEventListener("submit", async (e) =>
   } catch (err) {
     alert("Error de registro: " + err.message);
   }
-});
+};
 
-// Inicio de Sesión
-document.getElementById("form-login").addEventListener("submit", async (e) => {
+// Login
+document.getElementById("form-login").onsubmit = async (e) => {
   e.preventDefault();
   const email = document.getElementById("login-email").value.trim();
   const pass = document.getElementById("login-pass").value;
@@ -87,10 +83,10 @@ document.getElementById("form-login").addEventListener("submit", async (e) => {
   } catch (err) {
     alert("Credenciales incorrectas o usuario no registrado.");
   }
-});
+};
 
 // Cerrar Sesión
-document.getElementById("btn-logout").addEventListener("click", () => signOut(auth));
+document.getElementById("btn-logout").onclick = () => signOut(auth);
 
 // Observador de Sesión
 onAuthStateChanged(auth, async (user) => {
@@ -113,46 +109,35 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// Menús de Navegación
+// Menú Navegación
 const viewCambios = document.getElementById("view-cambios");
 const viewInforme = document.getElementById("view-informe");
 const menuBtnCambios = document.getElementById("menu-btn-cambios");
 const menuBtnInforme = document.getElementById("menu-btn-informe");
 
-menuBtnCambios.addEventListener("click", () => {
+menuBtnCambios.onclick = () => {
   viewCambios.classList.remove("hidden");
   viewInforme.classList.add("hidden");
-  menuBtnCambios.className = "w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition bg-red-50 text-[#D61B28]";
-  menuBtnInforme.className = "w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm text-gray-600 hover:bg-gray-100 transition";
-});
+  menuBtnCambios.className = "w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition bg-red-50 text-[#D61B28] cursor-pointer";
+  menuBtnInforme.className = "w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm text-gray-600 hover:bg-gray-100 transition cursor-pointer";
+};
 
-menuBtnInforme.addEventListener("click", () => {
+menuBtnInforme.onclick = () => {
   viewInforme.classList.remove("hidden");
   viewCambios.classList.add("hidden");
-  menuBtnInforme.className = "w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition bg-red-50 text-[#D61B28]";
-  menuBtnCambios.className = "w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm text-gray-600 hover:bg-gray-100 transition";
+  menuBtnInforme.className = "w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition bg-red-50 text-[#D61B28] cursor-pointer";
+  menuBtnCambios.className = "w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm text-gray-600 hover:bg-gray-100 transition cursor-pointer";
   renderInformeView();
-});
+};
 
-// Modal de Nueva Solicitud
+// Modal Nueva Solicitud
 const modalNewChange = document.getElementById("modal-new-change");
-document.getElementById("btn-open-new-change").addEventListener("click", () => modalNewChange.classList.remove("hidden"));
-document.getElementById("modal-btn-close").addEventListener("click", () => modalNewChange.classList.add("hidden"));
-document.getElementById("modal-btn-cancel").addEventListener("click", () => modalNewChange.classList.add("hidden"));
+document.getElementById("btn-open-new-change").onclick = () => modalNewChange.classList.remove("hidden");
+document.getElementById("modal-btn-close").onclick = () => modalNewChange.classList.add("hidden");
+document.getElementById("modal-btn-cancel").onclick = () => modalNewChange.classList.add("hidden");
 
-// Notificación automática por correo
-async function notificarUsuariosPorCorreo(proyecto, articulo, cambio) {
-  try {
-    const usuariosSnap = await getDocs(collection(db, "usuarios"));
-    const correos = usuariosSnap.docs.map(d => d.data().email).filter(Boolean);
-    console.log("Notificando por correo a:", correos);
-  } catch (error) {
-    console.warn("Error al recuperar lista de correos:", error);
-  }
-}
-
-// Crear Solicitud de Cambio
-document.getElementById("form-new-change").addEventListener("submit", async (e) => {
+// Registrar Cambio
+document.getElementById("form-new-change").onsubmit = async (e) => {
   e.preventDefault();
   const proyecto = document.getElementById("change-project").value.trim();
   const articulo = document.getElementById("change-article").value.trim();
@@ -173,16 +158,14 @@ document.getElementById("form-new-change").addEventListener("submit", async (e) 
       timestamp: serverTimestamp()
     });
 
-    notificarUsuariosPorCorreo(proyecto, articulo, boxCambio);
-
     document.getElementById("form-new-change").reset();
     modalNewChange.classList.add("hidden");
   } catch (err) {
     alert("Error al registrar cambio: " + err.message);
   }
-});
+};
 
-// Escuchar solicitudes en tiempo real
+// Escuchar cambios Firestore
 function escucharCambios() {
   const q = query(collection(db, "solicitudes_cambios"), orderBy("timestamp", "desc"));
   onSnapshot(q, (snapshot) => {
@@ -197,7 +180,7 @@ function formatearFecha(iso) {
   return d.toLocaleDateString("es-BO", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-// Renderizado de Tabla
+// Render Tabla
 function renderTabla() {
   const tbody = document.getElementById("table-cambios-body");
   tbody.innerHTML = "";
@@ -280,7 +263,7 @@ window.editarTextoBox = async (id, textoActual) => {
   }
 };
 
-// Módulo de Informes y Gráfico
+// Informe y Grafico
 function renderInformeView() {
   const container = document.getElementById("report-project-selection-list");
   container.innerHTML = "";
@@ -297,12 +280,12 @@ function renderInformeView() {
   });
 
   document.querySelectorAll(".report-chk").forEach(chk => {
-    chk.addEventListener("change", actualizarGraficoTorres);
+    chk.onchange = actualizarGraficoTorres;
   });
   actualizarGraficoTorres();
 }
 
-document.getElementById("report-filter-status").addEventListener("change", actualizarGraficoTorres);
+document.getElementById("report-filter-status").onchange = actualizarGraficoTorres;
 
 function actualizarGraficoTorres() {
   const filtroEstado = document.getElementById("report-filter-status").value;
