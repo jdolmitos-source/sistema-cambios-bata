@@ -32,6 +32,11 @@ const firebaseConfig = {
   measurementId: "G-0XXGS651PJ"
 };
 
+// ⚠️ AQUÍ DEFINES TU CORREO DE GMAIL COMO SUPER ADMIN
+const SUPER_ADMIN_EMAILS = [
+  "jd.olmitos@gmail.com" // Reemplaza con tu Gmail real
+];
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -50,12 +55,10 @@ const fileToBase64 = (file) => new Promise((resolve, reject) => {
   reader.onerror = error => reject(error);
 });
 
-// Comprobar Super Admin (Daniel Olmos)
+// Comprobar si el usuario conectado es el Super Admin (Gmail)
 function esSuperAdmin() {
-  if (!userData) return false;
-  const email = (userData.email || "").toLowerCase();
-  const nombre = (userData.nombre || "").toLowerCase();
-  return email === "daniel.olmos@bata.com" || nombre.includes("daniel olmos");
+  if (!currentUser || !currentUser.email) return false;
+  return SUPER_ADMIN_EMAILS.some(adm => adm.toLowerCase() === currentUser.email.toLowerCase());
 }
 
 // Modales y Controles
@@ -79,7 +82,7 @@ if (document.getElementById("close-modal-resumen")) {
   document.getElementById("close-modal-resumen").onclick = () => modalResumen.classList.add("hidden");
 }
 
-// Reset de Contraseña Directo a WhatsApp sin Correo
+// Reset de Contraseña por WhatsApp
 document.getElementById("btn-forgot-pass").onclick = async () => {
   const email = document.getElementById("login-email").value.trim();
   if (!email) {
@@ -103,14 +106,14 @@ document.getElementById("btn-forgot-pass").onclick = async () => {
         `👤 *Usuario:* ${usuarioEncontrado.nombre}\n` +
         `📧 *Correo:* ${email}\n` +
         `📱 *Celular:* +591 ${usuarioEncontrado.celular}\n\n` +
-        `_Solicito el restablecimiento directo de mi contraseña de acceso._`
+        `_Solicito restablecer mi contraseña de acceso._`
       );
       window.open(`https://wa.me/591${usuarioEncontrado.celular}?text=${msg}`, "_blank");
     } else {
-      alert(`No se encontró un usuario registrado con el correo: ${email}`);
+      alert(`No se encontró ningún usuario con el correo: ${email}`);
     }
   } catch (err) {
-    alert("Error al procesar reseteo: " + err.message);
+    alert("Error al procesar: " + err.message);
   }
 };
 
@@ -167,11 +170,7 @@ document.getElementById("form-register").onsubmit = async (e) => {
     });
     modalRegister.classList.add("hidden");
   } catch (err) {
-    if (err.code === "auth/email-already-in-use") {
-      alert("Este correo ya está registrado en Firebase Auth. Si fue eliminado, debes borrarlo también en Authentication de Firebase.");
-    } else {
-      alert("Error de registro: " + err.message);
-    }
+    alert("Error de registro: " + err.message);
   }
 };
 
@@ -191,8 +190,9 @@ document.getElementById("form-login").onsubmit = async (e) => {
 document.getElementById("btn-logout").onclick = () => signOut(auth);
 
 function actualizarHeaderUsuario() {
-  document.getElementById("user-display-name").textContent = userData.nombre;
-  document.getElementById("user-display-role").textContent = userData.rol;
+  const esAdmin = esSuperAdmin();
+  document.getElementById("user-display-name").textContent = userData.nombre || currentUser.email;
+  document.getElementById("user-display-role").textContent = esAdmin ? "SUPER ADMIN" : userData.rol;
   
   const avatarImg = document.getElementById("user-display-avatar");
   const avatarIcon = document.getElementById("user-display-avatar-icon");
@@ -205,20 +205,23 @@ function actualizarHeaderUsuario() {
     avatarIcon.classList.remove("hidden");
   }
 
-  const esAdmin = esSuperAdmin();
-  const esJefe = userData.rol === "Desarrollo de producto - Jefe" || esAdmin;
-
+  // Permisos Super Admin (Gmail)
+  const menuAdmin = document.getElementById("menu-btn-usuarios");
+  const colAdmin = document.getElementById("col-header-admin");
   if (esAdmin) {
-    document.getElementById("menu-btn-usuarios").classList.remove("hidden");
+    menuAdmin.classList.remove("hidden");
+    colAdmin.classList.remove("hidden");
   } else {
-    document.getElementById("menu-btn-usuarios").classList.add("hidden");
+    menuAdmin.classList.add("hidden");
+    colAdmin.classList.add("hidden");
   }
 
-  // Visibilidad exclusiva de la Minuta solo para Jefe de Desarrollo
+  // Permisos Jefe de Desarrollo (Rol asignado)
+  const esJefe = userData.rol === "Desarrollo de producto - Jefe";
   const btnMinutaMenu = document.getElementById("menu-btn-minuta");
   const btnMinutaHeader = document.getElementById("btn-open-minuta-header");
   if (btnMinutaMenu && btnMinutaHeader) {
-    if (esJefe) {
+    if (esJefe || esAdmin) {
       btnMinutaMenu.classList.remove("hidden");
       btnMinutaHeader.classList.remove("hidden");
     } else {
@@ -234,11 +237,19 @@ onAuthStateChanged(auth, async (user) => {
     const docSnap = await getDoc(doc(db, "usuarios", user.uid));
     if (docSnap.exists()) {
       userData = docSnap.data();
-      actualizarHeaderUsuario();
-      welcomeContainer.classList.add("hidden");
-      appContainer.classList.remove("hidden");
-      escucharCambios();
+    } else {
+      // Si entra por primera vez el Super Admin con su Gmail
+      userData = {
+        nombre: "Super Administrador",
+        email: user.email,
+        rol: "Super Admin",
+        celular: ""
+      };
     }
+    actualizarHeaderUsuario();
+    welcomeContainer.classList.add("hidden");
+    appContainer.classList.remove("hidden");
+    escucharCambios();
   } else {
     currentUser = null;
     userData = null;
@@ -247,7 +258,7 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// Menús
+// Navegación
 const viewCambios = document.getElementById("view-cambios");
 const viewInforme = document.getElementById("view-informe");
 const viewUsuarios = document.getElementById("view-usuarios");
@@ -302,7 +313,7 @@ window.filtrarPorSubmenu = (estado) => {
   renderTabla();
 };
 
-// Panel Super Admin: Listar y Asignar Roles
+// Super Admin: Listar y Asignar Roles
 async function cargarListaUsuariosAdmin() {
   const tbody = document.getElementById("table-users-body");
   tbody.innerHTML = "";
@@ -328,17 +339,17 @@ async function cargarListaUsuariosAdmin() {
           <option value="Costos" ${u.rol === 'Costos' ? 'selected' : ''}>Costos</option>
           <option value="Compras" ${u.rol === 'Compras' ? 'selected' : ''}>Compras</option>
           <option value="Producción" ${u.rol === 'Producción' ? 'selected' : ''}>Producción</option>
-          <option value="Desarrollo de producto" ${u.rol === 'Desarrollo de producto' ? 'selected' : ''}>Desarrollo de producto (General)</option>
+          <option value="Desarrollo de producto" ${u.rol === 'Desarrollo de producto' ? 'selected' : ''}>Desarrollo (General)</option>
           <option value="Desarrollo de producto - Técnico" ${u.rol === 'Desarrollo de producto - Técnico' ? 'selected' : ''}>Desarrollo - Técnico</option>
           <option value="Desarrollo de producto - Jefe" ${u.rol === 'Desarrollo de producto - Jefe' ? 'selected' : ''}>Desarrollo - Jefe</option>
         </select>
       </td>
       <td class="p-3 text-center">
         ${docU.id !== currentUser.uid ? `
-          <button onclick="window.eliminarUsuarioDoc('${docU.id}', '${u.nombre}', '${u.email}')" class="text-red-600 hover:text-red-800 font-bold text-xs cursor-pointer">
+          <button onclick="window.eliminarUsuarioDoc('${docU.id}', '${u.nombre}')" class="text-red-600 hover:text-red-800 font-bold text-xs cursor-pointer">
             <i class="fa-solid fa-trash"></i> Eliminar
           </button>
-        ` : '<span class="text-gray-400 text-[10px] font-bold">Admin Principal</span>'}
+        ` : '<span class="text-gray-400 text-[10px] font-bold">Tú</span>'}
       </td>
     `;
     tbody.appendChild(tr);
@@ -350,7 +361,7 @@ window.cambiarRolUsuario = async (userId, nuevoRol) => {
   alert("Rol asignado correctamente.");
 };
 
-window.eliminarUsuarioDoc = async (id, nombre, email) => {
+window.eliminarUsuarioDoc = async (id, nombre) => {
   if (confirm(`¿Eliminar al usuario ${nombre}?`)) {
     await deleteDoc(doc(db, "usuarios", id));
     cargarListaUsuariosAdmin();
@@ -428,7 +439,7 @@ if (document.getElementById("form-minuta")) {
   };
 }
 
-// Crear Solicitud de Cambio (con campo Semana)
+// Crear Solicitud de Cambio (Artículo con formato libre)
 const modalNewChange = document.getElementById("modal-new-change");
 document.getElementById("btn-open-new-change").onclick = () => modalNewChange.classList.remove("hidden");
 document.getElementById("modal-btn-close").onclick = () => modalNewChange.classList.add("hidden");
@@ -485,7 +496,7 @@ function formatearFecha(iso) {
   return d.toLocaleDateString("es-BO", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-// Render Tabla
+// Render Tabla de Cambios
 function renderTabla() {
   const tbody = document.getElementById("table-cambios-body");
   tbody.innerHTML = "";
@@ -502,6 +513,10 @@ function renderTabla() {
   }
   empty.classList.add("hidden");
 
+  const esAdmin = esSuperAdmin();
+  const esDesarrollo = (userData.rol || "").includes("Desarrollo") || esAdmin;
+  const esCostos = userData.rol === "Costos" || esAdmin;
+
   itemsFiltrados.forEach((item) => {
     const tr = document.createElement("tr");
     tr.className = "hover:bg-gray-50/80 transition border-b border-gray-100";
@@ -511,11 +526,7 @@ function renderTabla() {
       textoBox += `<br><span class="text-[10px] text-gray-400 italic"> (editado: ${formatearFecha(item.ultimaEdicion)})</span>`;
     }
 
-    // Permisos: Modificar Estado (Técnicos, Jefes y Super Admin)
-    const esDesarrollo = (userData.rol || "").includes("Desarrollo") || esSuperAdmin();
-    // Permisos: Validación de Costos (Exclusivo Costos y Super Admin)
-    const esCostos = userData.rol === "Costos" || esSuperAdmin();
-
+    // Estado HTML
     let estadoHTML = "";
     if (esDesarrollo) {
       estadoHTML = `
@@ -535,12 +546,12 @@ function renderTabla() {
       estadoHTML = `<span class="border ${estilo} px-3 py-1 rounded-lg font-bold text-xs">${item.estado}</span>`;
     }
 
-    // Columna Fecha Realizado en vez de porcentaje
+    // Fecha Realizado
     const fechaRealizadoHTML = item.fechaRealizado 
       ? `<span class="font-bold text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200">${formatearFecha(item.fechaRealizado)}</span>`
       : `<span class="text-gray-300 text-[11px]">—</span>`;
 
-    // Validación Costos (Casilla Exclusiva para Costos)
+    // Validación Costos
     let costosHTML = "";
     if (item.estado === "Realizado") {
       if (item.validadoCostos) {
@@ -548,7 +559,7 @@ function renderTabla() {
           <div class="flex items-center justify-center space-x-1 text-green-700 font-bold text-xs">
             <i class="fa-solid fa-circle-check text-green-600"></i>
             <span>Validado</span>
-            ${esSuperAdmin() ? `<button onclick="window.desbloquearValidacionCostos('${item.id}')" class="text-red-500 hover:text-red-700 text-[10px] ml-1 cursor-pointer" title="Desbloquear como Super Admin"><i class="fa-solid fa-unlock"></i></button>` : ''}
+            ${esAdmin ? `<button onclick="window.desbloquearValidacionCostos('${item.id}')" class="text-red-500 hover:text-red-700 text-[10px] ml-1 cursor-pointer" title="Desbloquear como Super Admin"><i class="fa-solid fa-unlock"></i></button>` : ''}
           </div>
         `;
       } else {
@@ -565,10 +576,19 @@ function renderTabla() {
       costosHTML = `<input type="checkbox" disabled class="h-4 w-4 text-gray-300 rounded border-gray-200 opacity-40">`;
     }
 
+    // Columna de Eliminación exclusiva de Super Admin
+    const adminActionHTML = esAdmin ? `
+      <td class="p-3 text-center border-l border-gray-100">
+        <button onclick="window.eliminarSolicitudProyecto('${item.id}', '${item.proyecto}')" class="text-red-500 hover:text-red-700 p-1 rounded" title="Eliminar proyecto de la base de datos">
+          <i class="fa-solid fa-trash-can"></i>
+        </button>
+      </td>
+    ` : '';
+
     tr.innerHTML = `
       <td class="p-3 font-semibold text-gray-500 border-r border-gray-100">${item.semana || 'Sem —'}</td>
       <td class="p-3.5 font-bold text-gray-800 border-r border-gray-100">${item.proyecto}</td>
-      <td class="p-3.5 font-mono text-gray-600 border-r border-gray-100">${item.articulo}</td>
+      <td class="p-3.5 font-mono text-gray-700 border-r border-gray-100">${item.articulo}</td>
       <td class="p-3.5 text-gray-700 border-r border-gray-100">
         <div>${textoBox}</div>
         <button onclick="window.editarTextoBox('${item.id}', '${item.boxCambio.replace(/'/g, "\\'")}')" class="text-[10px] text-blue-600 hover:underline mt-1 font-medium inline-flex items-center space-x-1 cursor-pointer">
@@ -577,13 +597,21 @@ function renderTabla() {
       </td>
       <td class="p-3.5 text-center border-r border-gray-100 whitespace-nowrap">${estadoHTML}</td>
       <td class="p-3.5 text-center border-r border-gray-100 whitespace-nowrap">${fechaRealizadoHTML}</td>
-      <td class="p-3.5 text-center whitespace-nowrap">${costosHTML}</td>
+      <td class="p-3.5 text-center border-r border-gray-100 whitespace-nowrap">${costosHTML}</td>
+      ${adminActionHTML}
     `;
     tbody.appendChild(tr);
   });
 }
 
-// Guardar Estado (Desarrollo -> Estampa Fecha y Notifica a Costos)
+// Eliminar Solicitud de Proyecto (Super Admin)
+window.eliminarSolicitudProyecto = async (id, proyecto) => {
+  if (confirm(`¿Eliminar la solicitud del proyecto "${proyecto}" permanentemente de la base de datos?`)) {
+    await deleteDoc(doc(db, "solicitudes_cambios", id));
+  }
+};
+
+// Guardar Estado
 window.guardarCambioEstado = async (id, proyecto, articulo, semana) => {
   const select = document.getElementById(`sel-estado-${id}`);
   const nuevoEstado = select.value;
@@ -609,7 +637,7 @@ window.guardarCambioEstado = async (id, proyecto, articulo, semana) => {
   }
 };
 
-// Validación Exclusiva de Costos (Costos -> Calidad)
+// Validación Costos
 window.confirmarValidacionCostos = async (id, proyecto, articulo, checkboxElem) => {
   const confirma = confirm(`¿Estás seguro de validar los costos del proyecto "${proyecto}"? Una vez confirmado quedará bloqueado.`);
   if (!confirma) {
@@ -632,7 +660,7 @@ window.confirmarValidacionCostos = async (id, proyecto, articulo, checkboxElem) 
 };
 
 window.desbloquearValidacionCostos = async (id) => {
-  if (confirm("¿Desbloquear validación de costos? (Acción exclusiva de Super Admin)")) {
+  if (confirm("¿Desbloquear validación de costos? (Acción de Super Admin)")) {
     await updateDoc(doc(db, "solicitudes_cambios", id), { validadoCostos: false });
   }
 };
@@ -647,7 +675,7 @@ window.editarTextoBox = async (id, textoActual) => {
   }
 };
 
-// ==================== INFORME, TORRES Y GENERADOR RESUMEN ====================
+// ==================== INFORME Y GENERADOR ====================
 function renderInformeView() {
   document.getElementById("metric-total").textContent = solicitudes.length;
   document.getElementById("metric-proceso").textContent = solicitudes.filter(s => s.estado === "En proceso").length;
