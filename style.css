@@ -1,14 +1,14 @@
-/* Marca de agua Isotipo 'B' de fondo sin entorpecer clics */
+/* Marca de agua Isotipo 'B' circular en la esquina inferior */
 .marca-agua-b {
   position: absolute;
   bottom: -40px;
-  left: -30px;
+  left: -40px;
   pointer-events: none;
   user-select: none;
   z-index: 1;
 }
 
-/* Corte corporativo superior en Dashboard */
+/* Corte sutil del Dashboard */
 .corte-rojo-dashboard {
   position: absolute;
   top: 0;
