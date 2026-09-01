@@ -91,7 +91,7 @@
           <div class="flex justify-between items-center mb-1">
             <label class="font-semibold text-gray-600">Contraseña</label>
             <button type="button" id="btn-forgot-pass" class="text-[10px] text-[#D61B28] hover:underline font-semibold flex items-center space-x-1">
-              <i class="fa-brands fa-whatsapp text-green-600"></i>
+              <i class="fa-brands fa-whatsapp text-green-600 text-xs"></i>
               <span>¿Resetear por WhatsApp?</span>
             </button>
           </div>
@@ -128,17 +128,16 @@
           <label class="block font-semibold text-gray-600 mb-1">Correo Electrónico</label>
           <input type="email" id="reg-email" required placeholder="usuario@bata.com" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D61B28] focus:outline-none">
         </div>
-        <!-- Busca el select id="reg-role" en index.html y reemplázalo por este: -->
-<div>
-  <label class="block font-semibold text-gray-600 mb-1">Sección / Rol</label>
-  <select id="reg-role" required class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D61B28] focus:outline-none bg-white font-medium">
-    <option value="Calidad">Calidad</option>
-    <option value="Costos">Costos</option>
-    <option value="Compras">Compras</option>
-    <option value="Producción">Producción</option>
-    <option value="Desarrollo de producto">Desarrollo de producto</option>
-  </select>
-</div>
+        <div>
+          <label class="block font-semibold text-gray-600 mb-1">Sección / Rol</label>
+          <select id="reg-role" required class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D61B28] focus:outline-none bg-white font-medium">
+            <option value="Calidad">Calidad</option>
+            <option value="Costos">Costos</option>
+            <option value="Compras">Compras</option>
+            <option value="Producción">Producción</option>
+            <option value="Desarrollo de producto">Desarrollo de producto</option>
+          </select>
+        </div>
         <div>
           <label class="block font-semibold text-gray-600 mb-1">Fotografía de Perfil (Opcional)</label>
           <input type="file" id="reg-photo" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-red-50 file:text-[#D61B28]">
@@ -181,6 +180,7 @@
     </header>
 
     <div class="flex flex-1 relative z-10">
+      <!-- Menú Lateral -->
       <aside class="w-64 bg-white border-r border-gray-200 p-4 space-y-3">
         <div>
           <button type="button" id="menu-btn-cambios" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition bg-red-50 text-[#D61B28] cursor-pointer">
@@ -216,12 +216,13 @@
           <span>Informe</span>
         </button>
 
-        <!-- Botón Exclusivo para Jefe de Desarrollo de Producto -->
+        <!-- Pestaña Exclusiva para Jefe de Desarrollo de Producto -->
         <button type="button" id="menu-btn-minuta" class="w-full hidden flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs bg-amber-50 text-amber-800 hover:bg-amber-100 transition cursor-pointer border border-amber-200">
           <i class="fa-solid fa-clipboard-list text-sm text-amber-600"></i>
           <span>Minuta de Cambios</span>
         </button>
 
+        <!-- Pestaña Super Admin (Daniel Olmos) -->
         <button type="button" id="menu-btn-usuarios" class="w-full hidden flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-gray-600 hover:bg-gray-100 transition cursor-pointer">
           <i class="fa-solid fa-user-shield text-[#D61B28] text-sm"></i>
           <span>Super Admin</span>
@@ -256,11 +257,12 @@
               <table class="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr class="bg-gray-50/75 border-b border-gray-200 text-gray-600 font-semibold">
+                    <th class="p-3 border-r border-gray-200">Semana</th>
                     <th class="p-3 border-r border-gray-200">Proyecto</th>
                     <th class="p-3 border-r border-gray-200">Artículo</th>
                     <th class="p-3 border-r border-gray-200 min-w-[280px]">Cambios (descripción)</th>
                     <th class="p-3 border-r border-gray-200 text-center">Estado</th>
-                    <th class="p-3 border-r border-gray-200 text-center w-28">% Avance</th>
+                    <th class="p-3 border-r border-gray-200 text-center w-36">Fecha Realizado</th>
                     <th class="p-3 text-center">¿Realizado? (Costos)</th>
                   </tr>
                 </thead>
@@ -276,10 +278,19 @@
 
         <!-- VISTA INFORME EJECUTIVO -->
         <section id="view-informe" class="hidden space-y-6">
-          <h2 class="text-lg font-bold text-[#D61B28] flex items-center space-x-2">
-            <i class="fa-regular fa-file-lines"></i>
-            <span>Informe Ejecutivo de Avance</span>
-          </h2>
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h2 class="text-lg font-bold text-[#D61B28] flex items-center space-x-2">
+                <i class="fa-regular fa-file-lines"></i>
+                <span>Informe Ejecutivo de Avance</span>
+              </h2>
+              <p class="text-xs text-gray-400">Selecciona proyectos para visualizar estadísticas y generar el resumen.</p>
+            </div>
+            <button type="button" id="btn-generar-informe-resumen" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
+              <i class="fa-solid fa-file-pdf"></i>
+              <span>Generar Informe de Proyectos Seleccionados</span>
+            </button>
+          </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex items-center space-x-3">
@@ -325,7 +336,7 @@
 
           <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
             <div class="flex justify-between items-center mb-4">
-              <h3 class="text-xs font-bold text-gray-700">Diagrama de Torres: % de Avance Ponderado por Proyecto</h3>
+              <h3 class="text-xs font-bold text-gray-700">Diagrama de Torres: % de Solicitudes Realizadas por Proyecto</h3>
               <span class="text-[11px] text-gray-400 font-medium">Escala: 0% a 100%</span>
             </div>
             <div class="h-80 w-full">
@@ -334,7 +345,7 @@
           </div>
         </section>
 
-        <!-- VISTA SUPER ADMIN (GESTIÓN Y ASIGNACIÓN DE ROLES) -->
+        <!-- VISTA SUPER ADMIN (GESTIÓN DE ROLES) -->
         <section id="view-usuarios" class="hidden space-y-6">
           <h2 class="text-lg font-bold text-[#D61B28] flex items-center space-x-2">
             <i class="fa-solid fa-user-shield"></i>
@@ -348,7 +359,7 @@
                   <th class="p-3">Nombre</th>
                   <th class="p-3">Correo</th>
                   <th class="p-3">Celular</th>
-                  <th class="p-3">Sección / Rol (Asignar)</th>
+                  <th class="p-3">Sección / Rol Asignado</th>
                   <th class="p-3 text-center">Acciones</th>
                 </tr>
               </thead>
@@ -360,7 +371,7 @@
     </div>
   </div>
 
-  <!-- MODAL: MINUTA DE CAMBIOS (JEFE DE DESARROLLO) -->
+  <!-- MODAL: MINUTA DE CAMBIOS (EXCLUSIVO JEFE DE DESARROLLO) -->
   <div id="modal-minuta" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-xl rounded-3xl p-6 shadow-2xl relative text-xs">
       <button type="button" id="close-minuta" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -411,7 +422,7 @@
     </div>
   </div>
 
-  <!-- MODAL: NUEVA SOLICITUD -->
+  <!-- MODAL: NUEVA SOLICITUD (CON CAMPO SEMANA) -->
   <div id="modal-new-change" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden">
       <div class="bg-[#D61B28] px-6 py-4 flex justify-between items-center text-white">
@@ -419,9 +430,15 @@
         <button type="button" id="modal-btn-close" class="text-white hover:text-gray-200 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <form id="form-new-change" class="p-6 space-y-4 text-xs">
-        <div>
-          <label class="block font-bold text-gray-700 mb-1">Nombre del Proyecto</label>
-          <input type="text" id="change-project" placeholder="Ej: pol" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-gray-700 mb-1">Semana</label>
+            <input type="text" id="change-semana" placeholder="Ej: Sem 36" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]">
+          </div>
+          <div>
+            <label class="block font-bold text-gray-700 mb-1">Nombre del Proyecto</label>
+            <input type="text" id="change-project" placeholder="Ej: pol" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]">
+          </div>
         </div>
         <div>
           <label class="block font-bold text-gray-700 mb-1">Artículo (Números)</label>
@@ -439,6 +456,29 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL: INFORME RESUMEN EJECUTIVO (LISTO PARA IMPRIMIR) -->
+  <div id="modal-resumen-reporte" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-4xl rounded-3xl p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto text-xs">
+      <button type="button" id="close-modal-resumen" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+      
+      <div class="border-b border-gray-200 pb-4 mb-4 flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+          <img src="./logo-bata-rojo.png" alt="Bata" class="w-16 h-auto">
+          <div>
+            <h3 class="font-extrabold text-sm text-[#D61B28]">Informe Ejecutivo de Cambios de Producción</h3>
+            <p class="text-[11px] text-gray-500">Bata Bolivia - Resumen de Proyectos Seleccionados</p>
+          </div>
+        </div>
+        <button type="button" onclick="window.print()" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold px-3.5 py-2 rounded-xl flex items-center space-x-1.5 shadow">
+          <i class="fa-solid fa-print"></i>
+          <span>Imprimir / Guardar PDF</span>
+        </button>
+      </div>
+
+      <div id="reporte-resumen-contenido" class="space-y-4"></div>
     </div>
   </div>
 
