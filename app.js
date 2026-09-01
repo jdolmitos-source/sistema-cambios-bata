@@ -10,6 +10,7 @@ import {
   getFirestore, 
   collection, 
   addDoc, 
+  getDocs,
   getDoc,
   doc, 
   setDoc, 
@@ -39,7 +40,7 @@ let userData = null;
 let solicitudes = [];
 let chartInstance = null;
 
-// Modales Portada
+// Control Portada y Modales
 const welcomeContainer = document.getElementById("welcome-container");
 const appContainer = document.getElementById("app-container");
 const modalLogin = document.getElementById("modal-login");
@@ -50,10 +51,11 @@ document.getElementById("btn-show-register").onclick = () => modalRegister.class
 document.getElementById("close-login").onclick = () => modalLogin.classList.add("hidden");
 document.getElementById("close-register").onclick = () => modalRegister.classList.add("hidden");
 
-// Registro
+// Registro con Celular
 document.getElementById("form-register").onsubmit = async (e) => {
   e.preventDefault();
   const name = document.getElementById("reg-name").value.trim();
+  const phone = document.getElementById("reg-phone").value.trim();
   const email = document.getElementById("reg-email").value.trim();
   const role = document.getElementById("reg-role").value;
   const pass = document.getElementById("reg-pass").value;
@@ -62,6 +64,7 @@ document.getElementById("form-register").onsubmit = async (e) => {
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
     await setDoc(doc(db, "usuarios", cred.user.uid), {
       nombre: name,
+      celular: phone,
       email: email,
       rol: role,
       fechaCreacion: serverTimestamp()
@@ -109,7 +112,7 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// Menú Navegación
+// Navegación
 const viewCambios = document.getElementById("view-cambios");
 const viewInforme = document.getElementById("view-informe");
 const menuBtnCambios = document.getElementById("menu-btn-cambios");
@@ -118,15 +121,15 @@ const menuBtnInforme = document.getElementById("menu-btn-informe");
 menuBtnCambios.onclick = () => {
   viewCambios.classList.remove("hidden");
   viewInforme.classList.add("hidden");
-  menuBtnCambios.className = "w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition bg-red-50 text-[#D61B28] cursor-pointer";
-  menuBtnInforme.className = "w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm text-gray-600 hover:bg-gray-100 transition cursor-pointer";
+  menuBtnCambios.className = "w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition bg-red-50 text-[#D61B28]";
+  menuBtnInforme.className = "w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm text-gray-600 hover:bg-gray-100 transition";
 };
 
 menuBtnInforme.onclick = () => {
   viewInforme.classList.remove("hidden");
   viewCambios.classList.add("hidden");
-  menuBtnInforme.className = "w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition bg-red-50 text-[#D61B28] cursor-pointer";
-  menuBtnCambios.className = "w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm text-gray-600 hover:bg-gray-100 transition cursor-pointer";
+  menuBtnInforme.className = "w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition bg-red-50 text-[#D61B28]";
+  menuBtnCambios.className = "w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm text-gray-600 hover:bg-gray-100 transition";
   renderInformeView();
 };
 
@@ -136,7 +139,56 @@ document.getElementById("btn-open-new-change").onclick = () => modalNewChange.cl
 document.getElementById("modal-btn-close").onclick = () => modalNewChange.classList.add("hidden");
 document.getElementById("modal-btn-cancel").onclick = () => modalNewChange.classList.add("hidden");
 
-// Registrar Cambio
+// Función para preparar y mostrar el envío de WhatsApp
+async function prepararNotificacionWhatsApp(proyecto, articulo, cambio) {
+  const modalWA = document.getElementById("modal-whatsapp");
+  const listContainer = document.getElementById("whatsapp-contacts-list");
+  listContainer.innerHTML = "";
+
+  const mensajeTexto = encodeURIComponent(
+    `👞 *NUEVA SOLICITUD DE CAMBIO - BATA BOLIVIA*\n\n` +
+    `📌 *Proyecto:* ${proyecto}\n` +
+    `🔢 *Artículo:* ${articulo}\n` +
+    `👤 *Solicitado por:* ${userData.nombre} (${userData.rol})\n` +
+    `📝 *Cambio:* ${cambio}\n\n` +
+    `_Revisar en el Sistema de Gestión de Cambios Bata_`
+  );
+
+  try {
+    const usuariosSnap = await getDocs(collection(db, "usuarios"));
+    const usuarios = usuariosSnap.docs.map(d => d.data());
+
+    usuarios.forEach(u => {
+      if (u.celular) {
+        const item = document.createElement("a");
+        item.href = `https://wa.me/591${u.celular}?text=${mensajeTexto}`;
+        item.target = "_blank";
+        item.className = "flex items-center justify-between p-2.5 bg-gray-50 hover:bg-green-50 rounded-xl border border-gray-200 transition text-gray-800";
+        item.innerHTML = `
+          <div>
+            <span class="font-bold">${u.nombre}</span>
+            <span class="text-[10px] text-gray-400 block">${u.rol} - +591 ${u.celular}</span>
+          </div>
+          <span class="bg-[#25D366] text-white px-2.5 py-1 rounded-lg font-bold text-[10px] flex items-center space-x-1">
+            <i class="fa-brands fa-whatsapp"></i>
+            <span>Enviar</span>
+          </span>
+        `;
+        listContainer.appendChild(item);
+      }
+    });
+
+    modalWA.classList.remove("hidden");
+  } catch (error) {
+    console.error("Error al preparar WhatsApp:", error);
+  }
+}
+
+document.getElementById("btn-close-whatsapp-modal").onclick = () => {
+  document.getElementById("modal-whatsapp").classList.add("hidden");
+};
+
+// Guardar Solicitud
 document.getElementById("form-new-change").onsubmit = async (e) => {
   e.preventDefault();
   const proyecto = document.getElementById("change-project").value.trim();
@@ -160,6 +212,10 @@ document.getElementById("form-new-change").onsubmit = async (e) => {
 
     document.getElementById("form-new-change").reset();
     modalNewChange.classList.add("hidden");
+
+    // Desplegar panel para notificar por WhatsApp
+    prepararNotificacionWhatsApp(proyecto, articulo, boxCambio);
+
   } catch (err) {
     alert("Error al registrar cambio: " + err.message);
   }
@@ -263,7 +319,7 @@ window.editarTextoBox = async (id, textoActual) => {
   }
 };
 
-// Informe y Grafico
+// Informes y Gráfico
 function renderInformeView() {
   const container = document.getElementById("report-project-selection-list");
   container.innerHTML = "";
