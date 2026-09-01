@@ -1,16 +1,28 @@
-/* Curva orgánica roja del lado izquierdo */
-.curva-roja-bata {
-  border-bottom-right-radius: 60px;
-  border-top-right-radius: 60px;
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Dancing+Script:wght@700&display=swap');
+
+/* Tipografía caligráfica idéntica al logotipo de las letras rojas */
+.bata-logo-script {
+  font-family: 'Dancing Script', 'Caveat', cursive;
+  font-weight: 700;
+  letter-spacing: -1px;
 }
 
-@media (min-width: 768px) {
-  .curva-roja-bata {
-    clip-path: ellipse(90% 100% at 0% 50%);
-  }
+/* Marca de agua 'B' de fondo sin bloquear clics */
+.marca-agua-b {
+  position: absolute;
+  bottom: -20px;
+  left: -20px;
+  font-size: 200px;
+  font-family: 'Dancing Script', 'Caveat', cursive;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+  line-height: 1;
 }
 
-/* Corte sutil del Dashboard */
+/* Corte sutil superior derecho en el dashboard */
 .corte-rojo-dashboard {
   position: absolute;
   top: 0;
