@@ -33,9 +33,7 @@ const firebaseConfig = {
 };
 
 // ⚠️ CORREO ÚNICO Y EXCLUSIVO DE SUPER ADMINISTRADOR
-const SUPER_ADMIN_EMAILS = [
-  "jd.olmitos@gmail.com"
-];
+const SUPER_ADMIN_EMAIL = "jd.olmitos@gmail.com";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -46,6 +44,7 @@ let userData = null;
 let solicitudes = [];
 let filtroSubmenuActivo = "todos";
 let chartInstance = null;
+let criterioOrdenInforme = "todos";
 
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
   if (!file) return resolve(null);
@@ -55,10 +54,10 @@ const fileToBase64 = (file) => new Promise((resolve, reject) => {
   reader.onerror = error => reject(error);
 });
 
-// Comprobar estrictamente si es Super Admin (únicamente jd.olmitos@gmail.com)
+// Comprobar estrictamente si es el Super Admin
 function esSuperAdmin() {
   if (!currentUser || !currentUser.email) return false;
-  return SUPER_ADMIN_EMAILS.some(adm => adm.toLowerCase() === currentUser.email.toLowerCase());
+  return currentUser.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
 }
 
 // Modales y Controles
@@ -69,6 +68,7 @@ const modalRegister = document.getElementById("modal-register");
 const modalProfile = document.getElementById("modal-profile");
 const modalMinuta = document.getElementById("modal-minuta");
 const modalResumen = document.getElementById("modal-resumen-reporte");
+const modalTextoWsp = document.getElementById("modal-texto-wsp");
 
 document.getElementById("btn-show-login").onclick = () => modalLogin.classList.remove("hidden");
 document.getElementById("btn-show-register").onclick = () => modalRegister.classList.remove("hidden");
@@ -80,6 +80,9 @@ if (document.getElementById("close-minuta")) {
 }
 if (document.getElementById("close-modal-resumen")) {
   document.getElementById("close-modal-resumen").onclick = () => modalResumen.classList.add("hidden");
+}
+if (document.getElementById("close-texto-wsp")) {
+  document.getElementById("close-texto-wsp").onclick = () => modalTextoWsp.classList.add("hidden");
 }
 
 // Reset de Contraseña por WhatsApp
@@ -207,13 +210,10 @@ function actualizarHeaderUsuario() {
 
   // Visibilidad del Panel Super Admin (SOLO para jd.olmitos@gmail.com)
   const menuAdmin = document.getElementById("menu-btn-usuarios");
-  const colAdmin = document.getElementById("col-header-admin");
   if (esAdmin) {
     menuAdmin.classList.remove("hidden");
-    if (colAdmin) colAdmin.classList.remove("hidden");
   } else {
     menuAdmin.classList.add("hidden");
-    if (colAdmin) colAdmin.classList.add("hidden");
   }
 
   // Visibilidad de Minuta: Exclusiva para Desarrollo Jefe (o Super Admin)
@@ -292,7 +292,7 @@ menuBtnUsuarios.onclick = () => {
   resetMenuStyles();
   viewUsuarios.classList.remove("hidden");
   menuBtnUsuarios.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs transition bg-red-50 text-[#D61B28] cursor-pointer";
-  cargarListaUsuariosAdmin();
+  cargarPanelSuperAdmin();
 };
 
 if (menuBtnMinuta) {
@@ -312,10 +312,13 @@ window.filtrarPorSubmenu = (estado) => {
   renderTabla();
 };
 
-// Super Admin: Listar y Asignar Roles
-async function cargarListaUsuariosAdmin() {
-  const tbody = document.getElementById("table-users-body");
-  tbody.innerHTML = "";
+// Panel Super Admin: Cargar Tablas de Usuarios y Solicitudes
+async function cargarPanelSuperAdmin() {
+  if (!esSuperAdmin()) return;
+
+  // 1. Tabla de Usuarios
+  const tbodyUsers = document.getElementById("table-users-body");
+  tbodyUsers.innerHTML = "";
   const snap = await getDocs(collection(db, "usuarios"));
   
   snap.forEach(docU => {
@@ -348,10 +351,33 @@ async function cargarListaUsuariosAdmin() {
           <button onclick="window.eliminarUsuarioDoc('${docU.id}', '${u.nombre}')" class="text-red-600 hover:text-red-800 font-bold text-xs cursor-pointer">
             <i class="fa-solid fa-trash"></i> Eliminar
           </button>
-        ` : '<span class="text-gray-400 text-[10px] font-bold">Tú</span>'}
+        ` : '<span class="text-gray-400 text-[10px] font-bold">Super Admin</span>'}
       </td>
     `;
-    tbody.appendChild(tr);
+    tbodyUsers.appendChild(tr);
+  });
+
+  // 2. Tabla de Solicitudes para Eliminar
+  const tbodySols = document.getElementById("table-admin-solicitudes-body");
+  tbodySols.innerHTML = "";
+
+  solicitudes.forEach(sol => {
+    const tr = document.createElement("tr");
+    tr.className = "hover:bg-gray-50 border-b border-gray-100";
+    tr.innerHTML = `
+      <td class="p-3 font-semibold text-gray-500">${sol.semana || '—'}</td>
+      <td class="p-3 text-gray-600 whitespace-nowrap">${formatearFecha(sol.fechaCreacion)}</td>
+      <td class="p-3 font-bold text-gray-800">${sol.proyecto}</td>
+      <td class="p-3 font-mono text-gray-700">${sol.articulo}</td>
+      <td class="p-3 text-gray-600">${sol.solicitanteNombre || '—'}</td>
+      <td class="p-3"><span class="px-2 py-0.5 rounded font-bold text-[10px] ${sol.estado === 'Realizado' ? 'bg-green-50 text-green-700' : (sol.estado === 'Retrasado' ? 'bg-red-50 text-red-700' : 'bg-orange-50 text-orange-700')}">${sol.estado}</span></td>
+      <td class="p-3 text-center">
+        <button onclick="window.eliminarSolicitudProyecto('${sol.id}', '${sol.proyecto}')" class="text-red-500 hover:text-red-700 p-1 rounded font-bold text-xs cursor-pointer">
+          <i class="fa-solid fa-trash-can"></i> Eliminar
+        </button>
+      </td>
+    `;
+    tbodySols.appendChild(tr);
   });
 }
 
@@ -363,7 +389,14 @@ window.cambiarRolUsuario = async (userId, nuevoRol) => {
 window.eliminarUsuarioDoc = async (id, nombre) => {
   if (confirm(`¿Eliminar al usuario ${nombre}?`)) {
     await deleteDoc(doc(db, "usuarios", id));
-    cargarListaUsuariosAdmin();
+    cargarPanelSuperAdmin();
+  }
+};
+
+window.eliminarSolicitudProyecto = async (id, proyecto) => {
+  if (confirm(`¿Eliminar la solicitud del proyecto "${proyecto}" permanentemente de la base de datos?`)) {
+    await deleteDoc(doc(db, "solicitudes_cambios", id));
+    cargarPanelSuperAdmin();
   }
 };
 
@@ -474,7 +507,7 @@ document.getElementById("form-new-change").onsubmit = async (e) => {
     abrirModalWhatsApp({
       titulo: "Solicitud Registrada",
       subtitulo: "Notificar solicitud creada al equipo:",
-      mensajeTexto: `👞 *NUEVA SOLICITUD DE CAMBIO - BATA BOLIVIA*\n\n📅 *${semana}*\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n👤 *Solicitado por:* ${userData.nombre} (${userData.rol})\n📝 *Cambio:* ${boxCambio}\n\n_Revisar en el Sistema de Gestión de Cambios Bata_`
+      mensajeTexto: `👞 *NUEVA SOLICITUD DE CAMBIO - BATA BOLIVIA*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n👤 *Solicitado por:* ${userData.nombre} (${userData.rol})\n📝 *Cambio:* ${boxCambio}\n\n_Revisar en el Sistema de Gestión de Cambios Bata_`
     });
   } catch (err) {
     alert("Error: " + err.message);
@@ -502,6 +535,9 @@ function escucharCambios() {
       return { id, ...data };
     });
     renderTabla();
+    if (esSuperAdmin() && !viewUsuarios.classList.contains("hidden")) {
+      cargarPanelSuperAdmin();
+    }
   });
 }
 
@@ -511,7 +547,7 @@ function formatearFecha(iso) {
   return d.toLocaleDateString("es-BO", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-// Render Tabla de Cambios
+// Render Tabla de Cambios Pública
 function renderTabla() {
   const tbody = document.getElementById("table-cambios-body");
   tbody.innerHTML = "";
@@ -591,15 +627,6 @@ function renderTabla() {
       costosHTML = `<input type="checkbox" disabled class="h-4 w-4 text-gray-300 rounded border-gray-200 opacity-40">`;
     }
 
-    // Columna de Acción (Super Admin)
-    const adminActionHTML = esAdmin ? `
-      <td class="p-3 text-center border-l border-gray-100">
-        <button onclick="window.eliminarSolicitudProyecto('${item.id}', '${item.proyecto}')" class="text-red-500 hover:text-red-700 p-1 rounded" title="Eliminar solicitud permanentemente">
-          <i class="fa-solid fa-trash-can"></i>
-        </button>
-      </td>
-    ` : '';
-
     tr.innerHTML = `
       <td class="p-3 font-semibold text-gray-500 border-r border-gray-100">${item.semana || '—'}</td>
       <td class="p-3 text-gray-600 border-r border-gray-100 whitespace-nowrap">${formatearFecha(item.fechaCreacion)}</td>
@@ -618,18 +645,10 @@ function renderTabla() {
       <td class="p-3.5 text-center border-r border-gray-100 whitespace-nowrap">${estadoHTML}</td>
       <td class="p-3.5 text-center border-r border-gray-100 whitespace-nowrap">${fechaRealizadoHTML}</td>
       <td class="p-3.5 text-center whitespace-nowrap">${costosHTML}</td>
-      ${adminActionHTML}
     `;
     tbody.appendChild(tr);
   });
 }
-
-// Eliminar Solicitud
-window.eliminarSolicitudProyecto = async (id, proyecto) => {
-  if (confirm(`¿Eliminar la solicitud del proyecto "${proyecto}" permanentemente de la base de datos?`)) {
-    await deleteDoc(doc(db, "solicitudes_cambios", id));
-  }
-};
 
 // Guardar Estado
 window.guardarCambioEstado = async (id, proyecto, articulo, semana) => {
@@ -649,7 +668,7 @@ window.guardarCambioEstado = async (id, proyecto, articulo, semana) => {
     abrirModalWhatsApp({
       titulo: "Proyecto Realizado",
       subtitulo: "Enviar alerta a los usuarios de Costos para su validación:",
-      mensajeTexto: `👟 *PROYECTO REALIZADO - REQUERIMIENTO DE COSTOS*\n\n📅 *${semana}*\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n✅ *Estado:* Realizado por Desarrollo de Producto (${userData.nombre})\n\n_Por favor ingresar al sistema para validar los costos asociados._`,
+      mensajeTexto: `👟 *PROYECTO REALIZADO - REQUERIMIENTO DE COSTOS*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n✅ *Estado:* Realizado por Desarrollo de Producto (${userData.nombre})\n\n_Por favor ingresar al sistema para validar los costos asociados._`,
       rolFiltro: "Costos"
     });
   } else {
@@ -695,30 +714,20 @@ window.editarTextoBox = async (id, textoActual) => {
   }
 };
 
-// ==================== INFORME Y GENERADOR ====================
+// ==================== INFORMES, ORDENACIÓN Y GENERADOR TEXTO ====================
 function renderInformeView() {
   document.getElementById("metric-total").textContent = solicitudes.length;
   document.getElementById("metric-proceso").textContent = solicitudes.filter(s => s.estado === "En proceso").length;
   document.getElementById("metric-realizado").textContent = solicitudes.filter(s => s.estado === "Realizado").length;
   document.getElementById("metric-retrasado").textContent = solicitudes.filter(s => s.estado === "Retrasado").length;
 
-  const container = document.getElementById("report-project-selection-list");
-  container.innerHTML = "";
-  const proyectosUnicos = [...new Set(solicitudes.map(s => s.proyecto))];
+  poblarListaProyectosInforme();
 
-  proyectosUnicos.forEach((proy) => {
-    const div = document.createElement("div");
-    div.className = "flex items-center space-x-2 bg-gray-50 p-2 rounded-xl border border-gray-100";
-    div.innerHTML = `
-      <input type="checkbox" value="${proy}" checked class="report-chk h-4 w-4 accent-[#D61B28]">
-      <span class="text-xs font-semibold text-gray-700">${proy}</span>
-    `;
-    container.appendChild(div);
-  });
-
-  document.querySelectorAll(".report-chk").forEach(chk => {
-    chk.onchange = actualizarGraficoTorres;
-  });
+  document.getElementById("select-ordenar-informe").onchange = (e) => {
+    criterioOrdenInforme = e.target.value;
+    poblarListaProyectosInforme();
+    actualizarGraficoTorres();
+  };
 
   document.getElementById("btn-select-all").onclick = () => {
     document.querySelectorAll(".report-chk").forEach(c => c.checked = true);
@@ -731,8 +740,81 @@ function renderInformeView() {
   };
 
   document.getElementById("btn-generar-informe-resumen").onclick = generarModalInformeResumen;
+  document.getElementById("btn-generar-texto-wsp").onclick = generarTextoNotificacionBata;
 
   actualizarGraficoTorres();
+}
+
+function poblarListaProyectosInforme() {
+  const container = document.getElementById("report-project-selection-list");
+  container.innerHTML = "";
+
+  let listaOrdenada = [...solicitudes];
+
+  if (criterioOrdenInforme === "semana") {
+    listaOrdenada.sort((a, b) => (a.semana || "").localeCompare(b.semana || "", undefined, { numeric: true }));
+  } else if (criterioOrdenInforme === "estado") {
+    listaOrdenada.sort((a, b) => (a.estado || "").localeCompare(b.estado || ""));
+  } else if (criterioOrdenInforme === "fecha") {
+    listaOrdenada.sort((a, b) => new Date(b.fechaCreacion || 0) - new Date(a.fechaCreacion || 0));
+  } else if (criterioOrdenInforme === "proyecto") {
+    listaOrdenada.sort((a, b) => (a.proyecto || "").localeCompare(b.proyecto || ""));
+  }
+
+  const proyectosUnicos = [...new Set(listaOrdenada.map(s => s.proyecto))];
+
+  proyectosUnicos.forEach((proy) => {
+    const itemReferencia = listaOrdenada.find(s => s.proyecto === proy);
+    const labelSemana = itemReferencia && itemReferencia.semana ? `(${itemReferencia.semana})` : '';
+
+    const div = document.createElement("div");
+    div.className = "flex items-center space-x-2 bg-gray-50 p-2 rounded-xl border border-gray-100";
+    div.innerHTML = `
+      <input type="checkbox" value="${proy}" checked class="report-chk h-4 w-4 accent-[#D61B28]">
+      <span class="text-xs font-semibold text-gray-700 truncate">${proy} <span class="text-[10px] text-gray-400">${labelSemana}</span></span>
+    `;
+    container.appendChild(div);
+  });
+
+  document.querySelectorAll(".report-chk").forEach(chk => {
+    chk.onchange = actualizarGraficoTorres;
+  });
+}
+
+// Generador de Texto Oficial para WhatsApp (Formato Imagen 2)
+function generarTextoNotificacionBata() {
+  const seleccionados = Array.from(document.querySelectorAll(".report-chk:checked")).map(c => c.value);
+  if (seleccionados.length === 0) {
+    alert("Selecciona al menos un proyecto para generar el texto.");
+    return;
+  }
+
+  const items = solicitudes.filter(s => seleccionados.includes(s.proyecto));
+  const semanaDetectada = items[0] && items[0].semana ? items[0].semana : "GENERAL";
+
+  let texto = `CAMBIOS REALIZADOS PARA SEM: ${semanaDetectada}\n\n`;
+  texto += `Saludos Estimados, Todos los cambios en guías para el congelamiento de la semana mencionada filas arriba han sido realizados y se puede continuar con el proceso.\n\n`;
+  texto += `Detalle de Artículos Afectados:\n`;
+
+  items.forEach(it => {
+    texto += `Proyecto: ${it.proyecto.toUpperCase()}, Artículo: ${it.articulo}\n`;
+  });
+
+  const textarea = document.getElementById("texto-wsp-output");
+  textarea.value = texto;
+
+  document.getElementById("btn-copiar-texto-wsp").onclick = () => {
+    textarea.select();
+    navigator.clipboard.writeText(texto);
+    alert("Texto copiado al portapapeles.");
+  };
+
+  document.getElementById("btn-enviar-wsp-directo").onclick = () => {
+    const encoded = encodeURIComponent(texto);
+    window.open(`https://wa.me/?text=${encoded}`, "_blank");
+  };
+
+  modalTextoWsp.classList.remove("hidden");
 }
 
 function generarModalInformeResumen() {
