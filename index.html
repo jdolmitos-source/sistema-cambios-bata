@@ -4,29 +4,33 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sistema de Gestión de Cambios - Bata Bolivia</title>
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-gray-100 font-sans text-gray-800 antialiased min-h-screen overflow-x-hidden">
+<body class="bg-gray-100 font-sans text-gray-800 antialiased min-h-screen">
 
-  <div id="welcome-container" class="relative min-h-screen flex items-center justify-end overflow-hidden bg-[#F4F5F7]">
+  <!-- ==================== VISTA 1: PORTADA ==================== -->
+  <div id="welcome-container" class="relative min-h-screen w-full flex flex-col md:flex-row bg-[#F8F9FA]">
     
-    <div class="absolute left-0 top-0 w-full md:w-[42%] h-full bg-[#D61B28] flex flex-col justify-between p-8 md:p-12 text-white z-0 curva-roja-bata">
-      <div class="relative z-10 pt-4">
-        <svg class="w-36 md:w-48 h-auto" viewBox="0 0 200 65" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M25 48C12 48 3 39 3 26C3 12 15 2 30 2C39 2 47 7 51 14L41 20C38 16 34 13 29 13C20 13 14 19 14 26C14 33 19 38 27 38C34 38 39 34 42 29L52 35C47 43 38 48 25 48Z" fill="white"/>
-          <path d="M55 46V4H66V46H55Z" fill="white"/>
-          <path d="M85 46L83 40C79 45 73 47 67 47C58 47 52 41 52 32C52 22 60 17 73 17H83V15C83 11 79 8 72 8C66 8 61 10 57 13L53 5C59 2 67 0 76 0C89 0 95 7 95 18V46H85ZM83 25H74C67 25 63 28 63 32C63 36 66 39 72 39C78 39 83 35 83 29V25Z" fill="white"/>
-          <path d="M109 46V13H99V4H109V0H120V4H131V13H120V38C120 41 122 42 125 42C127 42 129 41 131 40L133 48C129 50 124 51 119 51C112 51 109 47 109 46Z" fill="white"/>
-          <path d="M150 46L148 40C144 45 138 47 132 47C123 47 117 41 117 32C117 22 125 17 138 17H148V15C148 11 144 8 137 8C131 8 126 10 122 13L118 5C124 2 132 0 141 0C154 0 160 7 160 18V46H150ZM148 25H139C132 25 128 28 128 32C128 36 131 39 137 39C143 39 148 35 148 29V25Z" fill="white"/>
-        </svg>
-        <p class="text-xs uppercase tracking-[0.3em] text-red-100 font-semibold mt-2">Bolivia</p>
+    <!-- Lado Izquierdo Rojo con Logo Blanco y Marca de Agua 'B' -->
+    <div class="w-full md:w-[40%] bg-[#D61B28] min-h-[220px] md:min-h-screen flex flex-col justify-between p-8 md:p-12 relative overflow-hidden text-white">
+      
+      <!-- Marca de agua de fondo 'B' -->
+      <div class="marca-agua-b">B</div>
+
+      <!-- Logotipo Caligráfico Bata (Blanco) -->
+      <div class="relative z-10">
+        <div class="bata-logo-script text-white text-5xl md:text-6xl tracking-tight select-none">Bata</div>
+        <p class="text-xs tracking-[0.35em] text-red-100 font-semibold uppercase mt-1">Bolivia</p>
       </div>
 
-      <div class="relative z-10">
-        <div class="text-[140px] font-black italic text-white/10 absolute -bottom-12 -left-6 pointer-events-none select-none">B</div>
+      <!-- Pie de página lateral -->
+      <div class="relative z-10 pt-6">
         <div class="flex items-center space-x-2 text-white/90 border-t border-white/20 pt-4 text-xs font-semibold">
           <i class="fa-solid fa-chart-line text-sm"></i>
           <span>Seguimiento de Cambios</span>
@@ -34,48 +38,56 @@
       </div>
     </div>
 
-    <div class="relative z-10 w-full md:w-[58%] flex flex-col items-center justify-center p-6 md:p-12">
+    <!-- Lado Derecho: Interacción y Tarjetas -->
+    <div class="w-full md:w-[60%] flex flex-col items-center justify-center p-6 md:p-12 relative z-10">
       <div class="text-center mb-8">
         <h2 class="text-2xl md:text-3xl font-extrabold text-[#D61B28]">Bienvenido a Bata Bolivia</h2>
+        <!-- Isotipo Zapato -->
         <div class="flex justify-center items-center my-2 text-[#D61B28]">
           <i class="fa-solid fa-shoe-prints text-lg"></i>
         </div>
         <p class="text-xs text-gray-500 font-medium">Accede a tu cuenta o crea una nueva</p>
       </div>
 
-      <div class="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 w-full max-w-xl">
+      <!-- Tarjeta Contenedora Principal -->
+      <div class="bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-gray-100 w-full max-w-lg">
         <h3 class="text-center font-bold text-gray-700 text-sm mb-6">¿Qué deseas hacer?</h3>
         
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div class="border border-red-200 rounded-2xl p-6 text-center flex flex-col justify-between items-center hover:shadow-md transition">
+          
+          <!-- Card Iniciar Sesión -->
+          <div class="border border-red-200 rounded-2xl p-6 text-center flex flex-col justify-between items-center hover:shadow-md transition bg-white">
             <div class="w-14 h-14 rounded-full border border-red-200 flex items-center justify-center text-[#D61B28] text-2xl mb-3">
               <i class="fa-solid fa-user"></i>
             </div>
             <h4 class="font-bold text-sm text-[#D61B28]">Iniciar sesión</h4>
             <p class="text-[11px] text-gray-500 my-2">Accede a tu cuenta existente para continuar.</p>
-            <button id="btn-show-login" class="w-full mt-2 bg-[#D61B28] hover:bg-red-700 text-white font-bold py-2 rounded-xl text-xs transition shadow-sm">
+            <button type="button" id="btn-show-login" class="w-full mt-2 bg-[#D61B28] hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-sm cursor-pointer active:scale-95">
               Iniciar sesión
             </button>
           </div>
 
-          <div class="border border-red-200 rounded-2xl p-6 text-center flex flex-col justify-between items-center hover:shadow-md transition">
+          <!-- Card Registrarse -->
+          <div class="border border-red-200 rounded-2xl p-6 text-center flex flex-col justify-between items-center hover:shadow-md transition bg-white">
             <div class="w-14 h-14 rounded-full border border-red-200 flex items-center justify-center text-[#D61B28] text-2xl mb-3">
               <i class="fa-solid fa-user-plus"></i>
             </div>
             <h4 class="font-bold text-sm text-[#D61B28]">Registrarse</h4>
             <p class="text-[11px] text-gray-500 my-2">Crea una nueva cuenta para comenzar.</p>
-            <button id="btn-show-register" class="w-full mt-2 border border-[#D61B28] text-[#D61B28] hover:bg-red-50 font-bold py-2 rounded-xl text-xs transition">
+            <button type="button" id="btn-show-register" class="w-full mt-2 border border-[#D61B28] text-[#D61B28] hover:bg-red-50 font-bold py-2.5 rounded-xl text-xs transition cursor-pointer active:scale-95">
               Registrarse
             </button>
           </div>
+
         </div>
       </div>
     </div>
   </div>
 
-  <div id="modal-login" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+  <!-- ==================== MODAL 1: LOGIN ==================== -->
+  <div id="modal-login" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl relative">
-      <button id="close-login" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+      <button type="button" id="close-login" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
       <div class="text-center mb-6">
         <div class="w-12 h-12 rounded-full border border-red-200 text-[#D61B28] flex items-center justify-center text-xl mx-auto mb-2">
           <i class="fa-solid fa-user"></i>
@@ -91,14 +103,15 @@
           <label class="block font-semibold text-gray-600 mb-1">Contraseña</label>
           <input type="password" id="login-pass" required placeholder="Ingrese su contraseña" class="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D61B28] focus:outline-none">
         </div>
-        <button type="submit" class="w-full bg-[#D61B28] hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition shadow">Ingresar</button>
+        <button type="submit" class="w-full bg-[#D61B28] hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition shadow cursor-pointer">Ingresar</button>
       </form>
     </div>
   </div>
 
-  <div id="modal-register" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+  <!-- ==================== MODAL 2: REGISTRO ==================== -->
+  <div id="modal-register" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl relative">
-      <button id="close-register" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+      <button type="button" id="close-register" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
       <div class="text-center mb-5">
         <div class="w-12 h-12 rounded-full border border-red-200 text-[#D61B28] flex items-center justify-center text-xl mx-auto mb-2">
           <i class="fa-solid fa-user-plus"></i>
@@ -128,27 +141,143 @@
           <label class="block font-semibold text-gray-600 mb-1">Contraseña</label>
           <input type="password" id="reg-pass" required placeholder="Ingrese su contraseña" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D61B28] focus:outline-none">
         </div>
-        <button type="submit" class="w-full bg-[#D61B28] hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition shadow mt-2">Crear cuenta</button>
+        <button type="submit" class="w-full bg-[#D61B28] hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition shadow mt-2 cursor-pointer">Crear cuenta</button>
       </form>
     </div>
   </div>
 
+  <!-- ==================== VISTA 2: DASHBOARD ==================== -->
   <div id="app-container" class="hidden min-h-screen flex flex-col relative bg-slate-50">
     <div class="corte-rojo-dashboard"></div>
 
     <header class="relative z-10 bg-white border-b border-gray-200 px-6 py-3 flex justify-between items-center shadow-sm">
       <div class="flex items-center space-x-4">
-        <svg class="w-20 h-auto" viewBox="0 0 200 65" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M25 48C12 48 3 39 3 26C3 12 15 2 30 2C39 2 47 7 51 14L41 20C38 16 34 13 29 13C20 13 14 19 14 26C14 33 19 38 27 38C34 38 39 34 42 29L52 35C47 43 38 48 25 48Z" fill="#D61B28"/>
-          <path d="M55 46V4H66V46H55Z" fill="#D61B28"/>
-          <path d="M85 46L83 40C79 45 73 47 67 47C58 47 52 41 52 32C52 22 60 17 73 17H83V15C83 11 79 8 72 8C66 8 61 10 57 13L53 5C59 2 67 0 76 0C89 0 95 7 95 18V46H85ZM83 25H74C67 25 63 28 63 32C63 36 66 39 72 39C78 39 83 35 83 29V25Z" fill="#D61B28"/>
-          <path d="M109 46V13H99V4H109V0H120V4H131V13H120V38C120 41 122 42 125 42C127 42 129 41 131 40L133 48C129 50 124 51 119 51C112 51 109 47 109 46Z" fill="#D61B28"/>
-          <path d="M150 46L148 40C144 45 138 47 132 47C123 47 117 41 117 32C117 22 125 17 138 17H148V15C148 11 144 8 137 8C131 8 126 10 122 13L118 5C124 2 132 0 141 0C154 0 160 7 160 18V46H150ZM148 25H139C132 25 128 28 128 32C128 36 131 39 137 39C143 39 148 35 148 29V25Z" fill="#D61B28"/>
-        </svg>
+        <!-- Logotipo Bata Rojo Caligráfico -->
+        <div class="bata-logo-script text-[#D61B28] text-3xl select-none">Bata</div>
         <div class="h-6 w-px bg-gray-300"></div>
         <p class="text-xs md:text-sm font-medium text-gray-700">Bienvenido al sistema de cambios de <span class="font-bold text-[#D61B28]">BATA Bolivia.</span></p>
       </div>
       <div class="flex items-center space-x-4">
         <div class="text-right">
           <span id="user-display-name" class="block text-xs font-bold text-gray-800">Usuario</span>
-          <span id="user-display-role" class="block text-[11px] font-semibold text-[#D61B28] bg-red-50 px-2 py-0.5 rounded
+          <span id="user-display-role" class="block text-[11px] font-semibold text-[#D61B28] bg-red-50 px-2 py-0.5 rounded-full border border-red-100">Rol</span>
+        </div>
+        <button type="button" id="btn-logout" title="Cerrar Sesión" class="text-gray-400 hover:text-[#D61B28] transition p-2 cursor-pointer">
+          <i class="fa-solid fa-arrow-right-from-bracket text-lg"></i>
+        </button>
+      </div>
+    </header>
+
+    <div class="flex flex-1 relative z-10">
+      <aside class="w-56 bg-white border-r border-gray-200 p-4 space-y-2">
+        <button type="button" id="menu-btn-cambios" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition bg-red-50 text-[#D61B28] cursor-pointer">
+          <i class="fa-solid fa-arrow-right-arrow-left"></i>
+          <span>Cambios</span>
+        </button>
+        <button type="button" id="menu-btn-informe" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm text-gray-600 hover:bg-gray-100 transition cursor-pointer">
+          <i class="fa-regular fa-file-lines"></i>
+          <span>Informe</span>
+        </button>
+      </aside>
+
+      <main class="flex-1 p-6 md:p-8 overflow-y-auto">
+        <!-- VISTA CAMBIOS -->
+        <section id="view-cambios" class="space-y-6">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <h2 class="text-lg font-bold text-[#D61B28] flex items-center space-x-2">
+              <i class="fa-solid fa-arrow-right-arrow-left"></i>
+              <span>Cambios</span>
+            </h2>
+            <button type="button" id="btn-open-new-change" class="bg-[#D61B28] hover:bg-red-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
+              <i class="fa-solid fa-plus"></i>
+              <span>Nuevo Cambio</span>
+            </button>
+          </div>
+
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="bg-gray-50/75 border-b border-gray-200 text-gray-600 font-semibold">
+                    <th class="p-3 border-r border-gray-200">Proyecto</th>
+                    <th class="p-3 border-r border-gray-200">Artículo</th>
+                    <th class="p-3 border-r border-gray-200 min-w-[300px]">Cambios (descripción)</th>
+                    <th class="p-3 border-r border-gray-200 text-center">Estado</th>
+                    <th class="p-3 text-center">¿Realizado?</th>
+                  </tr>
+                </thead>
+                <tbody id="table-cambios-body" class="divide-y divide-gray-200"></tbody>
+              </table>
+            </div>
+            <div id="table-empty-state" class="hidden p-8 text-center text-gray-400 text-xs">
+              <i class="fa-regular fa-folder-open text-3xl mb-2"></i>
+              <p>No hay solicitudes de cambios registradas en el sistema.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- VISTA INFORME -->
+        <section id="view-informe" class="hidden space-y-6">
+          <h2 class="text-lg font-bold text-[#D61B28] flex items-center space-x-2">
+            <i class="fa-regular fa-file-lines"></i>
+            <span>Informe</span>
+          </h2>
+
+          <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+              <div class="flex items-center space-x-2">
+                <label class="text-xs font-bold text-gray-700">Filtrar:</label>
+                <select id="report-filter-status" class="border border-gray-300 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-[#D61B28]">
+                  <option value="todos">Todos los Estados</option>
+                  <option value="En proceso">En proceso</option>
+                  <option value="Realizado">Realizados</option>
+                  <option value="Retrasado">Retrasados</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="report-project-selection-list" class="max-h-40 overflow-y-auto border border-gray-200 rounded-xl p-3 grid grid-cols-1 md:grid-cols-3 gap-2"></div>
+          </div>
+
+          <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+            <h3 class="text-xs font-bold text-gray-700 mb-4">Porcentaje de Avance por Proyecto</h3>
+            <div class="h-72 w-full">
+              <canvas id="chartAvance"></canvas>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- MODAL NUEVA SOLICITUD -->
+  <div id="modal-new-change" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden">
+      <div class="bg-[#D61B28] px-6 py-4 flex justify-between items-center text-white">
+        <h3 class="font-bold text-sm">Nueva Solicitud de Cambio</h3>
+        <button type="button" id="modal-btn-close" class="text-white hover:text-gray-200"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="form-new-change" class="p-6 space-y-4 text-xs">
+        <div>
+          <label class="block font-bold text-gray-700 mb-1">Nombre del Proyecto</label>
+          <input type="text" id="change-project" placeholder="Ej: pol" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]">
+        </div>
+        <div>
+          <label class="block font-bold text-gray-700 mb-1">Artículo (Números)</label>
+          <input type="text" id="change-article" pattern="[0-9]+" placeholder="Ej: 3445025" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]">
+        </div>
+        <div>
+          <label class="block font-bold text-gray-700 mb-1">Box de Cambios</label>
+          <textarea id="change-box" rows="4" placeholder="Describir cambios a realizar..." required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]"></textarea>
+        </div>
+        <div class="pt-2 flex justify-end space-x-2">
+          <button type="button" id="modal-btn-cancel" class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg font-bold">Cancelar</button>
+          <button type="submit" class="px-5 py-2 bg-[#D61B28] text-white rounded-lg font-bold hover:bg-red-700 cursor-pointer">Aceptar y Registrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
