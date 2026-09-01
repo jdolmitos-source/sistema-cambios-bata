@@ -1,28 +1,14 @@
-@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Dancing+Script:wght@700&display=swap');
-
-/* Tipografía caligráfica idéntica al logotipo de las letras rojas */
-.bata-logo-script {
-  font-family: 'Dancing Script', 'Caveat', cursive;
-  font-weight: 700;
-  letter-spacing: -1px;
-}
-
-/* Marca de agua 'B' de fondo sin bloquear clics */
+/* Marca de agua Isotipo 'B' de fondo sin entorpecer clics */
 .marca-agua-b {
   position: absolute;
-  bottom: -20px;
-  left: -20px;
-  font-size: 200px;
-  font-family: 'Dancing Script', 'Caveat', cursive;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.08);
+  bottom: -40px;
+  left: -30px;
   pointer-events: none;
   user-select: none;
   z-index: 1;
-  line-height: 1;
 }
 
-/* Corte sutil superior derecho en el dashboard */
+/* Corte corporativo superior en Dashboard */
 .corte-rojo-dashboard {
   position: absolute;
   top: 0;
