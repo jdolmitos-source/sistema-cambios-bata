@@ -6,57 +6,76 @@
   <title>Sistema de Gestión de Cambios - Bata Bolivia</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Chart.js para Reportes -->
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- FontAwesome Icons -->
+  <!-- FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-gray-100 font-sans text-gray-800 antialiased min-h-screen">
+<body class="bg-[#F8F9FA] font-sans text-gray-800 antialiased min-h-screen">
 
   <!-- ==================== VISTA 1: PORTADA OFICIAL ==================== -->
-  <div id="welcome-container" class="relative min-h-screen w-full flex flex-col md:flex-row bg-[#F4F5F7] overflow-hidden">
+  <div id="welcome-container" class="relative min-h-screen w-full flex flex-col md:flex-row bg-[#F8F9FA] overflow-hidden">
     
-    <!-- Columna Izquierda: Banner Gráfico Oficial de Bata -->
-    <div class="w-full md:w-[42%] min-h-[300px] md:min-h-screen relative overflow-hidden flex flex-col justify-end bg-[#D61B28]">
-      <img src="banner-lateral.png" alt="Bata Bolivia" class="absolute inset-0 w-full h-full object-cover object-left md:object-right pointer-events-none select-none z-0">
+    <!-- Columna Izquierda: Banner Gráfico Rojo -->
+    <div class="w-full md:w-[38%] min-h-[340px] md:min-h-screen relative overflow-hidden flex flex-col justify-between p-8 md:p-12 z-0 bg-[#D61B28]">
+      
+      <!-- Fondo ilustrado -->
+      <img src="banner-lateral.jpg" alt="Bata Bolivia" class="absolute inset-0 w-full h-full object-cover object-left pointer-events-none select-none z-0">
+
+      <!-- Logotipo Bata Blanco y País montados sobre el banner -->
+      <div class="relative z-10 pt-4">
+        <h1 class="bata-title text-white text-5xl md:text-6xl tracking-tight drop-shadow-md select-none">Bata</h1>
+        <p class="text-xs uppercase tracking-[0.4em] text-white/90 font-bold mt-1 ml-1 select-none">Bolivia</p>
+      </div>
+
+      <!-- Pie del banner con Ícono -->
+      <div class="relative z-10">
+        <div class="flex items-center space-x-2 text-white/95 border-t border-white/20 pt-4 text-xs font-semibold select-none">
+          <i class="fa-solid fa-chart-line text-sm"></i>
+          <span>Seguimiento de Cambios</span>
+        </div>
+      </div>
     </div>
 
-    <!-- Columna Derecha: Selección de Inicio / Registro -->
-    <div class="w-full md:w-[58%] flex flex-col items-center justify-center p-6 md:p-12 relative z-10">
+    <!-- Columna Derecha: Tarjetas de Acceso -->
+    <div class="w-full md:w-[62%] flex flex-col items-center justify-center p-6 md:p-12 relative z-10">
+      
       <div class="text-center mb-8">
-        <h2 class="text-2xl md:text-3xl font-extrabold text-[#D61B28]">Bienvenido a Bata Bolivia</h2>
-        <div class="flex justify-center items-center my-2 text-[#D61B28]">
+        <h2 class="text-3xl md:text-4xl font-extrabold text-[#D61B28] tracking-tight">Bienvenido a Bata Bolivia</h2>
+        <!-- Isotipo Zapato Corporativo -->
+        <div class="flex justify-center items-center my-3 text-[#D61B28]">
           <i class="fa-solid fa-shoe-prints text-lg"></i>
         </div>
         <p class="text-xs text-gray-500 font-medium">Accede a tu cuenta o crea una nueva</p>
       </div>
 
+      <!-- Tarjeta Contenedora Principal -->
       <div class="bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-gray-100 w-full max-w-lg">
         <h3 class="text-center font-bold text-gray-700 text-sm mb-6">¿Qué deseas hacer?</h3>
         
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
           
-          <!-- Botón Iniciar Sesión -->
+          <!-- Opción: Iniciar Sesión -->
           <div class="border border-red-200 rounded-2xl p-6 text-center flex flex-col justify-between items-center hover:shadow-md transition bg-white">
             <div class="w-14 h-14 rounded-full border border-red-200 flex items-center justify-center text-[#D61B28] text-2xl mb-3">
               <i class="fa-solid fa-user"></i>
             </div>
             <h4 class="font-bold text-sm text-[#D61B28]">Iniciar sesión</h4>
-            <p class="text-[11px] text-gray-500 my-2">Accede a tu cuenta existente para continuar.</p>
-            <button type="button" id="btn-show-login" class="w-full mt-2 bg-[#D61B28] hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-sm cursor-pointer">
+            <p class="text-[11px] text-gray-500 my-2 leading-relaxed">Accede a tu cuenta existente para continuar.</p>
+            <button type="button" id="btn-show-login" class="w-full mt-2 bg-[#D61B28] hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-sm cursor-pointer active:scale-95">
               Iniciar sesión
             </button>
           </div>
 
-          <!-- Botón Registrarse -->
+          <!-- Opción: Registrarse -->
           <div class="border border-red-200 rounded-2xl p-6 text-center flex flex-col justify-between items-center hover:shadow-md transition bg-white">
             <div class="w-14 h-14 rounded-full border border-red-200 flex items-center justify-center text-[#D61B28] text-2xl mb-3">
               <i class="fa-solid fa-user-plus"></i>
             </div>
             <h4 class="font-bold text-sm text-[#D61B28]">Registrarse</h4>
-            <p class="text-[11px] text-gray-500 my-2">Crea una nueva cuenta con tu celular.</p>
-            <button type="button" id="btn-show-register" class="w-full mt-2 border border-[#D61B28] text-[#D61B28] hover:bg-red-50 font-bold py-2.5 rounded-xl text-xs transition cursor-pointer">
+            <p class="text-[11px] text-gray-500 my-2 leading-relaxed">Crea una nueva cuenta con tu celular.</p>
+            <button type="button" id="btn-show-register" class="w-full mt-2 border border-[#D61B28] text-[#D61B28] hover:bg-red-50 font-bold py-2.5 rounded-xl text-xs transition cursor-pointer active:scale-95">
               Registrarse
             </button>
           </div>
@@ -69,7 +88,7 @@
   <!-- ==================== MODAL: LOGIN ==================== -->
   <div id="modal-login" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl relative">
-      <button type="button" id="close-login" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
+      <button type="button" id="close-login" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
       <div class="text-center mb-6">
         <div class="w-12 h-12 rounded-full border border-red-200 text-[#D61B28] flex items-center justify-center text-xl mx-auto mb-2">
           <i class="fa-solid fa-user"></i>
@@ -78,7 +97,7 @@
       </div>
       <form id="form-login" class="space-y-4 text-xs">
         <div>
-          <label class="block font-semibold text-gray-600 mb-1">Correo Electrónico Corporativo</label>
+          <label class="block font-semibold text-gray-600 mb-1">Correo Electrónico</label>
           <input type="email" id="login-email" required placeholder="ejemplo@bata.com" class="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D61B28] focus:outline-none">
         </div>
         <div>
@@ -93,7 +112,7 @@
   <!-- ==================== MODAL: REGISTRO ==================== -->
   <div id="modal-register" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-      <button type="button" id="close-register" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
+      <button type="button" id="close-register" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
       <div class="text-center mb-5">
         <div class="w-12 h-12 rounded-full border border-red-200 text-[#D61B28] flex items-center justify-center text-xl mx-auto mb-2">
           <i class="fa-solid fa-user-plus"></i>
@@ -143,10 +162,9 @@
   <div id="app-container" class="hidden min-h-screen flex flex-col relative bg-slate-50">
     <div class="corte-rojo-dashboard"></div>
 
-    <!-- Header Principal -->
     <header class="relative z-10 bg-white border-b border-gray-200 px-6 py-3 flex justify-between items-center shadow-sm">
       <div class="flex items-center space-x-4">
-        <img src="logo-bata-rojo.png" alt="Bata" class="w-20 h-auto select-none">
+        <h1 class="bata-title text-[#D61B28] text-3xl select-none leading-none">Bata</h1>
         <div class="h-6 w-px bg-gray-300"></div>
         <p class="text-xs md:text-sm font-medium text-gray-700">Bienvenido al sistema de cambios de <span class="font-bold text-[#D61B28]">BATA Bolivia.</span></p>
       </div>
@@ -169,7 +187,6 @@
     </header>
 
     <div class="flex flex-1 relative z-10">
-      <!-- Menú Lateral -->
       <aside class="w-56 bg-white border-r border-gray-200 p-4 space-y-2">
         <button type="button" id="menu-btn-cambios" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition bg-red-50 text-[#D61B28] cursor-pointer">
           <i class="fa-solid fa-arrow-right-arrow-left"></i>
@@ -185,7 +202,6 @@
         </button>
       </aside>
 
-      <!-- Área Principal -->
       <main class="flex-1 p-6 md:p-8 overflow-y-auto">
         <!-- VISTA CAMBIOS -->
         <section id="view-cambios" class="space-y-6">
@@ -230,7 +246,6 @@
             <span>Informe Ejecutivo de Avance</span>
           </h2>
 
-          <!-- Tarjetas de Métricas -->
           <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex items-center space-x-3">
               <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg"><i class="fa-solid fa-list-check"></i></div>
@@ -262,7 +277,6 @@
             </div>
           </div>
 
-          <!-- Selector de Proyectos -->
           <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
             <div class="flex items-center justify-between">
               <label class="text-xs font-bold text-gray-700">Seleccionar Proyectos a incluir en el Informe:</label>
@@ -274,7 +288,6 @@
             <div id="report-project-selection-list" class="max-h-36 overflow-y-auto border border-gray-200 rounded-xl p-3 grid grid-cols-1 md:grid-cols-4 gap-2"></div>
           </div>
 
-          <!-- Diagrama de Torres -->
           <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
             <div class="flex justify-between items-center mb-4">
               <h3 class="text-xs font-bold text-gray-700">Diagrama de Torres: % de Avance Ponderado por Proyecto</h3>
@@ -369,7 +382,7 @@
     </div>
   </div>
 
-  <!-- MODAL: ENVIAR WHATSAPP -->
+  <!-- MODAL: WHATSAPP -->
   <div id="modal-whatsapp" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden p-6 text-xs">
       <div class="text-center mb-4">
