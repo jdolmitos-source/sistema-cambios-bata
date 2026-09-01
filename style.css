@@ -1,14 +1,15 @@
-/* Marca de agua Isotipo 'B' circular en la esquina inferior */
-.marca-agua-b {
-  position: absolute;
-  bottom: -40px;
-  left: -40px;
-  pointer-events: none;
-  user-select: none;
-  z-index: 1;
+/* ============================================================
+   ESTILOS GENERALES Y CORPORATIVOS BATA BOLIVIA
+   ============================================================ */
+
+/* Tipografía y suavizado de fuentes */
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Corte sutil del Dashboard */
+/* Corte sutil superior derecho en el encabezado del Dashboard */
 .corte-rojo-dashboard {
   position: absolute;
   top: 0;
@@ -18,4 +19,31 @@
   background-color: #D61B28;
   transform: skewX(-25deg) translateX(2rem);
   z-index: 5;
+  opacity: 0.95;
+  pointer-events: none;
+}
+
+/* Scrollbar personalizado para tablas y modales */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Animaciones suaves para transiciones de botones y modales */
+button, input, select, textarea {
+  transition: all 0.15s ease-in-out;
 }
