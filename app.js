@@ -54,8 +54,9 @@ const fileToBase64 = (file) => new Promise((resolve, reject) => {
 // Comprobar Super Admin (Daniel Olmos)
 function esSuperAdmin() {
   if (!userData) return false;
-  const nombreLimpio = (userData.nombre || "").trim().toLowerCase();
-  return nombreLimpio === "daniel olmos" || (userData.email || "").toLowerCase().includes("olmos");
+  const email = (userData.email || "").toLowerCase();
+  const nombre = (userData.nombre || "").toLowerCase();
+  return email === "daniel.olmos@bata.com" || nombre.includes("daniel olmos");
 }
 
 // Modales y Controles
@@ -64,25 +65,44 @@ const appContainer = document.getElementById("app-container");
 const modalLogin = document.getElementById("modal-login");
 const modalRegister = document.getElementById("modal-register");
 const modalProfile = document.getElementById("modal-profile");
+const modalMinuta = document.getElementById("modal-minuta");
 
 document.getElementById("btn-show-login").onclick = () => modalLogin.classList.remove("hidden");
 document.getElementById("btn-show-register").onclick = () => modalRegister.classList.remove("hidden");
 document.getElementById("close-login").onclick = () => modalLogin.classList.add("hidden");
 document.getElementById("close-register").onclick = () => modalRegister.classList.add("hidden");
 document.getElementById("close-profile").onclick = () => modalProfile.classList.add("hidden");
+document.getElementById("close-minuta").onclick = () => modalMinuta.classList.add("hidden");
 
-// Recuperación de Contraseña
+// Reset de Contraseña Directo por WhatsApp
 document.getElementById("btn-forgot-pass").onclick = async () => {
   const email = document.getElementById("login-email").value.trim();
   if (!email) {
-    alert("Por favor ingresa tu correo electrónico en el campo superior para enviarte el enlace de restablecimiento.");
+    alert("Ingresa tu correo en la casilla para buscar tu número de celular y enviarte la notificación por WhatsApp.");
     return;
   }
+
   try {
+    const snap = await getDocs(collection(db, "usuarios"));
+    let usuarioEncontrado = null;
+    snap.forEach(d => {
+      const u = d.data();
+      if ((u.email || "").toLowerCase() === email.toLowerCase()) {
+        usuarioEncontrado = u;
+      }
+    });
+
+    // Enviar correo nativo de Firebase
     await sendPasswordResetEmail(auth, email);
-    alert(`Se ha enviado un correo a ${email} para restablecer tu contraseña. Revisa tu bandeja de entrada o spam.`);
+
+    if (usuarioEncontrado && usuarioEncontrado.celular) {
+      const msg = encodeURIComponent(`🔒 *SISTEMA BATA BOLIVIA*\nHola ${usuarioEncontrado.nombre}, se ha generado tu solicitud de restablecimiento de contraseña para el correo: ${email}.\nRevisa el enlace enviado a tu bandeja de correo para cambiarla.`);
+      window.open(`https://wa.me/591${usuarioEncontrado.celular}?text=${msg}`, "_blank");
+    } else {
+      alert(`Enlace de restablecimiento enviado a ${email}.`);
+    }
   } catch (err) {
-    alert("Error al enviar correo de recuperación: " + err.message);
+    alert("Error al solicitar reseteo: " + err.message);
   }
 };
 
@@ -112,7 +132,7 @@ document.getElementById("form-update-profile").onsubmit = async (e) => {
     modalProfile.classList.add("hidden");
     alert("Perfil actualizado correctamente.");
   } catch (err) {
-    alert("Error al actualizar: " + err.message);
+    alert("Error: " + err.message);
   }
 };
 
@@ -173,10 +193,22 @@ function actualizarHeaderUsuario() {
     avatarIcon.classList.remove("hidden");
   }
 
-  if (esSuperAdmin()) {
+  // Permisos especiales
+  const esAdmin = esSuperAdmin();
+  const esJefe = userData.rol === "Jefe Desarrollo" || esAdmin;
+
+  if (esAdmin) {
     document.getElementById("menu-btn-usuarios").classList.remove("hidden");
   } else {
     document.getElementById("menu-btn-usuarios").classList.add("hidden");
+  }
+
+  if (esJefe) {
+    document.getElementById("menu-btn-minuta").classList.remove("hidden");
+    document.getElementById("btn-open-minuta-header").classList.remove("hidden");
+  } else {
+    document.getElementById("menu-btn-minuta").classList.add("hidden");
+    document.getElementById("btn-open-minuta-header").classList.add("hidden");
   }
 }
 
@@ -206,6 +238,7 @@ const viewUsuarios = document.getElementById("view-usuarios");
 const menuBtnCambios = document.getElementById("menu-btn-cambios");
 const menuBtnInforme = document.getElementById("menu-btn-informe");
 const menuBtnUsuarios = document.getElementById("menu-btn-usuarios");
+const menuBtnMinuta = document.getElementById("menu-btn-minuta");
 
 function resetMenuStyles() {
   [menuBtnCambios, menuBtnInforme, menuBtnUsuarios].forEach(b => {
@@ -236,20 +269,22 @@ menuBtnUsuarios.onclick = () => {
   cargarListaUsuariosAdmin();
 };
 
-// Submenús de Filtro de Cambios
+// Abrir Modal Minuta
+menuBtnMinuta.onclick = () => modalMinuta.classList.remove("hidden");
+document.getElementById("btn-open-minuta-header").onclick = () => modalMinuta.classList.remove("hidden");
+
+// Submenús de Filtro
 window.filtrarPorSubmenu = (estado) => {
   filtroSubmenuActivo = estado;
   const subtitle = document.getElementById("view-subtitle-filter");
-  
   if (estado === "todos") subtitle.textContent = "Mostrando todos los registros";
   else if (estado === "En proceso") subtitle.textContent = "Filtrando: Cambios en proceso";
   else if (estado === "Realizado") subtitle.textContent = "Filtrando: Cambios realizados";
   else if (estado === "Retrasado") subtitle.textContent = "Filtrando: Cambios retrasados";
-
   renderTabla();
 };
 
-// Panel Super Admin (Daniel Olmos)
+// Panel Super Admin: Listar y Cambiar Roles
 async function cargarListaUsuariosAdmin() {
   const tbody = document.getElementById("table-users-body");
   tbody.innerHTML = "";
@@ -269,7 +304,16 @@ async function cargarListaUsuariosAdmin() {
       <td class="p-3 font-bold text-gray-800">${u.nombre}</td>
       <td class="p-3 text-gray-600">${u.email}</td>
       <td class="p-3 font-mono text-gray-600">${u.celular ? '+591 ' + u.celular : '<span class="text-red-400">Sin celular</span>'}</td>
-      <td class="p-3"><span class="bg-red-50 text-[#D61B28] px-2 py-0.5 rounded font-bold text-[10px]">${u.rol}</span></td>
+      <td class="p-3">
+        <select onchange="window.cambiarRolUsuario('${docU.id}', this.value)" class="border border-gray-300 rounded px-2 py-1 text-xs bg-white font-semibold text-gray-700 focus:ring-1 focus:ring-[#D61B28]">
+          <option value="Calidad" ${u.rol === 'Calidad' ? 'selected' : ''}>Calidad</option>
+          <option value="Costos" ${u.rol === 'Costos' ? 'selected' : ''}>Costos</option>
+          <option value="Compras" ${u.rol === 'Compras' ? 'selected' : ''}>Compras</option>
+          <option value="Producción" ${u.rol === 'Producción' ? 'selected' : ''}>Producción</option>
+          <option value="Técnico Desarrollo" ${u.rol === 'Técnico Desarrollo' ? 'selected' : ''}>Desarrollo - Técnico</option>
+          <option value="Jefe Desarrollo" ${u.rol === 'Jefe Desarrollo' ? 'selected' : ''}>Desarrollo - Jefe</option>
+        </select>
+      </td>
       <td class="p-3 text-center">
         ${docU.id !== currentUser.uid ? `
           <button onclick="window.eliminarUsuarioDoc('${docU.id}', '${u.nombre}', '${u.email}')" class="text-red-600 hover:text-red-800 font-bold text-xs cursor-pointer">
@@ -282,21 +326,19 @@ async function cargarListaUsuariosAdmin() {
   });
 }
 
+window.cambiarRolUsuario = async (userId, nuevoRol) => {
+  await updateDoc(doc(db, "usuarios", userId), { rol: nuevoRol });
+  alert("Rol actualizado correctamente.");
+};
+
 window.eliminarUsuarioDoc = async (id, nombre, email) => {
-  if (confirm(`¿Deseas eliminar permanentemente al usuario ${nombre} (${email})?`)) {
+  if (confirm(`¿Eliminar usuario ${nombre} (${email})? Podrás volver a registrar este correo cuando lo necesites.`)) {
     await deleteDoc(doc(db, "usuarios", id));
-    alert(`Usuario ${nombre} eliminado de la base de datos.`);
     cargarListaUsuariosAdmin();
   }
 };
 
-// Modal Nueva Solicitud
-const modalNewChange = document.getElementById("modal-new-change");
-document.getElementById("btn-open-new-change").onclick = () => modalNewChange.classList.remove("hidden");
-document.getElementById("modal-btn-close").onclick = () => modalNewChange.classList.add("hidden");
-document.getElementById("modal-btn-cancel").onclick = () => modalNewChange.classList.add("hidden");
-
-// Notificación de WhatsApp Dinámica con Filtro por Rol
+// Modal WhatsApp Dinámico
 async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro = null }) {
   const modalWA = document.getElementById("modal-whatsapp");
   const listContainer = document.getElementById("whatsapp-contacts-list");
@@ -335,7 +377,7 @@ async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro =
     });
 
     if (count === 0) {
-      listContainer.innerHTML = `<p class="p-3 text-center text-gray-400 text-xs">No hay usuarios registrados con celular en la sección solicitada (${rolFiltro || 'General'}).</p>`;
+      listContainer.innerHTML = `<p class="p-3 text-center text-gray-400 text-xs">No hay usuarios registrados con celular para el grupo (${rolFiltro || 'General'}).</p>`;
     }
 
     modalWA.classList.remove("hidden");
@@ -348,7 +390,29 @@ document.getElementById("btn-close-whatsapp-modal").onclick = () => {
   document.getElementById("modal-whatsapp").classList.add("hidden");
 };
 
-// Crear Nueva Solicitud
+// Enviar Minuta de Cambios (Jefe de Desarrollo)
+document.getElementById("form-minuta").onsubmit = async (e) => {
+  e.preventDefault();
+  const titulo = document.getElementById("minuta-title").value.trim();
+  const detalle = document.getElementById("minuta-box").value.trim();
+
+  modalMinuta.classList.add("hidden");
+  document.getElementById("form-minuta").reset();
+
+  abrirModalWhatsApp({
+    titulo: "Minuta de Cambios (Plan Piloto)",
+    subtitulo: "Enviar minuta técnica a los Técnicos de Desarrollo:",
+    mensajeTexto: `📋 *MINUTA DE CAMBIOS - PLAN PILOTO*\n*Bata Bolivia / Desarrollo de Producto*\n\n📌 *Asunto:* ${titulo}\n👤 *Emitido por:* ${userData.nombre} (Jefe Desarrollo)\n\n📝 *DETALLE DE CAMBIOS:*\n${detalle}\n\n_Por favor proceder con las modificaciones técnicas correspondientes._`,
+    rolFiltro: "Técnico Desarrollo"
+  });
+};
+
+// Crear Solicitud de Cambio
+const modalNewChange = document.getElementById("modal-new-change");
+document.getElementById("btn-open-new-change").onclick = () => modalNewChange.classList.remove("hidden");
+document.getElementById("modal-btn-close").onclick = () => modalNewChange.classList.add("hidden");
+document.getElementById("modal-btn-cancel").onclick = () => modalNewChange.classList.add("hidden");
+
 document.getElementById("form-new-change").onsubmit = async (e) => {
   e.preventDefault();
   const proyecto = document.getElementById("change-project").value.trim();
@@ -424,11 +488,11 @@ function renderTabla() {
       textoBox += `<br><span class="text-[10px] text-gray-400 italic"> (editado: ${formatearFecha(item.ultimaEdicion)})</span>`;
     }
 
-    const esDesarrollo = userData.rol === "Desarrollo de producto" || esSuperAdmin();
+    // Permisos: Técnico de Desarrollo, Jefe de Desarrollo y Super Admin
+    const esDesarrollo = userData.rol === "Técnico Desarrollo" || userData.rol === "Jefe Desarrollo" || esSuperAdmin();
     const esCostos = userData.rol === "Costos" || esSuperAdmin();
     const progresoVal = item.progreso !== undefined ? item.progreso : (item.estado === "Realizado" ? 100 : 25);
 
-    // Selector de Estado para Desarrollo de Producto
     let estadoHTML = "";
     if (esDesarrollo) {
       estadoHTML = `
@@ -438,7 +502,7 @@ function renderTabla() {
             <option value="Realizado" ${item.estado === "Realizado" ? "selected" : ""}>Realizado</option>
             <option value="Retrasado" ${item.estado === "Retrasado" ? "selected" : ""}>Retrasado</option>
           </select>
-          <button onclick="window.guardarCambioEstado('${item.id}', '${item.proyecto}', '${item.articulo}')" title="Guardar Estado y Notificar a Costos" class="bg-gray-100 hover:bg-[#D61B28] hover:text-white text-gray-600 p-1.5 rounded-lg text-xs transition">
+          <button onclick="window.guardarCambioEstado('${item.id}', '${item.proyecto}', '${item.articulo}')" title="Guardar y Notificar a Costos" class="bg-gray-100 hover:bg-[#D61B28] hover:text-white text-gray-600 p-1.5 rounded-lg text-xs transition cursor-pointer">
             <i class="fa-solid fa-floppy-disk"></i>
           </button>
         </div>
@@ -448,7 +512,6 @@ function renderTabla() {
       estadoHTML = `<span class="border ${estilo} px-3 py-1 rounded-lg font-bold text-xs">${item.estado}</span>`;
     }
 
-    // Progreso %
     let progresoHTML = "";
     if (esDesarrollo) {
       progresoHTML = `
@@ -468,7 +531,6 @@ function renderTabla() {
       `;
     }
 
-    // Validación Costos (Checkbox Bloqueable con Confirmación)
     let costosHTML = "";
     if (item.estado === "Realizado") {
       if (item.validadoCostos) {
@@ -476,7 +538,7 @@ function renderTabla() {
           <div class="flex items-center justify-center space-x-1 text-green-700 font-bold text-xs">
             <i class="fa-solid fa-circle-check text-green-600"></i>
             <span>Validado</span>
-            ${esSuperAdmin() ? `<button onclick="window.desbloquearValidacionCostos('${item.id}')" class="text-red-500 hover:text-red-700 text-[10px] ml-1" title="Desbloquear como Super Admin"><i class="fa-solid fa-unlock"></i></button>` : ''}
+            ${esSuperAdmin() ? `<button onclick="window.desbloquearValidacionCostos('${item.id}')" class="text-red-500 hover:text-red-700 text-[10px] ml-1 cursor-pointer" title="Desbloquear como Super Admin"><i class="fa-solid fa-unlock"></i></button>` : ''}
           </div>
         `;
       } else {
@@ -498,7 +560,7 @@ function renderTabla() {
       <td class="p-3.5 font-mono text-gray-600 border-r border-gray-100">${item.articulo}</td>
       <td class="p-3.5 text-gray-700 border-r border-gray-100">
         <div>${textoBox}</div>
-        <button onclick="window.editarTextoBox('${item.id}', '${item.boxCambio.replace(/'/g, "\\'")}')" class="text-[10px] text-blue-600 hover:underline mt-1 font-medium inline-flex items-center space-x-1">
+        <button onclick="window.editarTextoBox('${item.id}', '${item.boxCambio.replace(/'/g, "\\'")}')" class="text-[10px] text-blue-600 hover:underline mt-1 font-medium inline-flex items-center space-x-1 cursor-pointer">
           <i class="fa-solid fa-pencil"></i> <span>editar</span>
         </button>
       </td>
@@ -510,7 +572,7 @@ function renderTabla() {
   });
 }
 
-// Guardar Estado desde Desarrollo de Producto y Notificar a Costos
+// Guardar Estado (Desarrollo -> Costos)
 window.guardarCambioEstado = async (id, proyecto, articulo) => {
   const select = document.getElementById(`sel-estado-${id}`);
   const nuevoEstado = select.value;
@@ -528,13 +590,13 @@ window.guardarCambioEstado = async (id, proyecto, articulo) => {
       rolFiltro: "Costos"
     });
   } else {
-    alert("Estado actualizado correctamente.");
+    alert("Estado guardado correctamente.");
   }
 };
 
-// Confirmación de Validación de Costos y Notificación a Calidad
+// Confirmación Costos (Costos -> Calidad)
 window.confirmarValidacionCostos = async (id, proyecto, articulo, checkboxElem) => {
-  const confirma = confirm(`¿Estás seguro de validar los costos del proyecto "${proyecto}"? Una vez confirmado no se podrá desmarcar.`);
+  const confirma = confirm(`¿Estás seguro de validar los costos del proyecto "${proyecto}"? Una vez confirmado quedará bloqueado de forma permanente.`);
   if (!confirma) {
     checkboxElem.checked = false;
     return;
@@ -548,14 +610,14 @@ window.confirmarValidacionCostos = async (id, proyecto, articulo, checkboxElem) 
 
   abrirModalWhatsApp({
     titulo: "Costos Validados",
-    subtitulo: "Enviar notificación a los usuarios de Calidad:",
-    mensajeTexto: `📋 *VALIDACIÓN DE COSTOS COMPLETADA - ALERTA CALIDAD*\n\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n💰 *Costos:* Validados por ${userData.nombre} (Costos)\n\n_El proyecto ya cuenta con validación técnica y económica._`,
+    subtitulo: "Enviar notificación al equipo de Calidad:",
+    mensajeTexto: `📋 *VALIDACIÓN DE COSTOS COMPLETADA - ALERTA CALIDAD*\n\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n💰 *Costos:* Validados por ${userData.nombre} (Costos)\n\n_El proyecto cuenta con validación técnica y económica lista para producción._`,
     rolFiltro: "Calidad"
   });
 };
 
 window.desbloquearValidacionCostos = async (id) => {
-  if (confirm("¿Desbloquear validación de costos? (Acción de Super Admin)")) {
+  if (confirm("¿Desbloquear validación de costos? (Acción exclusiva de Super Admin)")) {
     await updateDoc(doc(db, "solicitudes_cambios", id), { validadoCostos: false });
   }
 };
@@ -575,7 +637,7 @@ window.editarTextoBox = async (id, textoActual) => {
   }
 };
 
-// Informe y Torres
+// Informes
 function renderInformeView() {
   document.getElementById("metric-total").textContent = solicitudes.length;
   document.getElementById("metric-proceso").textContent = solicitudes.filter(s => s.estado === "En proceso").length;
