@@ -12,34 +12,34 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-[#F8F9FA] font-sans text-gray-800 antialiased min-h-screen">
+<body class="bg-[#F4F5F7] font-sans text-gray-800 antialiased min-h-screen">
 
-  <!-- ==================== VISTA 1: PORTADA OFICIAL ==================== -->
-  <div id="welcome-container" class="relative min-h-screen w-full flex flex-col md:flex-row bg-[#F8F9FA] overflow-hidden">
+  <!-- ==================== VISTA 1: PORTADA OFICIAL (PNGS ORIGINALES) ==================== -->
+  <div id="welcome-container" class="relative min-h-screen w-full flex flex-col md:flex-row bg-[#F4F5F7] overflow-hidden">
     
-    <!-- Columna Izquierda: Banner Gráfico Rojo -->
-    <div class="w-full md:w-[38%] min-h-[340px] md:min-h-screen relative overflow-hidden flex flex-col justify-between p-8 md:p-12 z-0 bg-[#D61B28]">
+    <!-- Contenedor Lateral Izquierdo -->
+    <div class="relative w-full md:w-[42%] min-h-[360px] md:min-h-screen flex flex-col justify-between p-8 md:p-12 z-0 overflow-hidden">
       
-      <!-- Fondo ilustrado -->
-      <img src="banner-lateral.jpg" alt="Bata Bolivia" class="absolute inset-0 w-full h-full object-cover object-left pointer-events-none select-none z-0">
+      <!-- Banner Curvo PNG con transparencia -->
+      <img src="./banner-lateral.png" alt="Bata Bolivia" class="absolute inset-0 w-full h-full object-cover object-left md:object-right pointer-events-none select-none z-0">
 
-      <!-- Logotipo Bata Blanco y País montados sobre el banner -->
+      <!-- Logo Bata Blanco PNG y País -->
       <div class="relative z-10 pt-4">
-        <h1 class="bata-title text-white text-5xl md:text-6xl tracking-tight drop-shadow-md select-none">Bata</h1>
-        <p class="text-xs uppercase tracking-[0.4em] text-white/90 font-bold mt-1 ml-1 select-none">Bolivia</p>
+        <img src="./logo-bata-blanco.png" alt="Bata" class="w-44 md:w-56 h-auto drop-shadow-md select-none">
+        <p class="text-xs uppercase tracking-[0.4em] text-white font-bold mt-2 ml-1 drop-shadow select-none">Bolivia</p>
       </div>
 
       <!-- Pie del banner con Ícono -->
       <div class="relative z-10">
-        <div class="flex items-center space-x-2 text-white/95 border-t border-white/20 pt-4 text-xs font-semibold select-none">
+        <div class="flex items-center space-x-2 text-white border-t border-white/20 pt-4 text-xs font-semibold drop-shadow select-none">
           <i class="fa-solid fa-chart-line text-sm"></i>
           <span>Seguimiento de Cambios</span>
         </div>
       </div>
     </div>
 
-    <!-- Columna Derecha: Tarjetas de Acceso -->
-    <div class="w-full md:w-[62%] flex flex-col items-center justify-center p-6 md:p-12 relative z-10">
+    <!-- Contenedor Lateral Derecho: Tarjetas de Acceso -->
+    <div class="w-full md:w-[58%] flex flex-col items-center justify-center p-6 md:p-12 relative z-10">
       
       <div class="text-center mb-8">
         <h2 class="text-3xl md:text-4xl font-extrabold text-[#D61B28] tracking-tight">Bienvenido a Bata Bolivia</h2>
@@ -56,7 +56,7 @@
         
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
           
-          <!-- Opción: Iniciar Sesión -->
+          <!-- Botón Iniciar Sesión -->
           <div class="border border-red-200 rounded-2xl p-6 text-center flex flex-col justify-between items-center hover:shadow-md transition bg-white">
             <div class="w-14 h-14 rounded-full border border-red-200 flex items-center justify-center text-[#D61B28] text-2xl mb-3">
               <i class="fa-solid fa-user"></i>
@@ -68,7 +68,7 @@
             </button>
           </div>
 
-          <!-- Opción: Registrarse -->
+          <!-- Botón Registrarse -->
           <div class="border border-red-200 rounded-2xl p-6 text-center flex flex-col justify-between items-center hover:shadow-md transition bg-white">
             <div class="w-14 h-14 rounded-full border border-red-200 flex items-center justify-center text-[#D61B28] text-2xl mb-3">
               <i class="fa-solid fa-user-plus"></i>
@@ -162,9 +162,10 @@
   <div id="app-container" class="hidden min-h-screen flex flex-col relative bg-slate-50">
     <div class="corte-rojo-dashboard"></div>
 
+    <!-- Header Principal con Logo Bata Rojo PNG -->
     <header class="relative z-10 bg-white border-b border-gray-200 px-6 py-3 flex justify-between items-center shadow-sm">
       <div class="flex items-center space-x-4">
-        <h1 class="bata-title text-[#D61B28] text-3xl select-none leading-none">Bata</h1>
+        <img src="./logo-bata-rojo.png" alt="Bata" class="w-20 h-auto select-none">
         <div class="h-6 w-px bg-gray-300"></div>
         <p class="text-xs md:text-sm font-medium text-gray-700">Bienvenido al sistema de cambios de <span class="font-bold text-[#D61B28]">BATA Bolivia.</span></p>
       </div>
@@ -187,6 +188,7 @@
     </header>
 
     <div class="flex flex-1 relative z-10">
+      <!-- Menú Lateral -->
       <aside class="w-56 bg-white border-r border-gray-200 p-4 space-y-2">
         <button type="button" id="menu-btn-cambios" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition bg-red-50 text-[#D61B28] cursor-pointer">
           <i class="fa-solid fa-arrow-right-arrow-left"></i>
@@ -202,6 +204,7 @@
         </button>
       </aside>
 
+      <!-- Área Principal -->
       <main class="flex-1 p-6 md:p-8 overflow-y-auto">
         <!-- VISTA CAMBIOS -->
         <section id="view-cambios" class="space-y-6">
