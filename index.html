@@ -14,22 +14,18 @@
 </head>
 <body class="bg-[#F4F5F7] font-sans text-gray-800 antialiased min-h-screen">
 
-  <!-- ==================== VISTA 1: PORTADA OFICIAL (PNGS ORIGINALES) ==================== -->
+  <!-- ==================== VISTA 1: PORTADA ==================== -->
   <div id="welcome-container" class="relative min-h-screen w-full flex flex-col md:flex-row bg-[#F4F5F7] overflow-hidden">
     
     <!-- Contenedor Lateral Izquierdo -->
     <div class="relative w-full md:w-[42%] min-h-[360px] md:min-h-screen flex flex-col justify-between p-8 md:p-12 z-0 overflow-hidden">
-      
-      <!-- Banner Curvo PNG con transparencia -->
       <img src="./banner-lateral.png" alt="Bata Bolivia" class="absolute inset-0 w-full h-full object-cover object-left md:object-right pointer-events-none select-none z-0">
 
-      <!-- Logo Bata Blanco PNG y País -->
       <div class="relative z-10 pt-4">
         <img src="./logo-bata-blanco.png" alt="Bata" class="w-44 md:w-56 h-auto drop-shadow-md select-none">
         <p class="text-xs uppercase tracking-[0.4em] text-white font-bold mt-2 ml-1 drop-shadow select-none">Bolivia</p>
       </div>
 
-      <!-- Pie del banner con Ícono -->
       <div class="relative z-10">
         <div class="flex items-center space-x-2 text-white border-t border-white/20 pt-4 text-xs font-semibold drop-shadow select-none">
           <i class="fa-solid fa-chart-line text-sm"></i>
@@ -38,25 +34,20 @@
       </div>
     </div>
 
-    <!-- Contenedor Lateral Derecho: Tarjetas de Acceso -->
+    <!-- Contenedor Lateral Derecho -->
     <div class="w-full md:w-[58%] flex flex-col items-center justify-center p-6 md:p-12 relative z-10">
-      
       <div class="text-center mb-8">
         <h2 class="text-3xl md:text-4xl font-extrabold text-[#D61B28] tracking-tight">Bienvenido a Bata Bolivia</h2>
-        <!-- Isotipo Zapato Corporativo -->
         <div class="flex justify-center items-center my-3 text-[#D61B28]">
           <i class="fa-solid fa-shoe-prints text-lg"></i>
         </div>
         <p class="text-xs text-gray-500 font-medium">Accede a tu cuenta o crea una nueva</p>
       </div>
 
-      <!-- Tarjeta Contenedora Principal -->
       <div class="bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-gray-100 w-full max-w-lg">
         <h3 class="text-center font-bold text-gray-700 text-sm mb-6">¿Qué deseas hacer?</h3>
         
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          
-          <!-- Botón Iniciar Sesión -->
           <div class="border border-red-200 rounded-2xl p-6 text-center flex flex-col justify-between items-center hover:shadow-md transition bg-white">
             <div class="w-14 h-14 rounded-full border border-red-200 flex items-center justify-center text-[#D61B28] text-2xl mb-3">
               <i class="fa-solid fa-user"></i>
@@ -68,7 +59,6 @@
             </button>
           </div>
 
-          <!-- Botón Registrarse -->
           <div class="border border-red-200 rounded-2xl p-6 text-center flex flex-col justify-between items-center hover:shadow-md transition bg-white">
             <div class="w-14 h-14 rounded-full border border-red-200 flex items-center justify-center text-[#D61B28] text-2xl mb-3">
               <i class="fa-solid fa-user-plus"></i>
@@ -79,7 +69,6 @@
               Registrarse
             </button>
           </div>
-
         </div>
       </div>
     </div>
@@ -101,7 +90,10 @@
           <input type="email" id="login-email" required placeholder="ejemplo@bata.com" class="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D61B28] focus:outline-none">
         </div>
         <div>
-          <label class="block font-semibold text-gray-600 mb-1">Contraseña</label>
+          <div class="flex justify-between items-center mb-1">
+            <label class="font-semibold text-gray-600">Contraseña</label>
+            <button type="button" id="btn-forgot-pass" class="text-[10px] text-[#D61B28] hover:underline font-semibold">¿Olvidaste tu contraseña?</button>
+          </div>
           <input type="password" id="login-pass" required placeholder="••••••••" class="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D61B28] focus:outline-none">
         </div>
         <button type="submit" class="w-full bg-[#D61B28] hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition shadow cursor-pointer">Ingresar</button>
@@ -162,7 +154,6 @@
   <div id="app-container" class="hidden min-h-screen flex flex-col relative bg-slate-50">
     <div class="corte-rojo-dashboard"></div>
 
-    <!-- Header Principal con Logo Bata Rojo PNG -->
     <header class="relative z-10 bg-white border-b border-gray-200 px-6 py-3 flex justify-between items-center shadow-sm">
       <div class="flex items-center space-x-4">
         <img src="./logo-bata-rojo.png" alt="Bata" class="w-20 h-auto select-none">
@@ -188,18 +179,45 @@
     </header>
 
     <div class="flex flex-1 relative z-10">
-      <!-- Menú Lateral -->
-      <aside class="w-56 bg-white border-r border-gray-200 p-4 space-y-2">
-        <button type="button" id="menu-btn-cambios" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition bg-red-50 text-[#D61B28] cursor-pointer">
-          <i class="fa-solid fa-arrow-right-arrow-left"></i>
-          <span>Cambios</span>
-        </button>
-        <button type="button" id="menu-btn-informe" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm text-gray-600 hover:bg-gray-100 transition cursor-pointer">
-          <i class="fa-regular fa-file-lines"></i>
+      <!-- Menú Lateral con Submenús de Filtro -->
+      <aside class="w-64 bg-white border-r border-gray-200 p-4 space-y-3">
+        <div>
+          <button type="button" id="menu-btn-cambios" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition bg-red-50 text-[#D61B28] cursor-pointer">
+            <div class="flex items-center space-x-2.5">
+              <i class="fa-solid fa-arrow-right-arrow-left"></i>
+              <span>Solicitudes de Cambios</span>
+            </div>
+            <i id="cambios-chevron" class="fa-solid fa-chevron-down text-[10px]"></i>
+          </button>
+          
+          <!-- Submenús de Filtrado -->
+          <div id="submenu-cambios" class="mt-1.5 pl-3 space-y-1">
+            <button type="button" onclick="window.filtrarPorSubmenu('todos')" class="sub-btn w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-100 hover:text-[#D61B28] flex items-center space-x-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+              <span>Todos los cambios</span>
+            </button>
+            <button type="button" onclick="window.filtrarPorSubmenu('En proceso')" class="sub-btn w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-100 hover:text-orange-600 flex items-center space-x-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+              <span>Cambios en proceso</span>
+            </button>
+            <button type="button" onclick="window.filtrarPorSubmenu('Realizado')" class="sub-btn w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-100 hover:text-green-600 flex items-center space-x-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+              <span>Cambios realizados</span>
+            </button>
+            <button type="button" onclick="window.filtrarPorSubmenu('Retrasado')" class="sub-btn w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-100 hover:text-red-600 flex items-center space-x-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+              <span>Cambios retrasados</span>
+            </button>
+          </div>
+        </div>
+
+        <button type="button" id="menu-btn-informe" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-gray-600 hover:bg-gray-100 transition cursor-pointer">
+          <i class="fa-regular fa-file-lines text-sm"></i>
           <span>Informe</span>
         </button>
-        <button type="button" id="menu-btn-usuarios" class="w-full hidden flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm text-gray-600 hover:bg-gray-100 transition cursor-pointer">
-          <i class="fa-solid fa-user-shield text-[#D61B28]"></i>
+
+        <button type="button" id="menu-btn-usuarios" class="w-full hidden flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-gray-600 hover:bg-gray-100 transition cursor-pointer">
+          <i class="fa-solid fa-user-shield text-[#D61B28] text-sm"></i>
           <span>Super Admin</span>
         </button>
       </aside>
@@ -209,13 +227,16 @@
         <!-- VISTA CAMBIOS -->
         <section id="view-cambios" class="space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <h2 class="text-lg font-bold text-[#D61B28] flex items-center space-x-2">
-              <i class="fa-solid fa-arrow-right-arrow-left"></i>
-              <span>Cambios</span>
-            </h2>
+            <div>
+              <h2 id="view-title-cambios" class="text-lg font-bold text-[#D61B28] flex items-center space-x-2">
+                <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                <span>Solicitudes de Cambios</span>
+              </h2>
+              <p id="view-subtitle-filter" class="text-[11px] text-gray-400 font-medium mt-0.5">Mostrando todos los registros</p>
+            </div>
             <button type="button" id="btn-open-new-change" class="bg-[#D61B28] hover:bg-red-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
               <i class="fa-solid fa-plus"></i>
-              <span>Nuevo Cambio</span>
+              <span>Solicitud de Cambios</span>
             </button>
           </div>
 
@@ -229,7 +250,7 @@
                     <th class="p-3 border-r border-gray-200 min-w-[280px]">Cambios (descripción)</th>
                     <th class="p-3 border-r border-gray-200 text-center">Estado</th>
                     <th class="p-3 border-r border-gray-200 text-center w-28">% Avance</th>
-                    <th class="p-3 text-center">¿Realizado?</th>
+                    <th class="p-3 text-center">¿Realizado? (Costos)</th>
                   </tr>
                 </thead>
                 <tbody id="table-cambios-body" class="divide-y divide-gray-200"></tbody>
@@ -237,7 +258,7 @@
             </div>
             <div id="table-empty-state" class="hidden p-8 text-center text-gray-400 text-xs">
               <i class="fa-regular fa-folder-open text-3xl mb-2"></i>
-              <p>No hay solicitudes de cambios registradas en el sistema.</p>
+              <p>No hay solicitudes de cambios registradas en esta categoría.</p>
             </div>
           </div>
         </section>
@@ -385,15 +406,15 @@
     </div>
   </div>
 
-  <!-- MODAL: WHATSAPP -->
+  <!-- MODAL: WHATSAPP FLOTANTE -->
   <div id="modal-whatsapp" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden p-6 text-xs">
       <div class="text-center mb-4">
         <div class="w-12 h-12 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-2xl mx-auto mb-2">
           <i class="fa-brands fa-whatsapp"></i>
         </div>
-        <h3 class="font-bold text-sm text-gray-900">Solicitud Creada con Éxito</h3>
-        <p class="text-gray-500 mt-1">Selecciona a quién enviar la alerta por WhatsApp:</p>
+        <h3 id="wa-modal-title" class="font-bold text-sm text-gray-900">Notificación por WhatsApp</h3>
+        <p id="wa-modal-desc" class="text-gray-500 mt-1">Selecciona al integrante para enviar la alerta:</p>
       </div>
       <div id="whatsapp-contacts-list" class="space-y-2 max-h-52 overflow-y-auto mb-4"></div>
       <button type="button" id="btn-close-whatsapp-modal" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 rounded-xl cursor-pointer">
