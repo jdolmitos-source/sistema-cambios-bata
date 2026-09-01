@@ -15,6 +15,7 @@ import {
   doc, 
   setDoc, 
   updateDoc, 
+  deleteDoc,
   onSnapshot, 
   query, 
   orderBy, 
@@ -40,18 +41,60 @@ let userData = null;
 let solicitudes = [];
 let chartInstance = null;
 
-// Control Portada y Modales
+// Conversión de archivo de imagen a Base64
+const fileToBase64 = (file) => new Promise((resolve, reject) => {
+  if (!file) return resolve(null);
+  const reader = new FileReader();
+  reader.readAsDataURL(file);
+  reader.onload = () => resolve(reader.result);
+  reader.onerror = error => reject(error);
+});
+
+// Portada y Modales
 const welcomeContainer = document.getElementById("welcome-container");
 const appContainer = document.getElementById("app-container");
 const modalLogin = document.getElementById("modal-login");
 const modalRegister = document.getElementById("modal-register");
+const modalProfile = document.getElementById("modal-profile");
 
 document.getElementById("btn-show-login").onclick = () => modalLogin.classList.remove("hidden");
 document.getElementById("btn-show-register").onclick = () => modalRegister.classList.remove("hidden");
 document.getElementById("close-login").onclick = () => modalLogin.classList.add("hidden");
 document.getElementById("close-register").onclick = () => modalRegister.classList.add("hidden");
+document.getElementById("close-profile").onclick = () => modalProfile.classList.add("hidden");
 
-// Registro con Celular
+// Abrir Edición de Perfil
+document.getElementById("btn-edit-profile").onclick = () => {
+  if (!userData) return;
+  document.getElementById("prof-name").value = userData.nombre || "";
+  document.getElementById("prof-phone").value = userData.celular || "";
+  modalProfile.classList.remove("hidden");
+};
+
+// Guardar Actualización de Perfil
+document.getElementById("form-update-profile").onsubmit = async (e) => {
+  e.preventDefault();
+  const name = document.getElementById("prof-name").value.trim();
+  const phone = document.getElementById("prof-phone").value.trim();
+  const photoFile = document.getElementById("prof-photo").files[0];
+
+  const updateData = { nombre: name, celular: phone };
+  if (photoFile) {
+    updateData.foto = await fileToBase64(photoFile);
+  }
+
+  try {
+    await updateDoc(doc(db, "usuarios", currentUser.uid), updateData);
+    userData = { ...userData, ...updateData };
+    actualizarHeaderUsuario();
+    modalProfile.classList.add("hidden");
+    alert("Perfil actualizado correctamente");
+  } catch (err) {
+    alert("Error al actualizar: " + err.message);
+  }
+};
+
+// Registro de Usuario
 document.getElementById("form-register").onsubmit = async (e) => {
   e.preventDefault();
   const name = document.getElementById("reg-name").value.trim();
@@ -59,6 +102,8 @@ document.getElementById("form-register").onsubmit = async (e) => {
   const email = document.getElementById("reg-email").value.trim();
   const role = document.getElementById("reg-role").value;
   const pass = document.getElementById("reg-pass").value;
+  const photoFile = document.getElementById("reg-photo").files[0];
+  const photoBase64 = photoFile ? await fileToBase64(photoFile) : null;
 
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
@@ -67,6 +112,7 @@ document.getElementById("form-register").onsubmit = async (e) => {
       celular: phone,
       email: email,
       rol: role,
+      foto: photoBase64,
       fechaCreacion: serverTimestamp()
     });
     modalRegister.classList.add("hidden");
@@ -88,8 +134,30 @@ document.getElementById("form-login").onsubmit = async (e) => {
   }
 };
 
-// Cerrar Sesión
 document.getElementById("btn-logout").onclick = () => signOut(auth);
+
+function actualizarHeaderUsuario() {
+  document.getElementById("user-display-name").textContent = userData.nombre;
+  document.getElementById("user-display-role").textContent = userData.rol;
+  
+  const avatarImg = document.getElementById("user-display-avatar");
+  const avatarIcon = document.getElementById("user-display-avatar-icon");
+  if (userData.foto) {
+    avatarImg.src = userData.foto;
+    avatarImg.classList.remove("hidden");
+    avatarIcon.classList.add("hidden");
+  } else {
+    avatarImg.classList.add("hidden");
+    avatarIcon.classList.remove("hidden");
+  }
+
+  // Si es Super Usuario, habilitar menú de administración de usuarios
+  if (userData.rol === "Super Usuario") {
+    document.getElementById("menu-btn-usuarios").classList.remove("hidden");
+  } else {
+    document.getElementById("menu-btn-usuarios").classList.add("hidden");
+  }
+}
 
 // Observador de Sesión
 onAuthStateChanged(auth, async (user) => {
@@ -98,8 +166,7 @@ onAuthStateChanged(auth, async (user) => {
     const docSnap = await getDoc(doc(db, "usuarios", user.uid));
     if (docSnap.exists()) {
       userData = docSnap.data();
-      document.getElementById("user-display-name").textContent = userData.nombre;
-      document.getElementById("user-display-role").textContent = userData.rol;
+      actualizarHeaderUsuario();
       welcomeContainer.classList.add("hidden");
       appContainer.classList.remove("hidden");
       escucharCambios();
@@ -112,25 +179,81 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// Navegación
+// Menús
 const viewCambios = document.getElementById("view-cambios");
 const viewInforme = document.getElementById("view-informe");
+const viewUsuarios = document.getElementById("view-usuarios");
 const menuBtnCambios = document.getElementById("menu-btn-cambios");
 const menuBtnInforme = document.getElementById("menu-btn-informe");
+const menuBtnUsuarios = document.getElementById("menu-btn-usuarios");
+
+function resetMenuStyles() {
+  [menuBtnCambios, menuBtnInforme, menuBtnUsuarios].forEach(b => {
+    b.className = "w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm text-gray-600 hover:bg-gray-100 transition";
+  });
+  viewCambios.classList.add("hidden");
+  viewInforme.classList.add("hidden");
+  viewUsuarios.classList.add("hidden");
+}
 
 menuBtnCambios.onclick = () => {
+  resetMenuStyles();
   viewCambios.classList.remove("hidden");
-  viewInforme.classList.add("hidden");
   menuBtnCambios.className = "w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition bg-red-50 text-[#D61B28]";
-  menuBtnInforme.className = "w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm text-gray-600 hover:bg-gray-100 transition";
 };
 
 menuBtnInforme.onclick = () => {
+  resetMenuStyles();
   viewInforme.classList.remove("hidden");
-  viewCambios.classList.add("hidden");
   menuBtnInforme.className = "w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition bg-red-50 text-[#D61B28]";
-  menuBtnCambios.className = "w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm text-gray-600 hover:bg-gray-100 transition";
   renderInformeView();
+};
+
+menuBtnUsuarios.onclick = () => {
+  resetMenuStyles();
+  viewUsuarios.classList.remove("hidden");
+  menuBtnUsuarios.className = "w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition bg-red-50 text-[#D61B28]";
+  cargarListaUsuariosAdmin();
+};
+
+// Cargar y Eliminar Usuarios (Solo Super Usuario)
+async function cargarListaUsuariosAdmin() {
+  const tbody = document.getElementById("table-users-body");
+  tbody.innerHTML = "";
+  const snap = await getDocs(collection(db, "usuarios"));
+  
+  snap.forEach(docU => {
+    const u = docU.data();
+    const tr = document.createElement("tr");
+    tr.className = "hover:bg-gray-50 border-b border-gray-100";
+    
+    const avatar = u.foto 
+      ? `<img src="${u.foto}" class="w-7 h-7 rounded-full object-cover">` 
+      : `<div class="w-7 h-7 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center"><i class="fa-solid fa-user text-[10px]"></i></div>`;
+
+    tr.innerHTML = `
+      <td class="p-3">${avatar}</td>
+      <td class="p-3 font-bold text-gray-800">${u.nombre}</td>
+      <td class="p-3 text-gray-600">${u.email}</td>
+      <td class="p-3 font-mono text-gray-600">${u.celular ? '+591 ' + u.celular : '<span class="text-red-400">Sin celular</span>'}</td>
+      <td class="p-3"><span class="bg-red-50 text-[#D61B28] px-2 py-0.5 rounded font-bold text-[10px]">${u.rol}</span></td>
+      <td class="p-3 text-center">
+        ${docU.id !== currentUser.uid ? `
+          <button onclick="window.eliminarUsuarioDoc('${docU.id}', '${u.nombre}')" class="text-red-600 hover:text-red-800 font-bold text-xs">
+            <i class="fa-solid fa-trash"></i> Eliminar
+          </button>
+        ` : '<span class="text-gray-400 text-[10px]">(Tú)</span>'}
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+window.eliminarUsuarioDoc = async (id, nombre) => {
+  if (confirm(`¿Estás seguro de eliminar al usuario ${nombre}?`)) {
+    await deleteDoc(doc(db, "usuarios", id));
+    cargarListaUsuariosAdmin();
+  }
 };
 
 // Modal Nueva Solicitud
@@ -139,26 +262,25 @@ document.getElementById("btn-open-new-change").onclick = () => modalNewChange.cl
 document.getElementById("modal-btn-close").onclick = () => modalNewChange.classList.add("hidden");
 document.getElementById("modal-btn-cancel").onclick = () => modalNewChange.classList.add("hidden");
 
-// Función para preparar y mostrar el envío de WhatsApp
+// Enviar WhatsApp
 async function prepararNotificacionWhatsApp(proyecto, articulo, cambio) {
   const modalWA = document.getElementById("modal-whatsapp");
   const listContainer = document.getElementById("whatsapp-contacts-list");
   listContainer.innerHTML = "";
 
   const mensajeTexto = encodeURIComponent(
-    `👞 *NUEVA SOLICITUD DE CAMBIO - BATA BOLIVIA*\n\n` +
+    `👞 *SOLICITUD DE CAMBIO - BATA BOLIVIA*\n\n` +
     `📌 *Proyecto:* ${proyecto}\n` +
     `🔢 *Artículo:* ${articulo}\n` +
-    `👤 *Solicitado por:* ${userData.nombre} (${userData.rol})\n` +
+    `👤 *Solicitante:* ${userData.nombre} (${userData.rol})\n` +
     `📝 *Cambio:* ${cambio}\n\n` +
-    `_Revisar en el Sistema de Gestión de Cambios Bata_`
+    `_Gestión de Cambios Bata_`
   );
 
   try {
     const usuariosSnap = await getDocs(collection(db, "usuarios"));
-    const usuarios = usuariosSnap.docs.map(d => d.data());
-
-    usuarios.forEach(u => {
+    usuariosSnap.forEach(d => {
+      const u = d.data();
       if (u.celular) {
         const item = document.createElement("a");
         item.href = `https://wa.me/591${u.celular}?text=${mensajeTexto}`;
@@ -177,7 +299,6 @@ async function prepararNotificacionWhatsApp(proyecto, articulo, cambio) {
         listContainer.appendChild(item);
       }
     });
-
     modalWA.classList.remove("hidden");
   } catch (error) {
     console.error("Error al preparar WhatsApp:", error);
@@ -188,7 +309,7 @@ document.getElementById("btn-close-whatsapp-modal").onclick = () => {
   document.getElementById("modal-whatsapp").classList.add("hidden");
 };
 
-// Guardar Solicitud
+// Registrar Solicitud
 document.getElementById("form-new-change").onsubmit = async (e) => {
   e.preventDefault();
   const proyecto = document.getElementById("change-project").value.trim();
@@ -212,16 +333,13 @@ document.getElementById("form-new-change").onsubmit = async (e) => {
 
     document.getElementById("form-new-change").reset();
     modalNewChange.classList.add("hidden");
-
-    // Desplegar panel para notificar por WhatsApp
     prepararNotificacionWhatsApp(proyecto, articulo, boxCambio);
-
   } catch (err) {
-    alert("Error al registrar cambio: " + err.message);
+    alert("Error: " + err.message);
   }
 };
 
-// Escuchar cambios Firestore
+// Escuchar Solicitudes
 function escucharCambios() {
   const q = query(collection(db, "solicitudes_cambios"), orderBy("timestamp", "desc"));
   onSnapshot(q, (snapshot) => {
@@ -257,8 +375,8 @@ function renderTabla() {
       textoBox += `<br><span class="text-[10px] text-gray-400 italic"> (editado: ${formatearFecha(item.ultimaEdicion)})</span>`;
     }
 
-    const esDesarrollo = userData.rol === "Desarrollo de producto";
-    const esCostos = userData.rol === "Costos";
+    const esDesarrollo = userData.rol === "Desarrollo de producto" || userData.rol === "Super Usuario";
+    const esCostos = userData.rol === "Costos" || userData.rol === "Super Usuario";
 
     let estadoHTML = "";
     if (esDesarrollo) {
@@ -319,7 +437,7 @@ window.editarTextoBox = async (id, textoActual) => {
   }
 };
 
-// Informes y Gráfico
+// Informes
 function renderInformeView() {
   const container = document.getElementById("report-project-selection-list");
   container.innerHTML = "";
