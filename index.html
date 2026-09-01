@@ -217,6 +217,7 @@
           <span>Minuta de Cambios</span>
         </button>
 
+        <!-- Pestaña Super Admin: Solo visible para jd.olmitos@gmail.com -->
         <button type="button" id="menu-btn-usuarios" class="w-full hidden flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-gray-600 hover:bg-gray-100 transition cursor-pointer">
           <i class="fa-solid fa-user-shield text-[#D61B28] text-sm"></i>
           <span>Super Admin</span>
@@ -259,8 +260,7 @@
                     <th class="p-3 border-r border-gray-200 min-w-[260px]">Cambios (descripción)</th>
                     <th class="p-3 border-r border-gray-200 text-center">Estado</th>
                     <th class="p-3 border-r border-gray-200 text-center w-32">Fecha Realizado</th>
-                    <th class="p-3 border-r border-gray-200 text-center">¿Realizado? (Costos)</th>
-                    <th id="col-header-admin" class="p-3 text-center hidden">Acción</th>
+                    <th class="p-3 text-center">¿Realizado? (Costos)</th>
                   </tr>
                 </thead>
                 <tbody id="table-cambios-body" class="divide-y divide-gray-200"></tbody>
@@ -281,14 +281,21 @@
                 <i class="fa-regular fa-file-lines"></i>
                 <span>Informe Ejecutivo de Avance</span>
               </h2>
-              <p class="text-xs text-gray-400">Selecciona proyectos para visualizar estadísticas y generar el resumen.</p>
+              <p class="text-xs text-gray-400">Selecciona y ordena proyectos para generar reportes y minutas de texto.</p>
             </div>
-            <button type="button" id="btn-generar-informe-resumen" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
-              <i class="fa-solid fa-file-pdf"></i>
-              <span>Generar Informe de Proyectos Seleccionados</span>
-            </button>
+            <div class="flex items-center space-x-2">
+              <button type="button" id="btn-generar-texto-wsp" class="bg-green-600 hover:bg-green-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
+                <i class="fa-brands fa-whatsapp text-sm"></i>
+                <span>Generar Texto Notificación</span>
+              </button>
+              <button type="button" id="btn-generar-informe-resumen" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
+                <i class="fa-solid fa-file-pdf"></i>
+                <span>Generar Informe PDF</span>
+              </button>
+            </div>
           </div>
 
+          <!-- Métricas -->
           <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex items-center space-x-3">
               <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg"><i class="fa-solid fa-list-check"></i></div>
@@ -320,9 +327,19 @@
             </div>
           </div>
 
+          <!-- Selector y Filtros de Ordenación -->
           <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-            <div class="flex items-center justify-between">
-              <label class="text-xs font-bold text-gray-700">Seleccionar Proyectos a incluir en el Informe:</label>
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div class="flex items-center space-x-3">
+                <label class="text-xs font-bold text-gray-700">Ordenar Proyectos por:</label>
+                <select id="select-ordenar-informe" class="border border-gray-300 rounded-lg px-2.5 py-1 text-xs font-semibold bg-gray-50 focus:ring-1 focus:ring-[#D61B28]">
+                  <option value="todos">Todos (Por Defecto)</option>
+                  <option value="semana">Semana de Producción</option>
+                  <option value="estado">Estado (Realizado / En proceso)</option>
+                  <option value="fecha">Fecha de Solicitud (Recientes)</option>
+                  <option value="proyecto">Nombre del Proyecto (A-Z)</option>
+                </select>
+              </div>
               <div class="space-x-2">
                 <button type="button" id="btn-select-all" class="text-[11px] text-blue-600 font-bold hover:underline cursor-pointer">Todos</button>
                 <button type="button" id="btn-deselect-all" class="text-[11px] text-gray-500 font-bold hover:underline cursor-pointer">Ninguno</button>
@@ -342,16 +359,22 @@
           </div>
         </section>
 
-        <!-- VISTA SUPER ADMIN -->
+        <!-- VISTA SUPER ADMIN (SOLO JD.OLMITOS@GMAIL.COM) -->
         <section id="view-usuarios" class="hidden space-y-6">
           <h2 class="text-lg font-bold text-[#D61B28] flex items-center space-x-2">
             <i class="fa-solid fa-user-shield"></i>
-            <span>Panel de Administración y Asignación de Roles</span>
+            <span>Panel de Administración (Super Admin: jd.olmitos@gmail.com)</span>
           </h2>
+          
+          <!-- TABLA 1: USUARIOS Y ASIGNACIÓN DE ROLES -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="bg-gray-50/75 p-3 border-b border-gray-200 font-bold text-xs text-gray-700 flex items-center space-x-2">
+              <i class="fa-solid fa-users text-[#D61B28]"></i>
+              <span>Gestión de Usuarios y Roles</span>
+            </div>
             <table class="w-full text-left border-collapse text-xs">
               <thead>
-                <tr class="bg-gray-50 border-b border-gray-200 text-gray-600 font-semibold">
+                <tr class="bg-gray-50/50 border-b border-gray-200 text-gray-600 font-semibold">
                   <th class="p-3">Avatar</th>
                   <th class="p-3">Nombre</th>
                   <th class="p-3">Correo</th>
@@ -362,6 +385,30 @@
               </thead>
               <tbody id="table-users-body" class="divide-y divide-gray-200"></tbody>
             </table>
+          </div>
+
+          <!-- TABLA 2: ELIMINACIÓN DE SOLICITUDES Y PROYECTOS -->
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="bg-gray-50/75 p-3 border-b border-gray-200 font-bold text-xs text-gray-700 flex items-center space-x-2">
+              <i class="fa-solid fa-folder-minus text-[#D61B28]"></i>
+              <span>Eliminar Solicitudes / Proyectos de la Base de Datos</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="bg-gray-50/50 border-b border-gray-200 text-gray-600 font-semibold">
+                    <th class="p-3">Semana</th>
+                    <th class="p-3">Fecha Solicitud</th>
+                    <th class="p-3">Proyecto</th>
+                    <th class="p-3">Artículo</th>
+                    <th class="p-3">Solicitante</th>
+                    <th class="p-3">Estado</th>
+                    <th class="p-3 text-center">Eliminar</th>
+                  </tr>
+                </thead>
+                <tbody id="table-admin-solicitudes-body" class="divide-y divide-gray-200"></tbody>
+              </table>
+            </div>
           </div>
         </section>
       </main>
@@ -430,16 +477,16 @@
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block font-bold text-gray-700 mb-1">Semana</label>
-            <input type="text" id="change-semana" placeholder="Ej: Sem 36 o 26" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]">
+            <input type="text" id="change-semana" placeholder="Ej: 632 o Sem 36" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]">
           </div>
           <div>
             <label class="block font-bold text-gray-700 mb-1">Nombre del Proyecto</label>
-            <input type="text" id="change-project" placeholder="Ej: Manuel" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]">
+            <input type="text" id="change-project" placeholder="Ej: SKATER" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]">
           </div>
         </div>
         <div>
-          <label class="block font-bold text-gray-700 mb-1">Artículo</label>
-          <input type="text" id="change-article" placeholder="Ej: 3/455-5666 o 344-5025" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28] font-mono">
+          <label class="block font-bold text-gray-700 mb-1">Artículo (Formato: #/###-####, ###-#####, ###-####)</label>
+          <input type="text" id="change-article" placeholder="Ej: 58961/91236 o 1-2419519V" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28] font-mono">
         </div>
         <div>
           <label class="block font-bold text-gray-700 mb-1">Box de Cambios</label>
@@ -453,6 +500,30 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL: TEXTO NOTIFICACIÓN WHATSAPP (IMAGEN 2) -->
+  <div id="modal-texto-wsp" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-xl rounded-3xl p-6 shadow-2xl relative text-xs">
+      <button type="button" id="close-texto-wsp" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+      <div class="flex items-center space-x-2 text-green-700 font-bold text-sm mb-3">
+        <i class="fa-brands fa-whatsapp text-lg"></i>
+        <span>Texto Generado para Notificación de Cambios</span>
+      </div>
+      <div class="bg-gray-50 border border-gray-200 rounded-2xl p-4 mb-4">
+        <textarea id="texto-wsp-output" rows="11" readonly class="w-full bg-transparent font-mono text-xs text-gray-800 focus:outline-none resize-none leading-relaxed"></textarea>
+      </div>
+      <div class="flex justify-end space-x-2">
+        <button type="button" id="btn-copiar-texto-wsp" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center space-x-1.5 cursor-pointer">
+          <i class="fa-regular fa-copy"></i>
+          <span>Copiar Texto</span>
+        </button>
+        <button type="button" id="btn-enviar-wsp-directo" class="bg-[#25D366] hover:bg-green-600 text-white font-bold px-5 py-2.5 rounded-xl transition shadow flex items-center space-x-1.5 cursor-pointer">
+          <i class="fa-brands fa-whatsapp"></i>
+          <span>Compartir en WhatsApp</span>
+        </button>
+      </div>
     </div>
   </div>
 
