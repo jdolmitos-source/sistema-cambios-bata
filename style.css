@@ -1,40 +1,23 @@
-/* Corte rojo diagonal para la pantalla de login/registro */
-.corte-rojo-login {
-  position: absolute;
-  right: 0;
-  top: 0;
-  width: 32%;
-  height: 100%;
-  background-color: #D61B28;
-  transform: skewX(-10deg) translateX(5rem);
-  z-index: 1;
+/* Curva orgánica roja del lado izquierdo */
+.curva-roja-bata {
+  border-bottom-right-radius: 60px;
+  border-top-right-radius: 60px;
 }
 
-/* Corte rojo institucional sutil en la barra del dashboard */
+@media (min-width: 768px) {
+  .curva-roja-bata {
+    clip-path: ellipse(90% 100% at 0% 50%);
+  }
+}
+
+/* Corte sutil del Dashboard */
 .corte-rojo-dashboard {
   position: absolute;
   top: 0;
   right: 0;
-  width: 180px;
-  height: 60px;
+  width: 140px;
+  height: 50px;
   background-color: #D61B28;
-  transform: skewX(-20deg) translateX(3rem);
+  transform: skewX(-25deg) translateX(2rem);
   z-index: 5;
-  opacity: 0.9;
-}
-
-/* Scrollbar personalizado para tablas */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-::-webkit-scrollbar-thumb {
-  background: #ccc;
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #999;
 }
