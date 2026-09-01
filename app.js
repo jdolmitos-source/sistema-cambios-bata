@@ -32,9 +32,9 @@ const firebaseConfig = {
   measurementId: "G-0XXGS651PJ"
 };
 
-// ⚠️ Pon aquí tu correo de Gmail para el Super Admin
+// ⚠️ CORREO ÚNICO Y EXCLUSIVO DE SUPER ADMINISTRADOR
 const SUPER_ADMIN_EMAILS = [
-  "tu_correo@gmail.com"
+  "jd.olmitos@gmail.com"
 ];
 
 const app = initializeApp(firebaseConfig);
@@ -55,6 +55,7 @@ const fileToBase64 = (file) => new Promise((resolve, reject) => {
   reader.onerror = error => reject(error);
 });
 
+// Comprobar estrictamente si es Super Admin (únicamente jd.olmitos@gmail.com)
 function esSuperAdmin() {
   if (!currentUser || !currentUser.email) return false;
   return SUPER_ADMIN_EMAILS.some(adm => adm.toLowerCase() === currentUser.email.toLowerCase());
@@ -204,18 +205,18 @@ function actualizarHeaderUsuario() {
     avatarIcon.classList.remove("hidden");
   }
 
-  // Permisos Super Admin (Gmail)
+  // Visibilidad del Panel Super Admin (SOLO para jd.olmitos@gmail.com)
   const menuAdmin = document.getElementById("menu-btn-usuarios");
   const colAdmin = document.getElementById("col-header-admin");
   if (esAdmin) {
     menuAdmin.classList.remove("hidden");
-    colAdmin.classList.remove("hidden");
+    if (colAdmin) colAdmin.classList.remove("hidden");
   } else {
     menuAdmin.classList.add("hidden");
-    colAdmin.classList.add("hidden");
+    if (colAdmin) colAdmin.classList.add("hidden");
   }
 
-  // Permisos Jefe de Desarrollo (Rol asignado)
+  // Visibilidad de Minuta: Exclusiva para Desarrollo Jefe (o Super Admin)
   const esJefe = userData.rol === "Desarrollo de producto - Jefe";
   const btnMinutaMenu = document.getElementById("menu-btn-minuta");
   const btnMinutaHeader = document.getElementById("btn-open-minuta-header");
@@ -238,9 +239,9 @@ onAuthStateChanged(auth, async (user) => {
       userData = docSnap.data();
     } else {
       userData = {
-        nombre: "Super Administrador",
+        nombre: esSuperAdmin() ? "Super Admin" : (user.email.split("@")[0]),
         email: user.email,
-        rol: "Super Admin",
+        rol: esSuperAdmin() ? "Super Admin" : "Desarrollo de producto",
         celular: ""
       };
     }
@@ -489,7 +490,6 @@ function escucharCambios() {
       const data = docSnap.data();
       const id = docSnap.id;
 
-      // Comprobar si ya pasó más de 1 semana (7 días) y sigue en proceso
       if (data.estado === "En proceso" && data.fechaCreacion) {
         const fechaCrea = new Date(data.fechaCreacion);
         const diferenciaDias = (ahora - fechaCrea) / (1000 * 60 * 60 * 24);
@@ -511,7 +511,7 @@ function formatearFecha(iso) {
   return d.toLocaleDateString("es-BO", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-// Render Tabla
+// Render Tabla de Cambios
 function renderTabla() {
   const tbody = document.getElementById("table-cambios-body");
   tbody.innerHTML = "";
