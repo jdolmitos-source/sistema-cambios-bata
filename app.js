@@ -32,9 +32,9 @@ const firebaseConfig = {
   measurementId: "G-0XXGS651PJ"
 };
 
-// ⚠️ AQUÍ DEFINES TU CORREO DE GMAIL COMO SUPER ADMIN
+// ⚠️ Pon aquí tu correo de Gmail para el Super Admin
 const SUPER_ADMIN_EMAILS = [
-  "jd.olmitos@gmail.com" // Reemplaza con tu Gmail real
+  "tu_correo@gmail.com"
 ];
 
 const app = initializeApp(firebaseConfig);
@@ -55,7 +55,6 @@ const fileToBase64 = (file) => new Promise((resolve, reject) => {
   reader.onerror = error => reject(error);
 });
 
-// Comprobar si el usuario conectado es el Super Admin (Gmail)
 function esSuperAdmin() {
   if (!currentUser || !currentUser.email) return false;
   return SUPER_ADMIN_EMAILS.some(adm => adm.toLowerCase() === currentUser.email.toLowerCase());
@@ -238,7 +237,6 @@ onAuthStateChanged(auth, async (user) => {
     if (docSnap.exists()) {
       userData = docSnap.data();
     } else {
-      // Si entra por primera vez el Super Admin con su Gmail
       userData = {
         nombre: "Super Administrador",
         email: user.email,
@@ -340,7 +338,7 @@ async function cargarListaUsuariosAdmin() {
           <option value="Compras" ${u.rol === 'Compras' ? 'selected' : ''}>Compras</option>
           <option value="Producción" ${u.rol === 'Producción' ? 'selected' : ''}>Producción</option>
           <option value="Desarrollo de producto" ${u.rol === 'Desarrollo de producto' ? 'selected' : ''}>Desarrollo (General)</option>
-          <option value="Desarrollo de producto - Técnico" ${u.rol === 'Desarrollo de producto - Técnico' ? 'selected' : ''}>Desarrollo - Técnico</option>
+          <option value="Desarrollo de producto - Técnico" ${u.rol === 'Desarrollo de producto - Técnico' ? 'selected' : ''}>Desarrollo - Técnico (Modelista)</option>
           <option value="Desarrollo de producto - Jefe" ${u.rol === 'Desarrollo de producto - Jefe' ? 'selected' : ''}>Desarrollo - Jefe</option>
         </select>
       </td>
@@ -439,7 +437,7 @@ if (document.getElementById("form-minuta")) {
   };
 }
 
-// Crear Solicitud de Cambio (Artículo con formato libre)
+// Crear Solicitud de Cambio
 const modalNewChange = document.getElementById("modal-new-change");
 document.getElementById("btn-open-new-change").onclick = () => modalNewChange.classList.remove("hidden");
 document.getElementById("modal-btn-close").onclick = () => modalNewChange.classList.add("hidden");
@@ -482,10 +480,27 @@ document.getElementById("form-new-change").onsubmit = async (e) => {
   }
 };
 
+// Escucha en tiempo real y detección automática de retraso (> 7 días)
 function escucharCambios() {
   const q = query(collection(db, "solicitudes_cambios"), orderBy("timestamp", "desc"));
   onSnapshot(q, (snapshot) => {
-    solicitudes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const ahora = new Date();
+    solicitudes = snapshot.docs.map(docSnap => {
+      const data = docSnap.data();
+      const id = docSnap.id;
+
+      // Comprobar si ya pasó más de 1 semana (7 días) y sigue en proceso
+      if (data.estado === "En proceso" && data.fechaCreacion) {
+        const fechaCrea = new Date(data.fechaCreacion);
+        const diferenciaDias = (ahora - fechaCrea) / (1000 * 60 * 60 * 24);
+        if (diferenciaDias >= 7) {
+          data.estado = "Retrasado";
+          updateDoc(doc(db, "solicitudes_cambios", id), { estado: "Retrasado" });
+        }
+      }
+
+      return { id, ...data };
+    });
     renderTabla();
   });
 }
@@ -496,7 +511,7 @@ function formatearFecha(iso) {
   return d.toLocaleDateString("es-BO", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-// Render Tabla de Cambios
+// Render Tabla
 function renderTabla() {
   const tbody = document.getElementById("table-cambios-body");
   tbody.innerHTML = "";
@@ -576,17 +591,22 @@ function renderTabla() {
       costosHTML = `<input type="checkbox" disabled class="h-4 w-4 text-gray-300 rounded border-gray-200 opacity-40">`;
     }
 
-    // Columna de Eliminación exclusiva de Super Admin
+    // Columna de Acción (Super Admin)
     const adminActionHTML = esAdmin ? `
       <td class="p-3 text-center border-l border-gray-100">
-        <button onclick="window.eliminarSolicitudProyecto('${item.id}', '${item.proyecto}')" class="text-red-500 hover:text-red-700 p-1 rounded" title="Eliminar proyecto de la base de datos">
+        <button onclick="window.eliminarSolicitudProyecto('${item.id}', '${item.proyecto}')" class="text-red-500 hover:text-red-700 p-1 rounded" title="Eliminar solicitud permanentemente">
           <i class="fa-solid fa-trash-can"></i>
         </button>
       </td>
     ` : '';
 
     tr.innerHTML = `
-      <td class="p-3 font-semibold text-gray-500 border-r border-gray-100">${item.semana || 'Sem —'}</td>
+      <td class="p-3 font-semibold text-gray-500 border-r border-gray-100">${item.semana || '—'}</td>
+      <td class="p-3 text-gray-600 border-r border-gray-100 whitespace-nowrap">${formatearFecha(item.fechaCreacion)}</td>
+      <td class="p-3 border-r border-gray-100 whitespace-nowrap">
+        <span class="font-bold text-gray-800 block">${item.solicitanteNombre || '—'}</span>
+        <span class="text-[10px] text-gray-400">${item.solicitanteRol || ''}</span>
+      </td>
       <td class="p-3.5 font-bold text-gray-800 border-r border-gray-100">${item.proyecto}</td>
       <td class="p-3.5 font-mono text-gray-700 border-r border-gray-100">${item.articulo}</td>
       <td class="p-3.5 text-gray-700 border-r border-gray-100">
@@ -597,14 +617,14 @@ function renderTabla() {
       </td>
       <td class="p-3.5 text-center border-r border-gray-100 whitespace-nowrap">${estadoHTML}</td>
       <td class="p-3.5 text-center border-r border-gray-100 whitespace-nowrap">${fechaRealizadoHTML}</td>
-      <td class="p-3.5 text-center border-r border-gray-100 whitespace-nowrap">${costosHTML}</td>
+      <td class="p-3.5 text-center whitespace-nowrap">${costosHTML}</td>
       ${adminActionHTML}
     `;
     tbody.appendChild(tr);
   });
 }
 
-// Eliminar Solicitud de Proyecto (Super Admin)
+// Eliminar Solicitud
 window.eliminarSolicitudProyecto = async (id, proyecto) => {
   if (confirm(`¿Eliminar la solicitud del proyecto "${proyecto}" permanentemente de la base de datos?`)) {
     await deleteDoc(doc(db, "solicitudes_cambios", id));
@@ -731,10 +751,11 @@ function generarModalInformeResumen() {
         <thead class="bg-gray-100">
           <tr>
             <th class="p-2 border">Semana</th>
+            <th class="p-2 border">Fecha Solicitud</th>
+            <th class="p-2 border">Solicitante</th>
             <th class="p-2 border">Proyecto</th>
             <th class="p-2 border">Artículo</th>
             <th class="p-2 border">Descripción de Cambios</th>
-            <th class="p-2 border">Solicitante</th>
             <th class="p-2 border text-center">Estado</th>
             <th class="p-2 border text-center">Fecha Realizado</th>
             <th class="p-2 border text-center">Validación Costos</th>
@@ -747,12 +768,13 @@ function generarModalInformeResumen() {
     html += `
       <tr class="border-b">
         <td class="p-2 border font-semibold">${it.semana || '—'}</td>
+        <td class="p-2 border whitespace-nowrap">${formatearFecha(it.fechaCreacion)}</td>
+        <td class="p-2 border whitespace-nowrap font-medium">${it.solicitanteNombre} <span class="text-[10px] text-gray-400">(${it.solicitanteRol})</span></td>
         <td class="p-2 border font-bold text-gray-800">${it.proyecto}</td>
         <td class="p-2 border font-mono">${it.articulo}</td>
         <td class="p-2 border text-gray-700">${it.boxCambio}</td>
-        <td class="p-2 border">${it.solicitanteNombre} <span class="text-[10px] text-gray-400">(${it.solicitanteRol})</span></td>
         <td class="p-2 border text-center font-bold ${it.estado === 'Realizado' ? 'text-green-600' : (it.estado === 'Retrasado' ? 'text-red-600' : 'text-orange-600')}">${it.estado}</td>
-        <td class="p-2 border text-center">${formatearFecha(it.fechaRealizado)}</td>
+        <td class="p-2 border text-center whitespace-nowrap">${formatearFecha(it.fechaRealizado)}</td>
         <td class="p-2 border text-center font-bold ${it.validadoCostos ? 'text-green-600' : 'text-gray-400'}">${it.validadoCostos ? 'Validado' : 'Pendiente'}</td>
       </tr>
     `;
