@@ -128,17 +128,17 @@
           <label class="block font-semibold text-gray-600 mb-1">Correo Electrónico</label>
           <input type="email" id="reg-email" required placeholder="usuario@bata.com" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D61B28] focus:outline-none">
         </div>
-        <div>
-          <label class="block font-semibold text-gray-600 mb-1">Sección / Rol Inicial</label>
-          <select id="reg-role" required class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D61B28] focus:outline-none bg-white font-medium">
-            <option value="Calidad">Calidad</option>
-            <option value="Costos">Costos</option>
-            <option value="Compras">Compras</option>
-            <option value="Producción">Producción</option>
-            <option value="Técnico Desarrollo">Desarrollo de producto - Técnico</option>
-            <option value="Jefe Desarrollo">Desarrollo de producto - Jefe</option>
-          </select>
-        </div>
+        <!-- Busca el select id="reg-role" en index.html y reemplázalo por este: -->
+<div>
+  <label class="block font-semibold text-gray-600 mb-1">Sección / Rol</label>
+  <select id="reg-role" required class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D61B28] focus:outline-none bg-white font-medium">
+    <option value="Calidad">Calidad</option>
+    <option value="Costos">Costos</option>
+    <option value="Compras">Compras</option>
+    <option value="Producción">Producción</option>
+    <option value="Desarrollo de producto">Desarrollo de producto</option>
+  </select>
+</div>
         <div>
           <label class="block font-semibold text-gray-600 mb-1">Fotografía de Perfil (Opcional)</label>
           <input type="file" id="reg-photo" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-red-50 file:text-[#D61B28]">
