@@ -4,26 +4,36 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sistema de Gestión de Cambios - Bata Bolivia</title>
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-gray-100 font-sans text-gray-800 antialiased min-h-screen">
 
-  <!-- ==================== VISTA 1: PORTADA ==================== -->
-  <div id="welcome-container" class="relative min-h-screen w-full flex flex-col md:flex-row bg-[#F8F9FA]">
+  <!-- ==================== VISTA 1: PORTADA OFICIAL ==================== -->
+  <div id="welcome-container" class="relative min-h-screen w-full flex flex-col md:flex-row bg-[#F4F5F7]">
     
-    <!-- Lado Izquierdo Rojo -->
-    <div class="w-full md:w-[40%] bg-[#D61B28] min-h-[220px] md:min-h-screen flex flex-col justify-between p-8 md:p-12 relative overflow-hidden text-white">
-      <div class="marca-agua-b">B</div>
-      <div class="relative z-10">
-        <div class="bata-logo-script text-white text-5xl md:text-6xl tracking-tight select-none">Bata</div>
-        <p class="text-xs tracking-[0.35em] text-red-100 font-semibold uppercase mt-1">Bolivia</p>
+    <!-- Lado Izquierdo Rojo Institucional -->
+    <div class="w-full md:w-[42%] bg-[#D61B28] min-h-[260px] md:min-h-screen flex flex-col justify-between p-8 md:p-12 relative overflow-hidden text-white shadow-2xl">
+      
+      <!-- Isotipo 'B' Oficial en Marca de Agua (Vectorial de la imagen) -->
+      <div class="marca-agua-b">
+        <svg viewBox="0 0 100 100" class="w-72 h-72 opacity-15">
+          <circle cx="50" cy="50" r="48" fill="none" stroke="white" stroke-width="3"/>
+          <path d="M32 72C27 72 24 68 26 62L34 28C35 23 40 20 47 20H60C69 20 75 25 73 33C71 39 67 43 61 45C68 47 70 53 68 60C66 68 59 72 49 72H32ZM44 42H54C58 42 61 40 62 36C63 32 60 30 56 30H47L44 42ZM41 62H52C57 62 60 59 61 54C62 50 59 47 54 47H44L41 62Z" fill="white"/>
+        </svg>
       </div>
+
+      <!-- Logotipo Oficial Bata (Vectorial Letras Rojas/Blancas) -->
+      <div class="relative z-10 pt-2">
+        <svg class="w-44 md:w-56 h-auto" viewBox="0 0 320 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Trazado fiel del logotipo Bata cursivo -->
+          <path d="M45 102C25 102 10 88 10 68C10 38 35 15 68 15C85 15 98 24 102 36L82 46C79 38 72 32 63 32C45 32 34 46 34 62C34 76 43 85 58 85C71 85 80 77 86 67L104 78C94 93 74 102 45 102ZM115 100V18H138V100H115ZM175 100L172 88C164 97 152 102 139 102C121 102 108 90 108 72C108 51 126 40 152 40H172V35C172 26 164 21 151 21C138 21 128 26 121 32L112 16C124 9 140 4 159 4C185 4 196 17 196 39V100H175ZM172 56H154C140 56 132 62 132 70C132 78 138 84 150 84C162 84 172 76 172 65V56ZM225 100V35H205V18H225V8H248V18H270V35H248V82C248 88 252 90 258 90C263 90 267 88 270 86L274 102C266 106 256 108 245 108C232 108 225 99 225 100ZM308 100L305 88C297 97 285 102 272 102C254 102 241 90 241 72C241 51 259 40 285 40H305V35C305 26 297 21 284 21C271 21 261 26 254 32L245 16C257 9 273 4 292 4C318 4 329 17 329 39V100H308ZM305 56H287C273 56 265 62 265 70C265 78 271 84 283 84C295 84 305 76 305 65V56Z" fill="white"/>
+        </svg>
+        <p class="text-xs uppercase tracking-[0.35em] text-red-100 font-semibold mt-2">Bolivia</p>
+      </div>
+
       <div class="relative z-10 pt-6">
         <div class="flex items-center space-x-2 text-white/90 border-t border-white/20 pt-4 text-xs font-semibold">
           <i class="fa-solid fa-chart-line text-sm"></i>
@@ -32,8 +42,8 @@
       </div>
     </div>
 
-    <!-- Lado Derecho: Tarjetas -->
-    <div class="w-full md:w-[60%] flex flex-col items-center justify-center p-6 md:p-12 relative z-10">
+    <!-- Lado Derecho: Acceso -->
+    <div class="w-full md:w-[58%] flex flex-col items-center justify-center p-6 md:p-12 relative z-10">
       <div class="text-center mb-8">
         <h2 class="text-2xl md:text-3xl font-extrabold text-[#D61B28]">Bienvenido a Bata Bolivia</h2>
         <div class="flex justify-center items-center my-2 text-[#D61B28]">
@@ -45,7 +55,6 @@
       <div class="bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-gray-100 w-full max-w-lg">
         <h3 class="text-center font-bold text-gray-700 text-sm mb-6">¿Qué deseas hacer?</h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          
           <div class="border border-red-200 rounded-2xl p-6 text-center flex flex-col justify-between items-center hover:shadow-md transition bg-white">
             <div class="w-14 h-14 rounded-full border border-red-200 flex items-center justify-center text-[#D61B28] text-2xl mb-3">
               <i class="fa-solid fa-user"></i>
@@ -67,14 +76,13 @@
               Registrarse
             </button>
           </div>
-
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ==================== MODAL: LOGIN ==================== -->
-  <div id="modal-login" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+  <!-- MODAL: LOGIN -->
+  <div id="modal-login" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl relative">
       <button type="button" id="close-login" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
       <div class="text-center mb-6">
@@ -97,9 +105,9 @@
     </div>
   </div>
 
-  <!-- ==================== MODAL: REGISTRO CON CELULAR ==================== -->
-  <div id="modal-register" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl relative">
+  <!-- MODAL: REGISTRO CON FOTO Y CELULAR -->
+  <div id="modal-register" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
       <button type="button" id="close-register" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
       <div class="text-center mb-5">
         <div class="w-12 h-12 rounded-full border border-red-200 text-[#D61B28] flex items-center justify-center text-xl mx-auto mb-2">
@@ -110,7 +118,7 @@
       <form id="form-register" class="space-y-3 text-xs">
         <div>
           <label class="block font-semibold text-gray-600 mb-1">Nombre Completo</label>
-          <input type="text" id="reg-name" required placeholder="Tu nombre" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D61B28] focus:outline-none">
+          <input type="text" id="reg-name" required placeholder="Tu nombre y apellido" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D61B28] focus:outline-none">
         </div>
         <div>
           <label class="block font-semibold text-gray-600 mb-1">Número de Celular (WhatsApp)</label>
@@ -120,18 +128,23 @@
           </div>
         </div>
         <div>
-          <label class="block font-semibold text-gray-600 mb-1">Correo Electrónico</label>
+          <label class="block font-semibold text-gray-600 mb-1">Correo Corporativo</label>
           <input type="email" id="reg-email" required placeholder="usuario@bata.com" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D61B28] focus:outline-none">
         </div>
         <div>
-          <label class="block font-semibold text-gray-600 mb-1">Sección / Tipo de Usuario</label>
+          <label class="block font-semibold text-gray-600 mb-1">Sección / Rol</label>
           <select id="reg-role" required class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D61B28] focus:outline-none bg-white font-medium">
             <option value="Calidad">Calidad</option>
             <option value="Costos">Costos</option>
             <option value="Compras">Compras</option>
             <option value="Producción">Producción</option>
             <option value="Desarrollo de producto">Desarrollo de producto</option>
+            <option value="Super Usuario">Super Usuario (Admin)</option>
           </select>
+        </div>
+        <div>
+          <label class="block font-semibold text-gray-600 mb-1">Fotografía de Perfil (Opcional)</label>
+          <input type="file" id="reg-photo" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-[#D61B28] hover:file:bg-red-100">
         </div>
         <div>
           <label class="block font-semibold text-gray-600 mb-1">Contraseña</label>
@@ -148,15 +161,26 @@
 
     <header class="relative z-10 bg-white border-b border-gray-200 px-6 py-3 flex justify-between items-center shadow-sm">
       <div class="flex items-center space-x-4">
-        <div class="bata-logo-script text-[#D61B28] text-3xl select-none">Bata</div>
+        <!-- Logo Bata Rojo Pequeño Vectorial -->
+        <svg class="w-24 h-auto" viewBox="0 0 320 120" fill="none">
+          <path d="M45 102C25 102 10 88 10 68C10 38 35 15 68 15C85 15 98 24 102 36L82 46C79 38 72 32 63 32C45 32 34 46 34 62C34 76 43 85 58 85C71 85 80 77 86 67L104 78C94 93 74 102 45 102ZM115 100V18H138V100H115ZM175 100L172 88C164 97 152 102 139 102C121 102 108 90 108 72C108 51 126 40 152 40H172V35C172 26 164 21 151 21C138 21 128 26 121 32L112 16C124 9 140 4 159 4C185 4 196 17 196 39V100H175ZM172 56H154C140 56 132 62 132 70C132 78 138 84 150 84C162 84 172 76 172 65V56ZM225 100V35H205V18H225V8H248V18H270V35H248V82C248 88 252 90 258 90C263 90 267 88 270 86L274 102C266 106 256 108 245 108C232 108 225 99 225 100ZM308 100L305 88C297 97 285 102 272 102C254 102 241 90 241 72C241 51 259 40 285 40H305V35C305 26 297 21 284 21C271 21 261 26 254 32L245 16C257 9 273 4 292 4C318 4 329 17 329 39V100H308ZM305 56H287C273 56 265 62 265 70C265 78 271 84 283 84C295 84 305 76 305 65V56Z" fill="#D61B28"/>
+        </svg>
         <div class="h-6 w-px bg-gray-300"></div>
         <p class="text-xs md:text-sm font-medium text-gray-700">Bienvenido al sistema de cambios de <span class="font-bold text-[#D61B28]">BATA Bolivia.</span></p>
       </div>
-      <div class="flex items-center space-x-4">
-        <div class="text-right">
-          <span id="user-display-name" class="block text-xs font-bold text-gray-800">Usuario</span>
-          <span id="user-display-role" class="block text-[11px] font-semibold text-[#D61B28] bg-red-50 px-2 py-0.5 rounded-full border border-red-100">Rol</span>
-        </div>
+
+      <!-- Perfil de Usuario con Foto y Edición -->
+      <div class="flex items-center space-x-3">
+        <button type="button" id="btn-edit-profile" class="flex items-center space-x-3 p-1.5 rounded-xl hover:bg-gray-100 transition text-left" title="Editar mi perfil">
+          <div class="w-8 h-8 rounded-full bg-red-100 text-[#D61B28] flex items-center justify-center overflow-hidden border border-red-200">
+            <img id="user-display-avatar" class="w-full h-full object-cover hidden" alt="Avatar">
+            <i id="user-display-avatar-icon" class="fa-solid fa-user text-xs"></i>
+          </div>
+          <div class="text-right">
+            <span id="user-display-name" class="block text-xs font-bold text-gray-800">Usuario</span>
+            <span id="user-display-role" class="block text-[10px] font-semibold text-[#D61B28] bg-red-50 px-2 py-0.2 rounded-full border border-red-100">Rol</span>
+          </div>
+        </button>
         <button type="button" id="btn-logout" title="Cerrar Sesión" class="text-gray-400 hover:text-[#D61B28] transition p-2">
           <i class="fa-solid fa-arrow-right-from-bracket text-lg"></i>
         </button>
@@ -164,6 +188,7 @@
     </header>
 
     <div class="flex flex-1 relative z-10">
+      <!-- Menú Lateral -->
       <aside class="w-56 bg-white border-r border-gray-200 p-4 space-y-2">
         <button type="button" id="menu-btn-cambios" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm transition bg-red-50 text-[#D61B28]">
           <i class="fa-solid fa-arrow-right-arrow-left"></i>
@@ -173,8 +198,14 @@
           <i class="fa-regular fa-file-lines"></i>
           <span>Informe</span>
         </button>
+        <!-- Pestaña de Super Usuario (Oculta por defecto) -->
+        <button type="button" id="menu-btn-usuarios" class="w-full hidden flex items-center space-x-3 px-4 py-2.5 rounded-xl font-semibold text-sm text-gray-600 hover:bg-gray-100 transition">
+          <i class="fa-solid fa-users-gear"></i>
+          <span>Usuarios</span>
+        </button>
       </aside>
 
+      <!-- Área de Contenido -->
       <main class="flex-1 p-6 md:p-8 overflow-y-auto">
         <!-- VISTA CAMBIOS -->
         <section id="view-cambios" class="space-y-6">
@@ -217,7 +248,6 @@
             <i class="fa-regular fa-file-lines"></i>
             <span>Informe</span>
           </h2>
-
           <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
             <div class="flex items-center space-x-2">
               <label class="text-xs font-bold text-gray-700">Filtrar:</label>
@@ -230,7 +260,6 @@
             </div>
             <div id="report-project-selection-list" class="max-h-40 overflow-y-auto border border-gray-200 rounded-xl p-3 grid grid-cols-1 md:grid-cols-3 gap-2"></div>
           </div>
-
           <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
             <h3 class="text-xs font-bold text-gray-700 mb-4">Porcentaje de Avance por Proyecto</h3>
             <div class="h-72 w-full">
@@ -238,7 +267,58 @@
             </div>
           </div>
         </section>
+
+        <!-- VISTA SUPER USUARIO (ADMINISTRACIÓN DE USUARIOS) -->
+        <section id="view-usuarios" class="hidden space-y-6">
+          <div class="flex justify-between items-center">
+            <h2 class="text-lg font-bold text-[#D61B28] flex items-center space-x-2">
+              <i class="fa-solid fa-users-gear"></i>
+              <span>Gestión de Usuarios (Super Usuario)</span>
+            </h2>
+          </div>
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-gray-50 border-b border-gray-200 text-gray-600 font-semibold">
+                  <th class="p-3">Foto</th>
+                  <th class="p-3">Nombre</th>
+                  <th class="p-3">Correo</th>
+                  <th class="p-3">Celular</th>
+                  <th class="p-3">Rol</th>
+                  <th class="p-3 text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="table-users-body" class="divide-y divide-gray-200"></tbody>
+            </table>
+          </div>
+        </section>
       </main>
+    </div>
+  </div>
+
+  <!-- MODAL: EDITAR MI PERFIL -->
+  <div id="modal-profile" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl relative text-xs">
+      <button type="button" id="close-profile" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><i class="fa-solid fa-xmark text-lg"></i></button>
+      <h3 class="font-bold text-base text-[#D61B28] mb-4 text-center">Mi Perfil</h3>
+      <form id="form-update-profile" class="space-y-3">
+        <div>
+          <label class="block font-semibold text-gray-600 mb-1">Nombre</label>
+          <input type="text" id="prof-name" required class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D61B28]">
+        </div>
+        <div>
+          <label class="block font-semibold text-gray-600 mb-1">Celular (WhatsApp)</label>
+          <div class="flex">
+            <span class="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-gray-300 bg-gray-50 text-gray-500 font-bold text-xs">+591</span>
+            <input type="tel" id="prof-phone" pattern="[0-9]{8}" required placeholder="70000000" class="w-full px-3 py-2 border border-gray-300 rounded-r-xl focus:ring-2 focus:ring-[#D61B28]">
+          </div>
+        </div>
+        <div>
+          <label class="block font-semibold text-gray-600 mb-1">Actualizar Fotografía</label>
+          <input type="file" id="prof-photo" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-red-50 file:text-[#D61B28]">
+        </div>
+        <button type="submit" class="w-full bg-[#D61B28] hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition shadow mt-3">Guardar Cambios</button>
+      </form>
     </div>
   </div>
 
@@ -273,7 +353,7 @@
     </div>
   </div>
 
-  <!-- MODAL: ENVIAR WHATSAPP A USUARIOS -->
+  <!-- MODAL: ENVIAR WHATSAPP -->
   <div id="modal-whatsapp" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden p-6 text-xs">
       <div class="text-center mb-4">
@@ -281,11 +361,9 @@
           <i class="fa-brands fa-whatsapp"></i>
         </div>
         <h3 class="font-bold text-sm text-gray-900">Solicitud Creada con Éxito</h3>
-        <p class="text-gray-500 mt-1">Haz clic para enviar la alerta a los celulares del equipo:</p>
+        <p class="text-gray-500 mt-1">Selecciona al integrante para enviar la alerta por WhatsApp:</p>
       </div>
-
-      <div id="whatsapp-contacts-list" class="space-y-2 max-h-48 overflow-y-auto mb-4"></div>
-
+      <div id="whatsapp-contacts-list" class="space-y-2 max-h-52 overflow-y-auto mb-4"></div>
       <button type="button" id="btn-close-whatsapp-modal" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 rounded-xl">
         Listo / Cerrar
       </button>
