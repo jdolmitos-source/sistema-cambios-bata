@@ -46,6 +46,7 @@ let entregas = [];
 let filtroSubmenuActivo = "todos";
 let chartInstance = null;
 let semanaSeleccionadaInforme = "todas";
+let criterioOrdenEntregas = "fecha";
 
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
   if (!file) return resolve(null);
@@ -55,6 +56,7 @@ const fileToBase64 = (file) => new Promise((resolve, reject) => {
   reader.onerror = error => reject(error);
 });
 
+// Comprobar estrictamente si es Super Admin (SOLO jd.olmitos@gmail.com)
 function esSuperAdmin() {
   if (!currentUser || !currentUser.email) return false;
   return currentUser.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
@@ -70,6 +72,8 @@ const modalMinuta = document.getElementById("modal-minuta");
 const modalResumen = document.getElementById("modal-resumen-reporte");
 const modalTextoWsp = document.getElementById("modal-texto-wsp");
 const modalNuevaEntrega = document.getElementById("modal-nueva-entrega");
+const modalReporteEntregasPrint = document.getElementById("modal-reporte-entregas-print");
+const modalEntregasTexto = document.getElementById("modal-entregas-texto");
 
 document.getElementById("btn-show-login").onclick = () => modalLogin.classList.remove("hidden");
 document.getElementById("btn-show-register").onclick = () => modalRegister.classList.remove("hidden");
@@ -90,6 +94,12 @@ if (document.getElementById("close-nueva-entrega")) {
 }
 if (document.getElementById("cancel-nueva-entrega")) {
   document.getElementById("cancel-nueva-entrega").onclick = () => modalNuevaEntrega.classList.add("hidden");
+}
+if (document.getElementById("close-modal-entregas-print")) {
+  document.getElementById("close-modal-entregas-print").onclick = () => modalReporteEntregasPrint.classList.add("hidden");
+}
+if (document.getElementById("close-modal-entregas-texto")) {
+  document.getElementById("close-modal-entregas-texto").onclick = () => modalEntregasTexto.classList.add("hidden");
 }
 
 // Reset de Contraseña por WhatsApp
@@ -645,6 +655,21 @@ function escucharEntregas() {
   });
 }
 
+// Selector de ordenamiento de entregas
+if (document.getElementById("select-ordenar-entregas")) {
+  document.getElementById("select-ordenar-entregas").onchange = (e) => {
+    criterioOrdenEntregas = e.target.value;
+    renderTablaEntregas();
+  };
+}
+
+if (document.getElementById("btn-reporte-entregas-pdf")) {
+  document.getElementById("btn-reporte-entregas-pdf").onclick = abrirReporteImpresoEntregas;
+}
+if (document.getElementById("btn-reporte-entregas-texto")) {
+  document.getElementById("btn-reporte-entregas-texto").onclick = abrirResumenTextoEntregas;
+}
+
 function renderTablaEntregas() {
   const tbody = document.getElementById("table-entregas-body");
   tbody.innerHTML = "";
@@ -652,13 +677,32 @@ function renderTablaEntregas() {
 
   if (entregas.length === 0) {
     empty.classList.remove("hidden");
+    const badge = document.getElementById("badge-total-entregas");
+    if (badge) badge.textContent = "0 entregas registradas";
     return;
   }
   empty.classList.add("hidden");
 
-  const esAdmin = esSuperAdmin();
+  let entregasOrdenadas = [...entregas];
 
-  entregas.forEach(ent => {
+  if (criterioOrdenEntregas === "semana") {
+    entregasOrdenadas.sort((a, b) => (a.semana || "").localeCompare(b.semana || "", undefined, { numeric: true }));
+  } else if (criterioOrdenEntregas === "proyecto") {
+    entregasOrdenadas.sort((a, b) => (a.proyecto || "").localeCompare(b.proyecto || ""));
+  } else if (criterioOrdenEntregas === "estado") {
+    entregasOrdenadas.sort((a, b) => (a.recibido === b.recibido ? 0 : a.recibido ? 1 : -1));
+  } else {
+    entregasOrdenadas.sort((a, b) => new Date(b.fechaEntrega || 0) - new Date(a.fechaEntrega || 0));
+  }
+
+  const esAdmin = esSuperAdmin();
+  const recibidasCount = entregas.filter(e => e.recibido).length;
+  const badge = document.getElementById("badge-total-entregas");
+  if (badge) {
+    badge.textContent = `Total: ${entregas.length} | Recibidas: ${recibidasCount} | En Tránsito: ${entregas.length - recibidasCount}`;
+  }
+
+  entregasOrdenadas.forEach(ent => {
     const tr = document.createElement("tr");
     tr.className = "hover:bg-gray-50/80 transition border-b border-gray-100";
 
@@ -713,6 +757,98 @@ window.confirmarRecepcionEntrega = async (id, tipo, proyecto) => {
     });
   }
 };
+
+function abrirReporteImpresoEntregas() {
+  if (entregas.length === 0) {
+    alert("No hay registros de entregas para generar el reporte.");
+    return;
+  }
+
+  const contenedor = document.getElementById("contenido-impresion-entregas");
+  let html = `
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse border border-gray-200 text-xs">
+        <thead class="bg-gray-100 font-bold">
+          <tr>
+            <th class="p-2 border">Sem.</th>
+            <th class="p-2 border">Fecha/Hora</th>
+            <th class="p-2 border">Proyecto</th>
+            <th class="p-2 border">Artículo</th>
+            <th class="p-2 border">Elemento Entregado</th>
+            <th class="p-2 border">Entregado Por</th>
+            <th class="p-2 border">Destino</th>
+            <th class="p-2 border text-center">Estado Recepción</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  entregas.forEach(it => {
+    html += `
+      <tr class="border-b">
+        <td class="p-2 border font-semibold">${it.semana}</td>
+        <td class="p-2 border whitespace-nowrap">${formatearFecha(it.fechaEntrega)}</td>
+        <td class="p-2 border font-bold text-gray-800">${it.proyecto}</td>
+        <td class="p-2 border font-mono">${it.articulo}</td>
+        <td class="p-2 border">${it.tipo} ${it.notas ? `(${it.notas})` : ''}</td>
+        <td class="p-2 border">${it.entregadoPorNombre} <span class="text-[10px] text-gray-400">(${it.entregadoPorRol})</span></td>
+        <td class="p-2 border font-bold">${it.destino}</td>
+        <td class="p-2 border text-center font-bold ${it.recibido ? 'text-green-600' : 'text-amber-600'}">
+          ${it.recibido ? 'Recibido' : 'En Tránsito'}
+        </td>
+      </tr>
+    `;
+  });
+
+  html += `
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  contenedor.innerHTML = html;
+  modalReporteEntregasPrint.classList.remove("hidden");
+}
+
+function abrirResumenTextoEntregas() {
+  if (entregas.length === 0) {
+    alert("No hay entregas registradas.");
+    return;
+  }
+
+  let texto = `CONTROL DE ENTREGAS A DEPARTAMENTOS - BATA BOLIVIA\n`;
+  texto += `Fecha de emisión: ${new Date().toLocaleDateString("es-BO")}\n\n`;
+  texto += `Saludos cordiales,\nA continuación se detalla el registro de entregas físicas efectuadas entre secciones:\n\n`;
+
+  entregas.forEach((it, idx) => {
+    texto += `${idx + 1}. [Sem: ${it.semana}] ${it.proyecto.toUpperCase()} | Art: ${it.articulo}\n`;
+    texto += `   • Entrega: ${it.tipo}\n`;
+    texto += `   • Entregado por: ${it.entregadoPorNombre} (${it.entregadoPorRol}) -> Destino: ${it.destino}\n`;
+    texto += `   • Estado: ${it.recibido ? 'RECIBIDO' : 'EN TRÁNSITO'}\n\n`;
+  });
+
+  const textarea = document.getElementById("texto-entregas-output");
+  textarea.value = texto;
+
+  document.getElementById("btn-copiar-texto-entregas").onclick = () => {
+    textarea.select();
+    navigator.clipboard.writeText(texto);
+    alert("Texto de entregas copiado al portapapeles.");
+  };
+
+  document.getElementById("btn-enviar-correo-entregas").onclick = () => {
+    const asunto = encodeURIComponent("Bata Bolivia - Control de Entregas a Departamentos");
+    const cuerpo = encodeURIComponent(texto);
+    window.location.href = `mailto:?subject=${asunto}&body=${cuerpo}`;
+  };
+
+  document.getElementById("btn-enviar-wsp-entregas").onclick = () => {
+    const encoded = encodeURIComponent(texto);
+    window.open(`https://wa.me/?text=${encoded}`, "_blank");
+  };
+
+  modalEntregasTexto.classList.remove("hidden");
+}
 
 // Escucha en tiempo real de Solicitudes y Retraso a los 7 Días
 function escucharCambios() {
@@ -947,14 +1083,12 @@ function poblarSelectorSemanasInforme() {
     return;
   }
 
-  // Opción para ver todas
   selectSemana.innerHTML += `<option value="todas">Todas las Semanas</option>`;
 
   semanasUnicas.forEach(sem => {
     selectSemana.innerHTML += `<option value="${sem}">Semana ${sem}</option>`;
   });
 
-  // Si ya había una selección previa la conservamos, sino seleccionamos la última semana activa
   if (valorActual && (semanasUnicas.includes(valorActual) || valorActual === "todas")) {
     selectSemana.value = valorActual;
     semanaSeleccionadaInforme = valorActual;
@@ -966,13 +1100,11 @@ function poblarSelectorSemanasInforme() {
 }
 
 function actualizarInformePorSemana() {
-  // 1. Filtrar solicitudes según la semana seleccionada
   let articulosSemana = solicitudes;
   if (semanaSeleccionadaInforme !== "todas") {
     articulosSemana = solicitudes.filter(s => (s.semana || "").trim() === semanaSeleccionadaInforme);
   }
 
-  // 2. Actualizar Mini-KPIs
   const total = articulosSemana.length;
   const realizados = articulosSemana.filter(s => s.estado === "Realizado").length;
   const enProceso = articulosSemana.filter(s => s.estado === "En proceso").length;
@@ -983,7 +1115,6 @@ function actualizarInformePorSemana() {
   document.getElementById("kpi-sem-realizados").textContent = realizados;
   document.getElementById("kpi-sem-costos").textContent = `${validadosCostos} de ${total}`;
 
-  // 3. Alerta de Congelamiento de Producción
   const badgeContainer = document.getElementById("badge-congelamiento-container");
   if (total === 0) {
     badgeContainer.innerHTML = `<span class="bg-gray-100 text-gray-500 font-bold text-[11px] px-3 py-1 rounded-full border border-gray-200">Sin artículos registrados</span>`;
@@ -1004,7 +1135,6 @@ function actualizarInformePorSemana() {
     `;
   }
 
-  // 4. Renderizar Tabla de Artículos de la Semana
   const tbody = document.getElementById("table-informe-articulos-body");
   tbody.innerHTML = "";
 
@@ -1054,7 +1184,6 @@ function actualizarConteoSeleccionados() {
   if (label) label.textContent = `${marcados} de ${total} artículos seleccionados`;
 }
 
-// Generador de Texto Oficial para WhatsApp (Formato Exacto Imagen 2)
 function generarTextoNotificacionBata() {
   const seleccionadosIds = Array.from(document.querySelectorAll(".chk-articulo-informe:checked")).map(c => c.value);
   if (seleccionadosIds.length === 0) {
