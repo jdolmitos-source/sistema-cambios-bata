@@ -179,7 +179,7 @@
     </header>
 
     <div class="flex flex-1 relative z-10">
-      <!-- Menú Lateral Simplificado -->
+      <!-- Menú Lateral -->
       <aside class="w-64 bg-white border-r border-gray-200 p-4 space-y-3">
         <button type="button" id="menu-btn-cambios" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs transition bg-red-50 text-[#D61B28] cursor-pointer">
           <i class="fa-solid fa-arrow-right-arrow-left"></i>
@@ -208,7 +208,7 @@
       </aside>
 
       <main class="flex-1 p-6 md:p-8 overflow-y-auto">
-        <!-- VISTA 1: CAMBIOS -->
+        <!-- VISTA 1: CAMBIOS (INCLUYE MINUTAS DE PLAN PILOTO) -->
         <section id="view-cambios" class="space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -216,7 +216,7 @@
                 <i class="fa-solid fa-arrow-right-arrow-left"></i>
                 <span>Solicitudes de Cambios</span>
               </h2>
-              <p class="text-[11px] text-gray-400 font-medium mt-0.5">Mostrando todos los registros</p>
+              <p class="text-[11px] text-gray-400 font-medium mt-0.5">Mostrando todos los registros y minutas de plan piloto</p>
             </div>
             <div class="flex items-center space-x-2">
               <button type="button" id="btn-open-minuta-header" class="hidden bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
@@ -256,7 +256,7 @@
           </div>
         </section>
 
-        <!-- VISTA 2: INFORME EJECUTIVO CON FILTRO TIPO EXCEL EN ENCABEZADOS -->
+        <!-- VISTA 2: INFORME EJECUTIVO CON FILTRO TIPO EXCEL -->
         <section id="view-informe" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -278,7 +278,7 @@
             </div>
           </div>
 
-          <!-- Mini-KPIs y Estado de Congelamiento -->
+          <!-- Mini-KPIs y Alerta de Congelamiento -->
           <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm space-y-3">
             <div class="flex justify-between items-center">
               <div id="badge-congelamiento-container"></div>
@@ -336,7 +336,6 @@
             </div>
           </div>
 
-          <!-- Diagrama de Torres -->
           <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
             <div class="flex justify-between items-center mb-4">
               <h3 class="text-xs font-bold text-gray-700">Diagrama de Torres: % de Avance por Proyecto</h3>
@@ -348,7 +347,7 @@
           </div>
         </section>
 
-        <!-- VISTA 3: ENTREGAS CON FILTROS EN ENCABEZADOS -->
+        <!-- VISTA 3: ENTREGAS -->
         <section id="view-entregas" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -409,13 +408,14 @@
           </div>
         </section>
 
-        <!-- VISTA 4: SUPER ADMIN -->
+        <!-- VISTA 4: SUPER ADMIN (CON LIMPIEZA COMPLETA DE ENTREGAS Y SOLICITUDES) -->
         <section id="view-usuarios" class="hidden space-y-6">
           <h2 class="text-lg font-bold text-[#D61B28] flex items-center space-x-2">
             <i class="fa-solid fa-user-shield"></i>
             <span>Panel de Administración (Super Admin: jd.olmitos@gmail.com)</span>
           </h2>
           
+          <!-- TABLA 1: USUARIOS -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <div class="bg-gray-50/75 p-3 border-b border-gray-200 font-bold text-xs text-gray-700 flex items-center space-x-2">
               <i class="fa-solid fa-users text-[#D61B28]"></i>
@@ -436,17 +436,19 @@
             </table>
           </div>
 
+          <!-- TABLA 2: ELIMINAR CAMBIOS Y MINUTAS -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <div class="bg-gray-50/75 p-3 border-b border-gray-200 font-bold text-xs text-gray-700 flex items-center space-x-2">
               <i class="fa-solid fa-folder-minus text-[#D61B28]"></i>
-              <span>Eliminar Solicitudes / Proyectos de la Base de Datos</span>
+              <span>Limpieza de Base de Datos: Solicitudes de Cambios y Minutas</span>
             </div>
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto max-h-72">
               <table class="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr class="bg-gray-50/50 border-b border-gray-200 text-gray-600 font-semibold">
                     <th class="p-3">Semana</th>
                     <th class="p-3">Fecha Solicitud</th>
+                    <th class="p-3">Tipo</th>
                     <th class="p-3">Proyecto</th>
                     <th class="p-3">Artículo</th>
                     <th class="p-3">Solicitante</th>
@@ -455,6 +457,30 @@
                   </tr>
                 </thead>
                 <tbody id="table-admin-solicitudes-body" class="divide-y divide-gray-200"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- TABLA 3: ELIMINAR ENTREGAS (LIMPIEZA SUPER ADMIN) -->
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="bg-gray-50/75 p-3 border-b border-gray-200 font-bold text-xs text-gray-700 flex items-center space-x-2">
+              <i class="fa-solid fa-trash-can text-[#D61B28]"></i>
+              <span>Limpieza de Base de Datos: Entregas Registradas</span>
+            </div>
+            <div class="overflow-x-auto max-h-72">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="bg-gray-50/50 border-b border-gray-200 text-gray-600 font-semibold">
+                    <th class="p-3">Semana</th>
+                    <th class="p-3">Fecha</th>
+                    <th class="p-3">Proyecto</th>
+                    <th class="p-3">Artículo</th>
+                    <th class="p-3">Elemento Entregado</th>
+                    <th class="p-3">Destino</th>
+                    <th class="p-3 text-center">Eliminar</th>
+                  </tr>
+                </thead>
+                <tbody id="table-admin-entregas-body" class="divide-y divide-gray-200"></tbody>
               </table>
             </div>
           </div>
@@ -539,12 +565,12 @@
           <input type="text" id="minuta-articulo" required placeholder="Ej: 58961/91236 o 1-2419519V" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-600 font-mono">
         </div>
         <div>
-          <label class="block font-semibold text-gray-600 mb-1">Cambios Técnicos Solicitados</label>
+          <label class="block font-semibold text-gray-600 mb-1">Cambios Técnicos Solicitados (Plan Piloto)</label>
           <textarea id="minuta-box" rows="5" required placeholder="Describe las modificaciones técnicas en guías, piezas, suelas o costuras..." class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-600"></textarea>
         </div>
         <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl transition shadow flex items-center justify-center space-x-2 cursor-pointer">
           <i class="fa-brands fa-whatsapp"></i>
-          <span>Enviar Minuta a Técnicos de Desarrollo</span>
+          <span>Publicar Minuta y Notificar a Técnicos</span>
         </button>
       </form>
     </div>
@@ -683,7 +709,7 @@
     </div>
   </div>
 
-  <!-- MODAL: RESUMEN TEXTO ENTREGAS -->
+  <!-- MODAL: RESUMEN TEXTO ENTREGAS (CONEXIÓN OUTLOOK PWA / WEB) -->
   <div id="modal-entregas-texto" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-xl rounded-3xl p-6 shadow-2xl relative text-xs">
       <button type="button" id="close-modal-entregas-texto" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -699,9 +725,9 @@
           <i class="fa-regular fa-copy"></i>
           <span>Copiar Texto</span>
         </button>
-        <button type="button" id="btn-enviar-correo-entregas" class="bg-slate-800 hover:bg-black text-white font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center space-x-1.5 cursor-pointer">
-          <i class="fa-solid fa-at"></i>
-          <span>Abrir Correo</span>
+        <button type="button" id="btn-enviar-correo-entregas" class="bg-[#0078D4] hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center space-x-1.5 cursor-pointer" title="Abrir Outlook Web / PWA">
+          <i class="fa-solid fa-envelope"></i>
+          <span>Abrir Outlook Web</span>
         </button>
         <button type="button" id="btn-enviar-wsp-entregas" class="bg-[#25D366] hover:bg-green-600 text-white font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center space-x-1.5 cursor-pointer">
           <i class="fa-brands fa-whatsapp"></i>
