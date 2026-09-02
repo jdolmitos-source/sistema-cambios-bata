@@ -42,6 +42,7 @@ const db = getFirestore(app);
 let currentUser = null;
 let userData = null;
 let solicitudes = [];
+let entregas = [];
 let filtroSubmenuActivo = "todos";
 let chartInstance = null;
 let criterioOrdenInforme = "todos";
@@ -54,7 +55,7 @@ const fileToBase64 = (file) => new Promise((resolve, reject) => {
   reader.onerror = error => reject(error);
 });
 
-// Comprobar estrictamente si es el Super Admin
+// Comprobar estrictamente si es el Super Admin (SOLO jd.olmitos@gmail.com)
 function esSuperAdmin() {
   if (!currentUser || !currentUser.email) return false;
   return currentUser.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
@@ -69,6 +70,7 @@ const modalProfile = document.getElementById("modal-profile");
 const modalMinuta = document.getElementById("modal-minuta");
 const modalResumen = document.getElementById("modal-resumen-reporte");
 const modalTextoWsp = document.getElementById("modal-texto-wsp");
+const modalNuevaEntrega = document.getElementById("modal-nueva-entrega");
 
 document.getElementById("btn-show-login").onclick = () => modalLogin.classList.remove("hidden");
 document.getElementById("btn-show-register").onclick = () => modalRegister.classList.remove("hidden");
@@ -83,6 +85,12 @@ if (document.getElementById("close-modal-resumen")) {
 }
 if (document.getElementById("close-texto-wsp")) {
   document.getElementById("close-texto-wsp").onclick = () => modalTextoWsp.classList.add("hidden");
+}
+if (document.getElementById("close-nueva-entrega")) {
+  document.getElementById("close-nueva-entrega").onclick = () => modalNuevaEntrega.classList.add("hidden");
+}
+if (document.getElementById("cancel-nueva-entrega")) {
+  document.getElementById("cancel-nueva-entrega").onclick = () => modalNuevaEntrega.classList.add("hidden");
 }
 
 // Reset de Contraseña por WhatsApp
@@ -190,7 +198,11 @@ document.getElementById("form-login").onsubmit = async (e) => {
   }
 };
 
-document.getElementById("btn-logout").onclick = () => signOut(auth);
+document.getElementById("btn-logout").onclick = () => {
+  signOut(auth).then(() => {
+    window.location.reload();
+  });
+};
 
 function actualizarHeaderUsuario() {
   const esAdmin = esSuperAdmin();
@@ -208,15 +220,18 @@ function actualizarHeaderUsuario() {
     avatarIcon.classList.remove("hidden");
   }
 
-  // Visibilidad del Panel Super Admin (SOLO para jd.olmitos@gmail.com)
+  // Permisos Super Admin (SOLO jd.olmitos@gmail.com)
   const menuAdmin = document.getElementById("menu-btn-usuarios");
   if (esAdmin) {
     menuAdmin.classList.remove("hidden");
   } else {
     menuAdmin.classList.add("hidden");
+    if (!viewUsuarios.classList.contains("hidden")) {
+      activarVistaCambios();
+    }
   }
 
-  // Visibilidad de Minuta: Exclusiva para Desarrollo Jefe (o Super Admin)
+  // Minuta: Exclusiva para Jefe de Desarrollo (o Super Admin)
   const esJefe = userData.rol === "Desarrollo de producto - Jefe";
   const btnMinutaMenu = document.getElementById("menu-btn-minuta");
   const btnMinutaHeader = document.getElementById("btn-open-minuta-header");
@@ -248,7 +263,9 @@ onAuthStateChanged(auth, async (user) => {
     actualizarHeaderUsuario();
     welcomeContainer.classList.add("hidden");
     appContainer.classList.remove("hidden");
+    activarVistaCambios();
     escucharCambios();
+    escucharEntregas();
   } else {
     currentUser = null;
     userData = null;
@@ -260,26 +277,31 @@ onAuthStateChanged(auth, async (user) => {
 // Navegación
 const viewCambios = document.getElementById("view-cambios");
 const viewInforme = document.getElementById("view-informe");
+const viewEntregas = document.getElementById("view-entregas");
 const viewUsuarios = document.getElementById("view-usuarios");
 const menuBtnCambios = document.getElementById("menu-btn-cambios");
 const menuBtnInforme = document.getElementById("menu-btn-informe");
+const menuBtnEntregas = document.getElementById("menu-btn-entregas");
 const menuBtnUsuarios = document.getElementById("menu-btn-usuarios");
 const menuBtnMinuta = document.getElementById("menu-btn-minuta");
 
 function resetMenuStyles() {
-  [menuBtnCambios, menuBtnInforme, menuBtnUsuarios].forEach(b => {
+  [menuBtnCambios, menuBtnInforme, menuBtnEntregas, menuBtnUsuarios].forEach(b => {
     if (b) b.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-gray-600 hover:bg-gray-100 transition cursor-pointer";
   });
   viewCambios.classList.add("hidden");
   viewInforme.classList.add("hidden");
+  viewEntregas.classList.add("hidden");
   viewUsuarios.classList.add("hidden");
 }
 
-menuBtnCambios.onclick = () => {
+function activarVistaCambios() {
   resetMenuStyles();
   viewCambios.classList.remove("hidden");
   menuBtnCambios.className = "w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition bg-red-50 text-[#D61B28] cursor-pointer";
-};
+}
+
+menuBtnCambios.onclick = activarVistaCambios;
 
 menuBtnInforme.onclick = () => {
   resetMenuStyles();
@@ -288,7 +310,18 @@ menuBtnInforme.onclick = () => {
   renderInformeView();
 };
 
+menuBtnEntregas.onclick = () => {
+  resetMenuStyles();
+  viewEntregas.classList.remove("hidden");
+  menuBtnEntregas.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs transition bg-red-50 text-[#D61B28] cursor-pointer";
+  renderTablaEntregas();
+};
+
 menuBtnUsuarios.onclick = () => {
+  if (!esSuperAdmin()) {
+    alert("Acceso denegado: solo el usuario jd.olmitos@gmail.com puede entrar al panel de administración.");
+    return;
+  }
   resetMenuStyles();
   viewUsuarios.classList.remove("hidden");
   menuBtnUsuarios.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs transition bg-red-50 text-[#D61B28] cursor-pointer";
@@ -312,7 +345,7 @@ window.filtrarPorSubmenu = (estado) => {
   renderTabla();
 };
 
-// Panel Super Admin: Cargar Tablas de Usuarios y Solicitudes
+// Panel Super Admin (SOLO jd.olmitos@gmail.com)
 async function cargarPanelSuperAdmin() {
   if (!esSuperAdmin()) return;
 
@@ -452,11 +485,13 @@ document.getElementById("btn-close-whatsapp-modal").onclick = () => {
   document.getElementById("modal-whatsapp").classList.add("hidden");
 };
 
-// Envío de Minuta (Jefe de Desarrollo)
+// Envío de Minuta Estructurada (Jefe de Desarrollo)
 if (document.getElementById("form-minuta")) {
   document.getElementById("form-minuta").onsubmit = async (e) => {
     e.preventDefault();
-    const titulo = document.getElementById("minuta-title").value.trim();
+    const semana = document.getElementById("minuta-semana").value.trim();
+    const proyecto = document.getElementById("minuta-proyecto").value.trim();
+    const articulo = document.getElementById("minuta-articulo").value.trim();
     const detalle = document.getElementById("minuta-box").value.trim();
 
     modalMinuta.classList.add("hidden");
@@ -465,7 +500,7 @@ if (document.getElementById("form-minuta")) {
     abrirModalWhatsApp({
       titulo: "Minuta de Cambios (Plan Piloto)",
       subtitulo: "Enviar minuta a los Técnicos de Desarrollo:",
-      mensajeTexto: `📋 *MINUTA DE CAMBIOS - PLAN PILOTO*\n*Bata Bolivia / Desarrollo de Producto*\n\n📌 *Asunto:* ${titulo}\n👤 *Emitido por:* ${userData.nombre} (Jefe Desarrollo)\n\n📝 *DETALLE DE CAMBIOS:*\n${detalle}\n\n_Proceder con los ajustes técnicos solicitados._`,
+      mensajeTexto: `📋 *MINUTA DE CAMBIOS - PLAN PILOTO*\n*Bata Bolivia / Desarrollo de Producto*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n👤 *Emitido por:* ${userData.nombre} (Jefe Desarrollo)\n\n📝 *DETALLE DE CAMBIOS TÉCNICOS:*\n${detalle}\n\n_Proceder con los ajustes técnicos correspondientes en guías y prototipos._`,
       rolFiltro: "Desarrollo de producto - Técnico"
     });
   };
@@ -514,7 +549,175 @@ document.getElementById("form-new-change").onsubmit = async (e) => {
   }
 };
 
-// Escucha en tiempo real y detección automática de retraso (> 7 días)
+// ==================== MÓDULO ENTREGAS ====================
+document.getElementById("btn-open-nueva-entrega").onclick = () => {
+  const esAdmin = esSuperAdmin();
+  const rol = userData.rol || "";
+  const esDesarrollo = rol.includes("Desarrollo") || esAdmin;
+  const esCostos = rol === "Costos" || esAdmin;
+
+  if (!esDesarrollo && !esCostos) {
+    alert("Solo los usuarios de Desarrollo de Producto o Costos pueden registrar entregas.");
+    return;
+  }
+
+  const selectTipo = document.getElementById("ent-tipo");
+  selectTipo.innerHTML = "";
+
+  if (esDesarrollo) {
+    selectTipo.innerHTML += `<option value="GUÍA DE PRODUCCIÓN">Guía de Producción</option>`;
+    selectTipo.innerHTML += `<option value="CORTE">Corte</option>`;
+    selectTipo.innerHTML += `<option value="MUESTRA DEFINITIVA">Muestra Definitiva</option>`;
+  } else if (esCostos) {
+    // Costos solo puede entregar Corte
+    selectTipo.innerHTML += `<option value="CORTE">Corte (De Costos a Producción)</option>`;
+  }
+
+  actualizarDestinosEntrega();
+  modalNuevaEntrega.classList.remove("hidden");
+};
+
+document.getElementById("ent-tipo").onchange = actualizarDestinosEntrega;
+
+function actualizarDestinosEntrega() {
+  const tipo = document.getElementById("ent-tipo").value;
+  const selectDestino = document.getElementById("ent-destino");
+  selectDestino.innerHTML = "";
+
+  const rol = (userData && userData.rol) || "";
+  const esCostos = rol === "Costos";
+
+  if (esCostos) {
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+  } else {
+    // Desarrollo entregando
+    if (tipo === "GUÍA DE PRODUCCIÓN" || tipo === "CORTE") {
+      selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
+    } else if (tipo === "MUESTRA DEFINITIVA") {
+      selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+      selectDestino.innerHTML += `<option value="Planeamiento">Planeamiento</option>`;
+      selectDestino.innerHTML += `<option value="Retail">Retail</option>`;
+    }
+  }
+}
+
+document.getElementById("form-nueva-entrega").onsubmit = async (e) => {
+  e.preventDefault();
+  const semana = document.getElementById("ent-semana").value.trim();
+  const proyecto = document.getElementById("ent-proyecto").value.trim();
+  const articulo = document.getElementById("ent-articulo").value.trim();
+  const tipo = document.getElementById("ent-tipo").value;
+  const destino = document.getElementById("ent-destino").value;
+  const notas = document.getElementById("ent-notas").value.trim();
+
+  try {
+    await addDoc(collection(db, "entregas_departamentos"), {
+      semana,
+      proyecto,
+      articulo,
+      tipo,
+      destino,
+      notas,
+      entregadoPorNombre: userData.nombre,
+      entregadoPorRol: userData.rol,
+      entregadoPorId: currentUser.uid,
+      recibido: false,
+      fechaEntrega: new Date().toISOString(),
+      timestamp: serverTimestamp()
+    });
+
+    document.getElementById("form-nueva-entrega").reset();
+    modalNuevaEntrega.classList.add("hidden");
+
+    abrirModalWhatsApp({
+      titulo: "Entrega Registrada",
+      subtitulo: `Notificar recepción a los encargados de ${destino}:`,
+      mensajeTexto: `📦 *ENTREGA DE MATERIAL - BATA BOLIVIA*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n🏷️ *Elemento Entregado:* ${tipo}\n👤 *Entregado por:* ${userData.nombre} (${userData.rol})\n🏢 *Destino:* ${destino}\n📝 *Notas:* ${notas || 'Sin notas adicionales'}\n\n_Por favor confirmar la recepción física en el sistema._`,
+      rolFiltro: destino
+    });
+  } catch (err) {
+    alert("Error al registrar entrega: " + err.message);
+  }
+};
+
+function escucharEntregas() {
+  const q = query(collection(db, "entregas_departamentos"), orderBy("timestamp", "desc"));
+  onSnapshot(q, (snapshot) => {
+    entregas = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderTablaEntregas();
+  });
+}
+
+function renderTablaEntregas() {
+  const tbody = document.getElementById("table-entregas-body");
+  tbody.innerHTML = "";
+  const empty = document.getElementById("entregas-empty-state");
+
+  if (entregas.length === 0) {
+    empty.classList.remove("hidden");
+    return;
+  }
+  empty.classList.add("hidden");
+
+  const esAdmin = esSuperAdmin();
+
+  entregas.forEach(ent => {
+    const tr = document.createElement("tr");
+    tr.className = "hover:bg-gray-50/80 transition border-b border-gray-100";
+
+    const puedeConfirmar = userData.rol === ent.destino || esAdmin;
+
+    let recepcionHTML = "";
+    if (ent.recibido) {
+      recepcionHTML = `
+        <span class="text-green-700 font-bold flex items-center justify-center space-x-1">
+          <i class="fa-solid fa-circle-check text-green-600"></i>
+          <span>Recibido</span>
+        </span>
+      `;
+    } else {
+      if (puedeConfirmar) {
+        recepcionHTML = `
+          <button onclick="window.confirmarRecepcionEntrega('${ent.id}', '${ent.tipo}', '${ent.proyecto}')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-2.5 py-1 rounded-lg border border-blue-200 transition cursor-pointer">
+            Confirmar Recepción
+          </button>
+        `;
+      } else {
+        recepcionHTML = `<span class="text-amber-600 font-semibold italic text-[11px]">En tránsito a ${ent.destino}</span>`;
+      }
+    }
+
+    tr.innerHTML = `
+      <td class="p-3 font-semibold text-gray-500 border-r border-gray-100">${ent.semana}</td>
+      <td class="p-3 text-gray-600 border-r border-gray-100 whitespace-nowrap">${formatearFecha(ent.fechaEntrega)}</td>
+      <td class="p-3 font-bold text-gray-800 border-r border-gray-100">${ent.proyecto}</td>
+      <td class="p-3 font-mono text-gray-700 border-r border-gray-100">${ent.articulo}</td>
+      <td class="p-3 border-r border-gray-100">
+        <span class="bg-red-50 text-[#D61B28] px-2 py-0.5 rounded font-bold text-[10px] border border-red-100">${ent.tipo}</span>
+        ${ent.notas ? `<p class="text-[10px] text-gray-400 mt-0.5">${ent.notas}</p>` : ''}
+      </td>
+      <td class="p-3 border-r border-gray-100 whitespace-nowrap">
+        <span class="font-bold text-gray-800 block">${ent.entregadoPorNombre}</span>
+        <span class="text-[10px] text-gray-400">${ent.entregadoPorRol}</span>
+      </td>
+      <td class="p-3 border-r border-gray-100 font-bold text-gray-700">${ent.destino}</td>
+      <td class="p-3 text-center whitespace-nowrap">${recepcionHTML}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+window.confirmarRecepcionEntrega = async (id, tipo, proyecto) => {
+  if (confirm(`¿Confirmar que has recibido físicamente el elemento "${tipo}" del proyecto "${proyecto}"?`)) {
+    await updateDoc(doc(db, "entregas_departamentos", id), {
+      recibido: true,
+      fechaRecepcion: new Date().toISOString(),
+      recibidoPorNombre: userData.nombre
+    });
+  }
+};
+
+// Escucha en tiempo real de Solicitudes y Retraso a los 7 Días
 function escucharCambios() {
   const q = query(collection(db, "solicitudes_cambios"), orderBy("timestamp", "desc"));
   onSnapshot(q, (snapshot) => {
@@ -577,7 +780,6 @@ function renderTabla() {
       textoBox += `<br><span class="text-[10px] text-gray-400 italic"> (editado: ${formatearFecha(item.ultimaEdicion)})</span>`;
     }
 
-    // Estado HTML
     let estadoHTML = "";
     if (esDesarrollo) {
       estadoHTML = `
@@ -597,12 +799,10 @@ function renderTabla() {
       estadoHTML = `<span class="border ${estilo} px-3 py-1 rounded-lg font-bold text-xs">${item.estado}</span>`;
     }
 
-    // Fecha Realizado
     const fechaRealizadoHTML = item.fechaRealizado 
       ? `<span class="font-bold text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200">${formatearFecha(item.fechaRealizado)}</span>`
       : `<span class="text-gray-300 text-[11px]">—</span>`;
 
-    // Validación Costos
     let costosHTML = "";
     if (item.estado === "Realizado") {
       if (item.validadoCostos) {
@@ -714,7 +914,7 @@ window.editarTextoBox = async (id, textoActual) => {
   }
 };
 
-// ==================== INFORMES, ORDENACIÓN Y GENERADOR TEXTO ====================
+// ==================== INFORMES Y NOTIFICACIÓN TEXTO ====================
 function renderInformeView() {
   document.getElementById("metric-total").textContent = solicitudes.length;
   document.getElementById("metric-proceso").textContent = solicitudes.filter(s => s.estado === "En proceso").length;
@@ -781,7 +981,6 @@ function poblarListaProyectosInforme() {
   });
 }
 
-// Generador de Texto Oficial para WhatsApp (Formato Imagen 2)
 function generarTextoNotificacionBata() {
   const seleccionados = Array.from(document.querySelectorAll(".report-chk:checked")).map(c => c.value);
   if (seleccionados.length === 0) {
