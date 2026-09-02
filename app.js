@@ -838,6 +838,7 @@ window.confirmarRecepcionEntrega = async (id, tipo, proyecto) => {
   }
 };
 
+// 1. Reporte Impreso / PDF Entregas (CON FOTOS)
 function abrirReporteImpresoEntregas() {
   if (entregas.length === 0) {
     alert("No hay registros de entregas para generar el reporte.");
@@ -850,6 +851,7 @@ function abrirReporteImpresoEntregas() {
       <table class="w-full text-left border-collapse border border-gray-200 text-xs">
         <thead class="bg-gray-100 font-bold">
           <tr>
+            <th class="p-2 border text-center w-12">Foto</th>
             <th class="p-2 border">Sem.</th>
             <th class="p-2 border">Fecha/Hora</th>
             <th class="p-2 border">Proyecto</th>
@@ -864,8 +866,13 @@ function abrirReporteImpresoEntregas() {
   `;
 
   entregas.forEach(it => {
+    const fotoPrint = it.foto 
+      ? `<img src="${it.foto}" style="width: 42px; height: 28px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; margin: auto;">`
+      : `<span style="color: #bbb;">—</span>`;
+
     html += `
       <tr class="border-b">
+        <td class="p-1 border text-center">${fotoPrint}</td>
         <td class="p-2 border font-bold font-mono">${it.semana}</td>
         <td class="p-2 border whitespace-nowrap">${formatearFecha(it.fechaEntrega)}</td>
         <td class="p-2 border font-bold text-gray-800">${it.proyecto}</td>
@@ -916,7 +923,7 @@ function abrirResumenTextoEntregas() {
     alert("Texto de entregas copiado al portapapeles.");
   };
 
-  // Apertura directa en Outlook (PWA / Escritorio)
+  // Disparo a Outlook (PWA / Escritorio)
   document.getElementById("btn-enviar-correo-entregas").onclick = () => {
     const asunto = encodeURIComponent("Bata Bolivia - Control de Entregas a Departamentos");
     const cuerpo = encodeURIComponent(texto);
@@ -1294,7 +1301,7 @@ function generarTextoNotificacionBata() {
     alert("Texto copiado al portapapeles con éxito.");
   };
 
-  // Abrir Outlook (PWA / Escritorio)
+  // Disparo a Outlook (PWA / Escritorio)
   document.getElementById("btn-enviar-correo-informe").onclick = () => {
     const asunto = encodeURIComponent(`Bata Bolivia - Cambios Realizados para Semana ${semanaTitulo}`);
     const cuerpo = encodeURIComponent(texto);
@@ -1309,6 +1316,7 @@ function generarTextoNotificacionBata() {
   modalTextoWsp.classList.remove("hidden");
 }
 
+// 2. Reporte Impreso / PDF Informe (CON FOTOS)
 function generarModalInformeResumen() {
   const seleccionadosIds = Array.from(document.querySelectorAll(".chk-articulo-informe:checked")).map(c => c.value);
   if (seleccionadosIds.length === 0) {
@@ -1324,6 +1332,7 @@ function generarModalInformeResumen() {
       <table class="w-full text-left border-collapse border border-gray-200 text-xs">
         <thead class="bg-gray-100 font-bold">
           <tr>
+            <th class="p-2 border text-center w-12">Foto</th>
             <th class="p-2 border">Semana</th>
             <th class="p-2 border">Fecha Solicitud</th>
             <th class="p-2 border">Solicitante</th>
@@ -1339,8 +1348,13 @@ function generarModalInformeResumen() {
   `;
 
   items.forEach(it => {
+    const fotoPrint = it.foto 
+      ? `<img src="${it.foto}" style="width: 42px; height: 28px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; margin: auto;">`
+      : `<span style="color: #bbb;">—</span>`;
+
     html += `
       <tr class="border-b">
+        <td class="p-1 border text-center">${fotoPrint}</td>
         <td class="p-2 border font-bold font-mono">${it.semana || '—'}</td>
         <td class="p-2 border whitespace-nowrap">${formatearFecha(it.fechaCreacion)}</td>
         <td class="p-2 border whitespace-nowrap font-medium">${it.solicitanteNombre} <span class="text-[10px] text-gray-400">(${it.solicitanteRol})</span></td>
