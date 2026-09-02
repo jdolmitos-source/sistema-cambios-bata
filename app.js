@@ -32,8 +32,9 @@ const firebaseConfig = {
   measurementId: "G-0XXGS651PJ"
 };
 
-// ⚠️ CORREO ÚNICO Y EXCLUSIVO DE SUPER ADMINISTRADOR
+// ⚠️ CORREO Y NÚMERO DIRECTO DE SUPER ADMINISTRADOR
 const SUPER_ADMIN_EMAIL = "jd.olmitos@gmail.com";
+const SUPER_ADMIN_WHATSAPP = "59174812364";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -45,11 +46,11 @@ let solicitudes = [];
 let entregas = [];
 let chartInstance = null;
 
-// Filtros directos en cabecera de tabla Informe
+// Filtros en cabecera de Informe
 let colFiltroSemanaInforme = "";
 let colFiltroProyectoInforme = "";
 
-// Filtros directos en cabecera de tabla Entregas
+// Filtros en cabecera de Entregas
 let colFiltroSemanaEntregas = "";
 let colFiltroProyectoEntregas = "";
 
@@ -61,7 +62,6 @@ const fileToBase64 = (file) => new Promise((resolve, reject) => {
   reader.onerror = error => reject(error);
 });
 
-// Comprobar estrictamente si es Super Admin (SOLO jd.olmitos@gmail.com)
 function esSuperAdmin() {
   if (!currentUser || !currentUser.email) return false;
   return currentUser.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
@@ -107,39 +107,22 @@ if (document.getElementById("close-modal-entregas-texto")) {
   document.getElementById("close-modal-entregas-texto").onclick = () => modalEntregasTexto.classList.add("hidden");
 }
 
-// Reset de Contraseña por WhatsApp
-document.getElementById("btn-forgot-pass").onclick = async () => {
+// Reset de Contraseña dirigido siempre al WhatsApp de Super Admin (+591 74812364)
+document.getElementById("btn-forgot-pass").onclick = () => {
   const email = document.getElementById("login-email").value.trim();
   if (!email) {
-    alert("Ingresa tu correo electrónico en la casilla para buscar tu número de celular registrado.");
+    alert("Por favor ingresa tu correo electrónico en el campo superior antes de solicitar el reseteo.");
     return;
   }
 
-  try {
-    const snap = await getDocs(collection(db, "usuarios"));
-    let usuarioEncontrado = null;
-    snap.forEach(d => {
-      const u = d.data();
-      if ((u.email || "").toLowerCase() === email.toLowerCase()) {
-        usuarioEncontrado = u;
-      }
-    });
+  const msg = encodeURIComponent(
+    `🔐 *SOLICITUD DE RESTABLECIMIENTO DE CONTRASEÑA*\n` +
+    `*Sistema de Cambios - Bata Bolivia*\n\n` +
+    `👤 *Correo del Solicitante:* ${email}\n\n` +
+    `_Hola Daniel, solicito por favor generar el enlace de reseteo de mi contraseña en Firebase Console para este correo._`
+  );
 
-    if (usuarioEncontrado && usuarioEncontrado.celular) {
-      const msg = encodeURIComponent(
-        `🔐 *SOLICITUD DE RESET DE CONTRASEÑA - BATA BOLIVIA*\n\n` +
-        `👤 *Usuario:* ${usuarioEncontrado.nombre}\n` +
-        `📧 *Correo:* ${email}\n` +
-        `📱 *Celular:* +591 ${usuarioEncontrado.celular}\n\n` +
-        `_Solicito restablecer mi contraseña de acceso._`
-      );
-      window.open(`https://wa.me/591${usuarioEncontrado.celular}?text=${msg}`, "_blank");
-    } else {
-      alert(`No se encontró ningún usuario con el correo: ${email}`);
-    }
-  } catch (err) {
-    alert("Error al procesar: " + err.message);
-  }
+  window.open(`https://wa.me/${SUPER_ADMIN_WHATSAPP}?text=${msg}`, "_blank");
 };
 
 // Perfil
@@ -354,10 +337,10 @@ async function cargarPanelSuperAdmin() {
   if (!esSuperAdmin()) return;
 
   const tbodyUsers = document.getElementById("table-users-body");
-  tbodyUsers.innerHTML = ""; // Limpieza preventiva para evitar duplicados
+  tbodyUsers.innerHTML = "";
 
   const snap = await getDocs(collection(db, "usuarios"));
-  tbodyUsers.innerHTML = ""; // Doble confirmación al completar la promesa
+  tbodyUsers.innerHTML = "";
 
   snap.forEach(docU => {
     const u = docU.data();
@@ -462,14 +445,12 @@ window.eliminarUsuarioDoc = async (id, nombre) => {
 window.eliminarSolicitudProyecto = async (id, proyecto) => {
   if (confirm(`¿Eliminar el registro "${proyecto}" permanentemente de la base de datos?`)) {
     await deleteDoc(doc(db, "solicitudes_cambios", id));
-    // No llamamos a cargarPanelSuperAdmin directamente porque onSnapshot se encargará de refrescar
   }
 };
 
 window.eliminarEntregaDoc = async (id, tipo, proyecto) => {
   if (confirm(`¿Eliminar la entrega "${tipo}" del proyecto "${proyecto}" permanentemente?`)) {
     await deleteDoc(doc(db, "entregas_departamentos", id));
-    // onSnapshot se encargará del refresco automático
   }
 };
 
@@ -525,7 +506,7 @@ document.getElementById("btn-close-whatsapp-modal").onclick = () => {
   document.getElementById("modal-whatsapp").classList.add("hidden");
 };
 
-// Envío y Publicación de Minuta (Se integra a la lista de Cambios como Plan Piloto)
+// Envío y Publicación de Minuta
 if (document.getElementById("form-minuta")) {
   document.getElementById("form-minuta").onsubmit = async (e) => {
     e.preventDefault();
@@ -540,7 +521,7 @@ if (document.getElementById("form-minuta")) {
         proyecto,
         articulo,
         boxCambio: detalle,
-        esMinuta: true, // Marca especial para Plan Piloto
+        esMinuta: true,
         solicitanteNombre: userData.nombre,
         solicitanteRol: userData.rol,
         solicitanteId: currentUser.uid,
@@ -708,7 +689,7 @@ function escucharEntregas() {
   });
 }
 
-// Filtros directos de tabla Entregas (Tipo Excel)
+// Filtros en cabecera de tabla Entregas
 const colFilterSemEntregas = document.getElementById("col-filter-semana-entregas");
 const colFilterProyEntregas = document.getElementById("col-filter-proyecto-entregas");
 
@@ -738,8 +719,8 @@ function renderTablaEntregas() {
   const empty = document.getElementById("entregas-empty-state");
 
   let entregasFiltradas = entregas.filter(item => {
-    const semStr = (item.semana || "").toString().toLowerCase();
-    const proyStr = (item.proyecto || "").toString().toLowerCase();
+    const semStr = (item.semana || "").toString().toLowerCase().trim();
+    const proyStr = (item.proyecto || "").toString().toLowerCase().trim();
     const coincideSem = !colFiltroSemanaEntregas || semStr.includes(colFiltroSemanaEntregas);
     const coincideProy = !colFiltroProyectoEntregas || proyStr.includes(colFiltroProyectoEntregas);
     return coincideSem && coincideProy;
@@ -889,7 +870,7 @@ function abrirResumenTextoEntregas() {
     alert("Texto de entregas copiado al portapapeles.");
   };
 
-  // Conexión con Outlook PWA / Web
+  // Conexión con Outlook PWA / Web para Entregas
   document.getElementById("btn-enviar-correo-entregas").onclick = () => {
     const asunto = encodeURIComponent("Bata Bolivia - Control de Entregas a Departamentos");
     const cuerpo = encodeURIComponent(texto);
@@ -956,7 +937,6 @@ function renderTabla() {
 
   solicitudes.forEach((item) => {
     const tr = document.createElement("tr");
-    // Si es Minuta de Plan Piloto se resalta con fondo dorado/ámbar suave
     tr.className = item.esMinuta 
       ? "bg-amber-50/70 hover:bg-amber-100/70 transition border-b border-amber-200" 
       : "hover:bg-gray-50/80 transition border-b border-gray-100";
@@ -1138,8 +1118,8 @@ function renderInformeView() {
 
 function actualizarInformePorSemana() {
   let articulosFiltrados = solicitudes.filter(item => {
-    const semStr = (item.semana || "").toString().toLowerCase();
-    const proyStr = (item.proyecto || "").toString().toLowerCase();
+    const semStr = (item.semana || "").toString().toLowerCase().trim();
+    const proyStr = (item.proyecto || "").toString().toLowerCase().trim();
     const coincideSem = !colFiltroSemanaInforme || semStr.includes(colFiltroSemanaInforme);
     const coincideProy = !colFiltroProyectoInforme || proyStr.includes(colFiltroProyectoInforme);
     return coincideSem && coincideProy;
@@ -1159,7 +1139,7 @@ function actualizarInformePorSemana() {
 
   const badgeContainer = document.getElementById("badge-congelamiento-container");
   if (total === 0) {
-    badgeContainer.innerHTML = `<span class="bg-gray-100 text-gray-500 font-bold text-[11px] px-3 py-1 rounded-full border border-gray-200">Sin artículos con ese filtro</span>`;
+    badgeContainer.innerHTML = `<span class="bg-gray-100 text-gray-500 font-bold text-[11px] px-3 py-1 rounded-full border border-gray-200">Sin artículos coincidentes</span>`;
   } else if (realizados === total && validadosCostos === total) {
     badgeContainer.innerHTML = `
       <span class="bg-green-100 text-green-800 font-bold text-[11px] px-3.5 py-1.5 rounded-full border border-green-300 inline-flex items-center space-x-1.5 shadow-sm">
@@ -1231,6 +1211,7 @@ function actualizarConteoSeleccionados() {
   if (label) label.textContent = `${marcados} de ${total} seleccionados`;
 }
 
+// Generador de Texto Oficial para WhatsApp / Outlook Web (Informe)
 function generarTextoNotificacionBata() {
   const seleccionadosIds = Array.from(document.querySelectorAll(".chk-articulo-informe:checked")).map(c => c.value);
   if (seleccionadosIds.length === 0) {
@@ -1256,6 +1237,14 @@ function generarTextoNotificacionBata() {
     textarea.select();
     navigator.clipboard.writeText(texto);
     alert("Texto copiado al portapapeles con éxito.");
+  };
+
+  // Conexión con Outlook PWA / Web para Informe
+  document.getElementById("btn-enviar-correo-informe").onclick = () => {
+    const asunto = encodeURIComponent(`Bata Bolivia - Cambios Realizados para Semana ${semanaTitulo}`);
+    const cuerpo = encodeURIComponent(texto);
+    const outlookWebUrl = `https://outlook.office.com/mail/deeplink/compose?subject=${asunto}&body=${cuerpo}`;
+    window.open(outlookWebUrl, "_blank");
   };
 
   document.getElementById("btn-enviar-wsp-directo").onclick = () => {
