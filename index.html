@@ -179,7 +179,7 @@
     </header>
 
     <div class="flex flex-1 relative z-10">
-      <!-- Menú Lateral Simplificado -->
+      <!-- Menú Lateral -->
       <aside class="w-64 bg-white border-r border-gray-200 p-4 space-y-3">
         <button type="button" id="menu-btn-cambios" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs transition bg-red-50 text-[#D61B28] cursor-pointer">
           <i class="fa-solid fa-arrow-right-arrow-left"></i>
@@ -196,11 +196,6 @@
           <span>Entregas</span>
         </button>
 
-        <button type="button" id="menu-btn-minuta" class="w-full hidden flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs bg-amber-50 text-amber-800 hover:bg-amber-100 transition cursor-pointer border border-amber-200">
-          <i class="fa-solid fa-clipboard-list text-sm text-amber-600"></i>
-          <span>Minuta de Cambios</span>
-        </button>
-
         <button type="button" id="menu-btn-usuarios" class="w-full hidden flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-gray-600 hover:bg-gray-100 transition cursor-pointer">
           <i class="fa-solid fa-user-shield text-[#D61B28] text-sm"></i>
           <span>Super Admin</span>
@@ -208,7 +203,7 @@
       </aside>
 
       <main class="flex-1 p-6 md:p-8 overflow-y-auto">
-        <!-- VISTA 1: CAMBIOS (INCLUYE MINUTAS DE PLAN PILOTO) -->
+        <!-- VISTA 1: CAMBIOS -->
         <section id="view-cambios" class="space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -235,7 +230,8 @@
               <table class="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr class="bg-gray-50/75 border-b border-gray-200 text-gray-600 font-semibold">
-                    <th class="p-3 border-r border-gray-200">Semana</th>
+                    <th class="p-2.5 border-r border-gray-200 text-center w-14">Foto</th>
+                    <th class="p-3 border-r border-gray-200 w-20">Semana</th>
                     <th class="p-3 border-r border-gray-200">Fecha Solicitud</th>
                     <th class="p-3 border-r border-gray-200">Solicitante</th>
                     <th class="p-3 border-r border-gray-200">Proyecto</th>
@@ -313,13 +309,14 @@
                     <th class="p-2.5 text-center w-10">
                       <input type="checkbox" id="chk-toggle-all-semana" checked class="h-4 w-4 accent-[#D61B28] cursor-pointer">
                     </th>
-                    <th class="p-2.5 w-28">
+                    <th class="p-2.5 text-center w-14">Foto</th>
+                    <th class="p-2.5 w-24">
                       <div class="space-y-1">
                         <span>Semana</span>
                         <input type="text" id="col-filter-semana-informe" placeholder="Filtrar..." class="w-full px-2 py-1 bg-white border border-gray-300 rounded font-normal font-mono text-[11px] focus:outline-none focus:border-[#D61B28]">
                       </div>
                     </th>
-                    <th class="p-2.5 w-40">
+                    <th class="p-2.5 w-36">
                       <div class="space-y-1">
                         <span>Proyecto</span>
                         <input type="text" id="col-filter-proyecto-informe" placeholder="Filtrar (ej: OMAR)..." class="w-full px-2 py-1 bg-white border border-gray-300 rounded font-normal text-[11px] focus:outline-none focus:border-[#D61B28]">
@@ -378,6 +375,7 @@
               <table class="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr class="bg-gray-100/80 border-b border-gray-200 text-gray-700 font-bold">
+                    <th class="p-2.5 border-r border-gray-200 text-center w-14">Foto</th>
                     <th class="p-2.5 border-r border-gray-200 w-24">
                       <div class="space-y-1">
                         <span>Semana</span>
@@ -415,6 +413,7 @@
             <span>Panel de Administración (Super Admin: jd.olmitos@gmail.com)</span>
           </h2>
           
+          <!-- TABLA 1: USUARIOS -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <div class="bg-gray-50/75 p-3 border-b border-gray-200 font-bold text-xs text-gray-700 flex items-center space-x-2">
               <i class="fa-solid fa-users text-[#D61B28]"></i>
@@ -435,6 +434,7 @@
             </table>
           </div>
 
+          <!-- TABLA 2: ELIMINAR CAMBIOS Y MINUTAS -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <div class="bg-gray-50/75 p-3 border-b border-gray-200 font-bold text-xs text-gray-700 flex items-center space-x-2">
               <i class="fa-solid fa-folder-minus text-[#D61B28]"></i>
@@ -459,6 +459,7 @@
             </div>
           </div>
 
+          <!-- TABLA 3: ELIMINAR ENTREGAS -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <div class="bg-gray-50/75 p-3 border-b border-gray-200 font-bold text-xs text-gray-700 flex items-center space-x-2">
               <i class="fa-solid fa-trash-can text-[#D61B28]"></i>
@@ -486,7 +487,7 @@
     </div>
   </div>
 
-  <!-- MODAL: NUEVA ENTREGA -->
+  <!-- MODAL: NUEVA ENTREGA (CON FOTO OPCIONAL) -->
   <div id="modal-nueva-entrega" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden text-xs">
       <div class="bg-[#D61B28] px-6 py-4 flex justify-between items-center text-white">
@@ -523,6 +524,11 @@
         </div>
 
         <div>
+          <label class="block font-bold text-gray-700 mb-1">Fotografía del Prototipo / Guía (Opcional)</label>
+          <input type="file" id="ent-photo" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-red-50 file:text-[#D61B28]">
+        </div>
+
+        <div>
           <label class="block font-bold text-gray-700 mb-1">Observaciones / Notas (Opcional)</label>
           <input type="text" id="ent-notas" placeholder="Ej: Aprobado para corte final" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]">
         </div>
@@ -538,7 +544,7 @@
     </div>
   </div>
 
-  <!-- MODAL: MINUTA DE CAMBIOS ESTRUCTURADA -->
+  <!-- MODAL: MINUTA DE CAMBIOS (CON FOTO OPCIONAL) -->
   <div id="modal-minuta" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl relative text-xs">
       <button type="button" id="close-minuta" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -562,8 +568,12 @@
           <input type="text" id="minuta-articulo" required placeholder="Ej: 58961/91236 o 1-2419519V" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-600 font-mono">
         </div>
         <div>
+          <label class="block font-semibold text-gray-600 mb-1">Fotografía del Prototipo / Guía (Opcional)</label>
+          <input type="file" id="minuta-photo" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-amber-50 file:text-amber-800">
+        </div>
+        <div>
           <label class="block font-semibold text-gray-600 mb-1">Cambios Técnicos Solicitados (Plan Piloto)</label>
-          <textarea id="minuta-box" rows="5" required placeholder="Describe las modificaciones técnicas en guías, piezas, suelas o costuras..." class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-600"></textarea>
+          <textarea id="minuta-box" rows="4" required placeholder="Describe las modificaciones técnicas en guías, piezas, suelas o costuras..." class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-600"></textarea>
         </div>
         <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl transition shadow flex items-center justify-center space-x-2 cursor-pointer">
           <i class="fa-brands fa-whatsapp"></i>
@@ -599,7 +609,7 @@
     </div>
   </div>
 
-  <!-- MODAL: NUEVA SOLICITUD -->
+  <!-- MODAL: NUEVA SOLICITUD (CON FOTO OPCIONAL) -->
   <div id="modal-new-change" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden">
       <div class="bg-[#D61B28] px-6 py-4 flex justify-between items-center text-white">
@@ -622,8 +632,12 @@
           <input type="text" id="change-article" placeholder="Ej: 58961/91236 o 1-2419519V" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28] font-mono">
         </div>
         <div>
+          <label class="block font-bold text-gray-700 mb-1">Fotografía del Prototipo / Guía (Opcional)</label>
+          <input type="file" id="change-photo" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-red-50 file:text-[#D61B28]">
+        </div>
+        <div>
           <label class="block font-bold text-gray-700 mb-1">Box de Cambios</label>
-          <textarea id="change-box" rows="4" placeholder="Describir cambios a realizar..." required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]"></textarea>
+          <textarea id="change-box" rows="3" placeholder="Describir cambios a realizar..." required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]"></textarea>
         </div>
         <div class="pt-2 flex justify-end space-x-2">
           <button type="button" id="modal-btn-cancel" class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg font-bold cursor-pointer">Cancelar</button>
@@ -636,7 +650,7 @@
     </div>
   </div>
 
-  <!-- MODAL: TEXTO NOTIFICACIÓN WHATSAPP E INFORME (CON OUTLOOK PWA / WEB) -->
+  <!-- MODAL: TEXTO NOTIFICACIÓN WHATSAPP E INFORME (OUTLOOK PWA / WEB) -->
   <div id="modal-texto-wsp" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-xl rounded-3xl p-6 shadow-2xl relative text-xs">
       <button type="button" id="close-texto-wsp" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -652,9 +666,9 @@
           <i class="fa-regular fa-copy"></i>
           <span>Copiar Texto</span>
         </button>
-        <button type="button" id="btn-enviar-correo-informe" class="bg-[#0078D4] hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center space-x-1.5 cursor-pointer" title="Abrir en Outlook Web / PWA">
+        <button type="button" id="btn-enviar-correo-informe" class="bg-[#0078D4] hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center space-x-1.5 cursor-pointer" title="Abrir en Outlook (PWA / Escritorio)">
           <i class="fa-solid fa-envelope"></i>
-          <span>Abrir Outlook Web</span>
+          <span>Outlook (PWA)</span>
         </button>
         <button type="button" id="btn-enviar-wsp-directo" class="bg-[#25D366] hover:bg-green-600 text-white font-bold px-5 py-2.5 rounded-xl transition shadow flex items-center space-x-1.5 cursor-pointer">
           <i class="fa-brands fa-whatsapp"></i>
@@ -710,7 +724,7 @@
     </div>
   </div>
 
-  <!-- MODAL: RESUMEN TEXTO ENTREGAS (CONEXIÓN OUTLOOK PWA / WEB) -->
+  <!-- MODAL: RESUMEN TEXTO ENTREGAS (CONEXIÓN OUTLOOK PWA / ESCRITORIO) -->
   <div id="modal-entregas-texto" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-xl rounded-3xl p-6 shadow-2xl relative text-xs">
       <button type="button" id="close-modal-entregas-texto" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -726,14 +740,25 @@
           <i class="fa-regular fa-copy"></i>
           <span>Copiar Texto</span>
         </button>
-        <button type="button" id="btn-enviar-correo-entregas" class="bg-[#0078D4] hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center space-x-1.5 cursor-pointer" title="Abrir Outlook Web / PWA">
+        <button type="button" id="btn-enviar-correo-entregas" class="bg-[#0078D4] hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center space-x-1.5 cursor-pointer" title="Abrir en Outlook (PWA / Escritorio)">
           <i class="fa-solid fa-envelope"></i>
-          <span>Abrir Outlook Web</span>
+          <span>Outlook (PWA)</span>
         </button>
         <button type="button" id="btn-enviar-wsp-entregas" class="bg-[#25D366] hover:bg-green-600 text-white font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center space-x-1.5 cursor-pointer">
           <i class="fa-brands fa-whatsapp"></i>
           <span>WhatsApp</span>
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: VISOR DE FOTOGRAFÍA / PROTOTIPO EN TAMAÑO COMPLETO -->
+  <div id="modal-visor-foto" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-3xl p-4 shadow-2xl relative max-w-2xl max-h-[90vh] flex flex-col items-center">
+      <button type="button" id="close-visor-foto" class="absolute top-3 right-3 text-gray-500 hover:text-gray-800 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+      <h4 id="visor-foto-titulo" class="font-bold text-xs text-gray-800 mb-3 text-center"></h4>
+      <div class="overflow-auto max-h-[75vh] flex items-center justify-center bg-gray-50 rounded-2xl p-2 border border-gray-200">
+        <img id="visor-foto-img" src="" alt="Prototipo" class="max-w-full h-auto object-contain rounded-xl">
       </div>
     </div>
   </div>
