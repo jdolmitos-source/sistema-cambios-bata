@@ -87,7 +87,7 @@
         <div>
           <div class="flex justify-between items-center mb-1">
             <label class="font-semibold text-gray-600">Contraseña</label>
-            <button type="button" id="btn-forgot-pass" class="text-[10px] text-[#D61B28] hover:underline font-semibold flex items-center space-x-1">
+            <button type="button" id="btn-forgot-pass" class="text-[10px] text-[#D61B28] hover:underline font-semibold flex items-center space-x-1" title="Solicitar reseteo al Super Admin por WhatsApp">
               <i class="fa-brands fa-whatsapp text-green-600 text-xs"></i>
               <span>¿Resetear por WhatsApp?</span>
             </button>
@@ -179,7 +179,7 @@
     </header>
 
     <div class="flex flex-1 relative z-10">
-      <!-- Menú Lateral -->
+      <!-- Menú Lateral Simplificado -->
       <aside class="w-64 bg-white border-r border-gray-200 p-4 space-y-3">
         <button type="button" id="menu-btn-cambios" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs transition bg-red-50 text-[#D61B28] cursor-pointer">
           <i class="fa-solid fa-arrow-right-arrow-left"></i>
@@ -269,7 +269,7 @@
             <div class="flex items-center space-x-2">
               <button type="button" id="btn-generar-texto-wsp" class="bg-green-600 hover:bg-green-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
                 <i class="fa-brands fa-whatsapp text-sm"></i>
-                <span>Generar Texto Notificación</span>
+                <span>Generar Notificación</span>
               </button>
               <button type="button" id="btn-generar-informe-resumen" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
                 <i class="fa-solid fa-file-pdf"></i>
@@ -408,14 +408,13 @@
           </div>
         </section>
 
-        <!-- VISTA 4: SUPER ADMIN (CON LIMPIEZA COMPLETA DE ENTREGAS Y SOLICITUDES) -->
+        <!-- VISTA 4: SUPER ADMIN -->
         <section id="view-usuarios" class="hidden space-y-6">
           <h2 class="text-lg font-bold text-[#D61B28] flex items-center space-x-2">
             <i class="fa-solid fa-user-shield"></i>
             <span>Panel de Administración (Super Admin: jd.olmitos@gmail.com)</span>
           </h2>
           
-          <!-- TABLA 1: USUARIOS -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <div class="bg-gray-50/75 p-3 border-b border-gray-200 font-bold text-xs text-gray-700 flex items-center space-x-2">
               <i class="fa-solid fa-users text-[#D61B28]"></i>
@@ -436,7 +435,6 @@
             </table>
           </div>
 
-          <!-- TABLA 2: ELIMINAR CAMBIOS Y MINUTAS -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <div class="bg-gray-50/75 p-3 border-b border-gray-200 font-bold text-xs text-gray-700 flex items-center space-x-2">
               <i class="fa-solid fa-folder-minus text-[#D61B28]"></i>
@@ -461,7 +459,6 @@
             </div>
           </div>
 
-          <!-- TABLA 3: ELIMINAR ENTREGAS (LIMPIEZA SUPER ADMIN) -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <div class="bg-gray-50/75 p-3 border-b border-gray-200 font-bold text-xs text-gray-700 flex items-center space-x-2">
               <i class="fa-solid fa-trash-can text-[#D61B28]"></i>
@@ -639,7 +636,7 @@
     </div>
   </div>
 
-  <!-- MODAL: TEXTO NOTIFICACIÓN WHATSAPP -->
+  <!-- MODAL: TEXTO NOTIFICACIÓN WHATSAPP E INFORME (CON OUTLOOK PWA / WEB) -->
   <div id="modal-texto-wsp" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-xl rounded-3xl p-6 shadow-2xl relative text-xs">
       <button type="button" id="close-texto-wsp" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -654,6 +651,10 @@
         <button type="button" id="btn-copiar-texto-wsp" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center space-x-1.5 cursor-pointer">
           <i class="fa-regular fa-copy"></i>
           <span>Copiar Texto</span>
+        </button>
+        <button type="button" id="btn-enviar-correo-informe" class="bg-[#0078D4] hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center space-x-1.5 cursor-pointer" title="Abrir en Outlook Web / PWA">
+          <i class="fa-solid fa-envelope"></i>
+          <span>Abrir Outlook Web</span>
         </button>
         <button type="button" id="btn-enviar-wsp-directo" class="bg-[#25D366] hover:bg-green-600 text-white font-bold px-5 py-2.5 rounded-xl transition shadow flex items-center space-x-1.5 cursor-pointer">
           <i class="fa-brands fa-whatsapp"></i>
