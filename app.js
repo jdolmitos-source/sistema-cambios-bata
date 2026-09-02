@@ -43,16 +43,15 @@ let currentUser = null;
 let userData = null;
 let solicitudes = [];
 let entregas = [];
-let filtroSubmenuActivo = "todos";
 let chartInstance = null;
 
-// Filtros de Informe
-let filtroSemanaInforme = "";
-let filtroProyectoInforme = "";
+// Filtros directos de tabla Informe
+let colFiltroSemanaInforme = "";
+let colFiltroProyectoInforme = "";
 
-// Filtros de Entregas
-let filtroSemanaEntregas = "";
-let filtroProyectoEntregas = "";
+// Filtros directos de tabla Entregas
+let colFiltroSemanaEntregas = "";
+let colFiltroProyectoEntregas = "";
 
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
   if (!file) return resolve(null);
@@ -235,7 +234,7 @@ function actualizarHeaderUsuario() {
     avatarIcon.classList.remove("hidden");
   }
 
-  // Visibilidad Super Admin: SOLO jd.olmitos@gmail.com
+  // Permisos Super Admin (SOLO jd.olmitos@gmail.com)
   const menuAdmin = document.getElementById("menu-btn-usuarios");
   if (esAdmin) {
     menuAdmin.classList.remove("hidden");
@@ -246,7 +245,7 @@ function actualizarHeaderUsuario() {
     }
   }
 
-  // Visibilidad Minuta: Exclusiva para Jefe de Desarrollo (o Super Admin)
+  // Minuta: Exclusiva para Jefe de Desarrollo (o Super Admin)
   const esJefe = userData.rol === "Desarrollo de producto - Jefe";
   const btnMinutaMenu = document.getElementById("menu-btn-minuta");
   const btnMinutaHeader = document.getElementById("btn-open-minuta-header");
@@ -313,7 +312,7 @@ function resetMenuStyles() {
 function activarVistaCambios() {
   resetMenuStyles();
   viewCambios.classList.remove("hidden");
-  menuBtnCambios.className = "w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition bg-red-50 text-[#D61B28] cursor-pointer";
+  menuBtnCambios.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs transition bg-red-50 text-[#D61B28] cursor-pointer";
 }
 
 menuBtnCambios.onclick = activarVistaCambios;
@@ -350,17 +349,7 @@ if (document.getElementById("btn-open-minuta-header")) {
   document.getElementById("btn-open-minuta-header").onclick = () => modalMinuta.classList.remove("hidden");
 }
 
-window.filtrarPorSubmenu = (estado) => {
-  filtroSubmenuActivo = estado;
-  const subtitle = document.getElementById("view-subtitle-filter");
-  if (estado === "todos") subtitle.textContent = "Mostrando todos los registros";
-  else if (estado === "En proceso") subtitle.textContent = "Filtrando: Cambios en proceso";
-  else if (estado === "Realizado") subtitle.textContent = "Filtrando: Cambios realizados";
-  else if (estado === "Retrasado") subtitle.textContent = "Filtrando: Cambios retrasados";
-  renderTabla();
-};
-
-// Panel Super Admin (SOLO jd.olmitos@gmail.com)
+// Panel Super Admin
 async function cargarPanelSuperAdmin() {
   if (!esSuperAdmin()) return;
 
@@ -500,7 +489,7 @@ document.getElementById("btn-close-whatsapp-modal").onclick = () => {
   document.getElementById("modal-whatsapp").classList.add("hidden");
 };
 
-// Envío de Minuta Estructurada
+// Envío de Minuta
 if (document.getElementById("form-minuta")) {
   document.getElementById("form-minuta").onsubmit = async (e) => {
     e.preventDefault();
@@ -521,7 +510,7 @@ if (document.getElementById("form-minuta")) {
   };
 }
 
-// Crear Solicitud de Cambio (Validación de 3 dígitos)
+// Crear Solicitud de Cambio
 const modalNewChange = document.getElementById("modal-new-change");
 document.getElementById("btn-open-new-change").onclick = () => modalNewChange.classList.remove("hidden");
 document.getElementById("modal-btn-close").onclick = () => modalNewChange.classList.add("hidden");
@@ -661,16 +650,19 @@ function escucharEntregas() {
   });
 }
 
-// Filtros directos de Entregas (Semana y Proyecto)
-if (document.getElementById("input-filtro-semana-entregas")) {
-  document.getElementById("input-filtro-semana-entregas").oninput = (e) => {
-    filtroSemanaEntregas = e.target.value.trim();
+// Filtros directos de tabla Entregas (Tipo Excel)
+const colFilterSemEntregas = document.getElementById("col-filter-semana-entregas");
+const colFilterProyEntregas = document.getElementById("col-filter-proyecto-entregas");
+
+if (colFilterSemEntregas) {
+  colFilterSemEntregas.oninput = (e) => {
+    colFiltroSemanaEntregas = e.target.value.trim().toLowerCase();
     renderTablaEntregas();
   };
 }
-if (document.getElementById("input-filtro-proyecto-entregas")) {
-  document.getElementById("input-filtro-proyecto-entregas").oninput = (e) => {
-    filtroProyectoEntregas = e.target.value.trim().toLowerCase();
+if (colFilterProyEntregas) {
+  colFilterProyEntregas.oninput = (e) => {
+    colFiltroProyectoEntregas = e.target.value.trim().toLowerCase();
     renderTablaEntregas();
   };
 }
@@ -688,28 +680,22 @@ function renderTablaEntregas() {
   const empty = document.getElementById("entregas-empty-state");
 
   let entregasFiltradas = entregas.filter(item => {
-    const coincideSem = !filtroSemanaEntregas || (item.semana || "").toString().includes(filtroSemanaEntregas);
-    const coincideProy = !filtroProyectoEntregas || (item.proyecto || "").toLowerCase().includes(filtroProyectoEntregas);
+    const semStr = (item.semana || "").toString().toLowerCase();
+    const proyStr = (item.proyecto || "").toString().toLowerCase();
+    const coincideSem = !colFiltroSemanaEntregas || semStr.includes(colFiltroSemanaEntregas);
+    const coincideProy = !colFiltroProyectoEntregas || proyStr.includes(colFiltroProyectoEntregas);
     return coincideSem && coincideProy;
   });
 
-  // Ordenar siempre por código de semana numérico ascendente (ej. 635, 636...)
   entregasFiltradas.sort((a, b) => (a.semana || "").localeCompare(b.semana || "", undefined, { numeric: true }));
 
   if (entregasFiltradas.length === 0) {
     empty.classList.remove("hidden");
-    const badge = document.getElementById("badge-total-entregas");
-    if (badge) badge.textContent = "0 entregas coincidentes";
     return;
   }
   empty.classList.add("hidden");
 
   const esAdmin = esSuperAdmin();
-  const recibidasCount = entregasFiltradas.filter(e => e.recibido).length;
-  const badge = document.getElementById("badge-total-entregas");
-  if (badge) {
-    badge.textContent = `Mostrando: ${entregasFiltradas.length} | Recibidas: ${recibidasCount} | En Tránsito: ${entregasFiltradas.length - recibidasCount}`;
-  }
 
   entregasFiltradas.forEach(ent => {
     const tr = document.createElement("tr");
@@ -881,7 +867,7 @@ function escucharCambios() {
     });
     renderTabla();
     if (!viewInforme.classList.contains("hidden")) {
-      renderInformeView();
+      actualizarInformePorSemana();
     }
     if (esSuperAdmin() && !viewUsuarios.classList.contains("hidden")) {
       cargarPanelSuperAdmin();
@@ -901,12 +887,7 @@ function renderTabla() {
   tbody.innerHTML = "";
   const empty = document.getElementById("table-empty-state");
 
-  const itemsFiltrados = solicitudes.filter(item => {
-    if (filtroSubmenuActivo === "todos") return true;
-    return item.estado === filtroSubmenuActivo;
-  });
-
-  if (itemsFiltrados.length === 0) {
+  if (solicitudes.length === 0) {
     empty.classList.remove("hidden");
     return;
   }
@@ -916,7 +897,7 @@ function renderTabla() {
   const esDesarrollo = (userData.rol || "").includes("Desarrollo") || esAdmin;
   const esCostos = userData.rol === "Costos" || esAdmin;
 
-  itemsFiltrados.forEach((item) => {
+  solicitudes.forEach((item) => {
     const tr = document.createElement("tr");
     tr.className = "hover:bg-gray-50/80 transition border-b border-gray-100";
 
@@ -1059,24 +1040,24 @@ window.editarTextoBox = async (id, textoActual) => {
   }
 };
 
-// ==================== INFORMES OPTIMIZADOS ====================
+// ==================== INFORMES CON FILTROS TIPO EXCEL ====================
 function renderInformeView() {
   actualizarInformePorSemana();
 
-  // Filtros de entrada directa por semana y proyecto
-  const inputSem = document.getElementById("input-filtro-semana-informe");
-  const inputProy = document.getElementById("input-filtro-proyecto-informe");
+  // Inputs en cabecera de la tabla Informe
+  const colSem = document.getElementById("col-filter-semana-informe");
+  const colProy = document.getElementById("col-filter-proyecto-informe");
 
-  if (inputSem) {
-    inputSem.oninput = (e) => {
-      filtroSemanaInforme = e.target.value.trim();
+  if (colSem) {
+    colSem.oninput = (e) => {
+      colFiltroSemanaInforme = e.target.value.trim().toLowerCase();
       actualizarInformePorSemana();
     };
   }
 
-  if (inputProy) {
-    inputProy.oninput = (e) => {
-      filtroProyectoInforme = e.target.value.trim().toLowerCase();
+  if (colProy) {
+    colProy.oninput = (e) => {
+      colFiltroProyectoInforme = e.target.value.trim().toLowerCase();
       actualizarInformePorSemana();
     };
   }
@@ -1093,17 +1074,16 @@ function renderInformeView() {
 }
 
 function actualizarInformePorSemana() {
-  // 1. Filtrar solicitudes según semana y proyecto ingresados
   let articulosFiltrados = solicitudes.filter(item => {
-    const coincideSem = !filtroSemanaInforme || (item.semana || "").toString().includes(filtroSemanaInforme);
-    const coincideProy = !filtroProyectoInforme || (item.proyecto || "").toLowerCase().includes(filtroProyectoInforme);
+    const semStr = (item.semana || "").toString().toLowerCase();
+    const proyStr = (item.proyecto || "").toString().toLowerCase();
+    const coincideSem = !colFiltroSemanaInforme || semStr.includes(colFiltroSemanaInforme);
+    const coincideProy = !colFiltroProyectoInforme || proyStr.includes(colFiltroProyectoInforme);
     return coincideSem && coincideProy;
   });
 
-  // Ordenar siempre por código de semana numérico ascendente (ej: 635, 636...)
   articulosFiltrados.sort((a, b) => (a.semana || "").localeCompare(b.semana || "", undefined, { numeric: true }));
 
-  // 2. Actualizar Mini-KPIs
   const total = articulosFiltrados.length;
   const realizados = articulosFiltrados.filter(s => s.estado === "Realizado").length;
   const enProceso = articulosFiltrados.filter(s => s.estado === "En proceso").length;
@@ -1114,7 +1094,6 @@ function actualizarInformePorSemana() {
   document.getElementById("kpi-sem-realizados").textContent = realizados;
   document.getElementById("kpi-sem-costos").textContent = `${validadosCostos} de ${total}`;
 
-  // 3. Alerta de Congelamiento de Producción
   const badgeContainer = document.getElementById("badge-congelamiento-container");
   if (total === 0) {
     badgeContainer.innerHTML = `<span class="bg-gray-100 text-gray-500 font-bold text-[11px] px-3 py-1 rounded-full border border-gray-200">Sin artículos con ese filtro</span>`;
@@ -1135,7 +1114,6 @@ function actualizarInformePorSemana() {
     `;
   }
 
-  // 4. Renderizar Tabla de Artículos
   const tbody = document.getElementById("table-informe-articulos-body");
   tbody.innerHTML = "";
 
@@ -1186,7 +1164,6 @@ function actualizarConteoSeleccionados() {
   if (label) label.textContent = `${marcados} de ${total} artículos seleccionados`;
 }
 
-// Generador de Texto Oficial para WhatsApp (Formato Exacto Bata Bolivia)
 function generarTextoNotificacionBata() {
   const seleccionadosIds = Array.from(document.querySelectorAll(".chk-articulo-informe:checked")).map(c => c.value);
   if (seleccionadosIds.length === 0) {
@@ -1195,7 +1172,7 @@ function generarTextoNotificacionBata() {
   }
 
   const items = solicitudes.filter(s => seleccionadosIds.includes(s.id));
-  const semanaTitulo = filtroSemanaInforme ? filtroSemanaInforme : (items[0]?.semana || "GENERAL");
+  const semanaTitulo = colFiltroSemanaInforme ? colFiltroSemanaInforme : (items[0]?.semana || "GENERAL");
 
   let texto = `CAMBIOS REALIZADOS PARA SEM: ${semanaTitulo}\n\n`;
   texto += `Saludos Estimados, Todos los cambios en guías para el congelamiento de la semana mencionada filas arriba han sido realizados y se puede continuar con el proceso.\n\n`;
