@@ -45,11 +45,11 @@ let solicitudes = [];
 let entregas = [];
 let chartInstance = null;
 
-// Filtros directos de tabla Informe
+// Filtros directos en cabecera de tabla Informe
 let colFiltroSemanaInforme = "";
 let colFiltroProyectoInforme = "";
 
-// Filtros directos de tabla Entregas
+// Filtros directos en cabecera de tabla Entregas
 let colFiltroSemanaEntregas = "";
 let colFiltroProyectoEntregas = "";
 
@@ -234,7 +234,7 @@ function actualizarHeaderUsuario() {
     avatarIcon.classList.remove("hidden");
   }
 
-  // Permisos Super Admin (SOLO jd.olmitos@gmail.com)
+  // Visibilidad Super Admin: SOLO jd.olmitos@gmail.com
   const menuAdmin = document.getElementById("menu-btn-usuarios");
   if (esAdmin) {
     menuAdmin.classList.remove("hidden");
@@ -245,7 +245,7 @@ function actualizarHeaderUsuario() {
     }
   }
 
-  // Minuta: Exclusiva para Jefe de Desarrollo (o Super Admin)
+  // Visibilidad Minuta: Exclusiva para Jefe de Desarrollo (o Super Admin)
   const esJefe = userData.rol === "Desarrollo de producto - Jefe";
   const btnMinutaMenu = document.getElementById("menu-btn-minuta");
   const btnMinutaHeader = document.getElementById("btn-open-minuta-header");
@@ -349,14 +349,16 @@ if (document.getElementById("btn-open-minuta-header")) {
   document.getElementById("btn-open-minuta-header").onclick = () => modalMinuta.classList.remove("hidden");
 }
 
-// Panel Super Admin
+// Panel Super Admin (SIN DUPLICADOS)
 async function cargarPanelSuperAdmin() {
   if (!esSuperAdmin()) return;
 
   const tbodyUsers = document.getElementById("table-users-body");
-  tbodyUsers.innerHTML = "";
+  tbodyUsers.innerHTML = ""; // Limpieza preventiva para evitar duplicados
+
   const snap = await getDocs(collection(db, "usuarios"));
-  
+  tbodyUsers.innerHTML = ""; // Doble confirmación al completar la promesa
+
   snap.forEach(docU => {
     const u = docU.data();
     const tr = document.createElement("tr");
@@ -395,6 +397,7 @@ async function cargarPanelSuperAdmin() {
     tbodyUsers.appendChild(tr);
   });
 
+  // 2. Tabla Solicitudes y Minutas
   const tbodySols = document.getElementById("table-admin-solicitudes-body");
   tbodySols.innerHTML = "";
 
@@ -404,6 +407,9 @@ async function cargarPanelSuperAdmin() {
     tr.innerHTML = `
       <td class="p-3 font-semibold text-gray-500 font-mono">${sol.semana || '—'}</td>
       <td class="p-3 text-gray-600 whitespace-nowrap">${formatearFecha(sol.fechaCreacion)}</td>
+      <td class="p-3">
+        ${sol.esMinuta ? '<span class="bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded text-[10px]">MINUTA PILOTO</span>' : '<span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-[10px]">CAMBIO</span>'}
+      </td>
       <td class="p-3 font-bold text-gray-800">${sol.proyecto}</td>
       <td class="p-3 font-mono text-gray-700">${sol.articulo}</td>
       <td class="p-3 text-gray-600">${sol.solicitanteNombre || '—'}</td>
@@ -415,6 +421,29 @@ async function cargarPanelSuperAdmin() {
       </td>
     `;
     tbodySols.appendChild(tr);
+  });
+
+  // 3. Tabla Entregas (Limpieza Super Admin)
+  const tbodyEnts = document.getElementById("table-admin-entregas-body");
+  tbodyEnts.innerHTML = "";
+
+  entregas.forEach(ent => {
+    const tr = document.createElement("tr");
+    tr.className = "hover:bg-gray-50 border-b border-gray-100";
+    tr.innerHTML = `
+      <td class="p-3 font-semibold text-gray-500 font-mono">${ent.semana || '—'}</td>
+      <td class="p-3 text-gray-600 whitespace-nowrap">${formatearFecha(ent.fechaEntrega)}</td>
+      <td class="p-3 font-bold text-gray-800">${ent.proyecto}</td>
+      <td class="p-3 font-mono text-gray-700">${ent.articulo}</td>
+      <td class="p-3 font-semibold text-gray-700">${ent.tipo}</td>
+      <td class="p-3 font-bold text-gray-700">${ent.destino}</td>
+      <td class="p-3 text-center">
+        <button onclick="window.eliminarEntregaDoc('${ent.id}', '${ent.tipo}', '${ent.proyecto}')" class="text-red-500 hover:text-red-700 p-1 rounded font-bold text-xs cursor-pointer">
+          <i class="fa-solid fa-trash-can"></i> Eliminar
+        </button>
+      </td>
+    `;
+    tbodyEnts.appendChild(tr);
   });
 }
 
@@ -431,9 +460,16 @@ window.eliminarUsuarioDoc = async (id, nombre) => {
 };
 
 window.eliminarSolicitudProyecto = async (id, proyecto) => {
-  if (confirm(`¿Eliminar la solicitud del proyecto "${proyecto}" permanentemente de la base de datos?`)) {
+  if (confirm(`¿Eliminar el registro "${proyecto}" permanentemente de la base de datos?`)) {
     await deleteDoc(doc(db, "solicitudes_cambios", id));
-    cargarPanelSuperAdmin();
+    // No llamamos a cargarPanelSuperAdmin directamente porque onSnapshot se encargará de refrescar
+  }
+};
+
+window.eliminarEntregaDoc = async (id, tipo, proyecto) => {
+  if (confirm(`¿Eliminar la entrega "${tipo}" del proyecto "${proyecto}" permanentemente?`)) {
+    await deleteDoc(doc(db, "entregas_departamentos", id));
+    // onSnapshot se encargará del refresco automático
   }
 };
 
@@ -489,7 +525,7 @@ document.getElementById("btn-close-whatsapp-modal").onclick = () => {
   document.getElementById("modal-whatsapp").classList.add("hidden");
 };
 
-// Envío de Minuta
+// Envío y Publicación de Minuta (Se integra a la lista de Cambios como Plan Piloto)
 if (document.getElementById("form-minuta")) {
   document.getElementById("form-minuta").onsubmit = async (e) => {
     e.preventDefault();
@@ -498,19 +534,40 @@ if (document.getElementById("form-minuta")) {
     const articulo = document.getElementById("minuta-articulo").value.trim();
     const detalle = document.getElementById("minuta-box").value.trim();
 
-    modalMinuta.classList.add("hidden");
-    document.getElementById("form-minuta").reset();
+    try {
+      await addDoc(collection(db, "solicitudes_cambios"), {
+        semana,
+        proyecto,
+        articulo,
+        boxCambio: detalle,
+        esMinuta: true, // Marca especial para Plan Piloto
+        solicitanteNombre: userData.nombre,
+        solicitanteRol: userData.rol,
+        solicitanteId: currentUser.uid,
+        estado: "En proceso",
+        fechaRealizado: null,
+        validadoCostos: false,
+        fechaCreacion: new Date().toISOString(),
+        ultimaEdicion: null,
+        timestamp: serverTimestamp()
+      });
 
-    abrirModalWhatsApp({
-      titulo: "Minuta de Cambios (Plan Piloto)",
-      subtitulo: "Enviar minuta a los Técnicos de Desarrollo:",
-      mensajeTexto: `📋 *MINUTA DE CAMBIOS - PLAN PILOTO*\n*Bata Bolivia / Desarrollo de Producto*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n👤 *Emitido por:* ${userData.nombre} (Jefe Desarrollo)\n\n📝 *DETALLE DE CAMBIOS TÉCNICOS:*\n${detalle}\n\n_Proceder con los ajustes técnicos correspondientes en guías y prototipos._`,
-      rolFiltro: "Desarrollo de producto - Técnico"
-    });
+      modalMinuta.classList.add("hidden");
+      document.getElementById("form-minuta").reset();
+
+      abrirModalWhatsApp({
+        titulo: "Minuta de Cambios Registrada",
+        subtitulo: "Enviar minuta a los Técnicos de Desarrollo:",
+        mensajeTexto: `📋 *MINUTA DE CAMBIOS - PLAN PILOTO*\n*Bata Bolivia / Desarrollo de Producto*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n👤 *Emitido por:* ${userData.nombre} (Jefe Desarrollo)\n\n📝 *DETALLE DE CAMBIOS TÉCNICOS:*\n${detalle}\n\n_Registrado en el sistema para control de avance y realización._`,
+        rolFiltro: "Desarrollo de producto - Técnico"
+      });
+    } catch (err) {
+      alert("Error al guardar minuta: " + err.message);
+    }
   };
 }
 
-// Crear Solicitud de Cambio
+// Crear Solicitud de Cambio Regular
 const modalNewChange = document.getElementById("modal-new-change");
 document.getElementById("btn-open-new-change").onclick = () => modalNewChange.classList.remove("hidden");
 document.getElementById("modal-btn-close").onclick = () => modalNewChange.classList.add("hidden");
@@ -529,6 +586,7 @@ document.getElementById("form-new-change").onsubmit = async (e) => {
       proyecto,
       articulo,
       boxCambio,
+      esMinuta: false,
       solicitanteNombre: userData.nombre,
       solicitanteRol: userData.rol,
       solicitanteId: currentUser.uid,
@@ -831,10 +889,12 @@ function abrirResumenTextoEntregas() {
     alert("Texto de entregas copiado al portapapeles.");
   };
 
+  // Conexión con Outlook PWA / Web
   document.getElementById("btn-enviar-correo-entregas").onclick = () => {
     const asunto = encodeURIComponent("Bata Bolivia - Control de Entregas a Departamentos");
     const cuerpo = encodeURIComponent(texto);
-    window.location.href = `mailto:?subject=${asunto}&body=${cuerpo}`;
+    const outlookWebUrl = `https://outlook.office.com/mail/deeplink/compose?subject=${asunto}&body=${cuerpo}`;
+    window.open(outlookWebUrl, "_blank");
   };
 
   document.getElementById("btn-enviar-wsp-entregas").onclick = () => {
@@ -869,9 +929,6 @@ function escucharCambios() {
     if (!viewInforme.classList.contains("hidden")) {
       actualizarInformePorSemana();
     }
-    if (esSuperAdmin() && !viewUsuarios.classList.contains("hidden")) {
-      cargarPanelSuperAdmin();
-    }
   });
 }
 
@@ -899,12 +956,19 @@ function renderTabla() {
 
   solicitudes.forEach((item) => {
     const tr = document.createElement("tr");
-    tr.className = "hover:bg-gray-50/80 transition border-b border-gray-100";
+    // Si es Minuta de Plan Piloto se resalta con fondo dorado/ámbar suave
+    tr.className = item.esMinuta 
+      ? "bg-amber-50/70 hover:bg-amber-100/70 transition border-b border-amber-200" 
+      : "hover:bg-gray-50/80 transition border-b border-gray-100";
 
     let textoBox = item.boxCambio;
     if (item.ultimaEdicion) {
       textoBox += `<br><span class="text-[10px] text-gray-400 italic"> (editado: ${formatearFecha(item.ultimaEdicion)})</span>`;
     }
+
+    let badgeMinuta = item.esMinuta 
+      ? `<span class="bg-amber-500 text-white font-black text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider block mb-1 w-fit shadow-xs">PLAN PILOTO</span>` 
+      : '';
 
     let estadoHTML = "";
     if (esDesarrollo) {
@@ -960,7 +1024,7 @@ function renderTabla() {
         <span class="font-bold text-gray-800 block">${item.solicitanteNombre || '—'}</span>
         <span class="text-[10px] text-gray-400">${item.solicitanteRol || ''}</span>
       </td>
-      <td class="p-3.5 font-bold text-gray-800 border-r border-gray-100">${item.proyecto}</td>
+      <td class="p-3.5 font-bold text-gray-800 border-r border-gray-100">${badgeMinuta}${item.proyecto}</td>
       <td class="p-3.5 font-mono text-gray-700 border-r border-gray-100">${item.articulo}</td>
       <td class="p-3.5 text-gray-700 border-r border-gray-100">
         <div>${textoBox}</div>
@@ -1044,7 +1108,6 @@ window.editarTextoBox = async (id, textoActual) => {
 function renderInformeView() {
   actualizarInformePorSemana();
 
-  // Inputs en cabecera de la tabla Informe
   const colSem = document.getElementById("col-filter-semana-informe");
   const colProy = document.getElementById("col-filter-proyecto-informe");
 
@@ -1126,14 +1189,18 @@ function actualizarInformePorSemana() {
 
   articulosFiltrados.forEach(item => {
     const tr = document.createElement("tr");
-    tr.className = "hover:bg-gray-50/70 border-b border-gray-100";
+    tr.className = item.esMinuta 
+      ? "bg-amber-50/70 hover:bg-amber-100/70 border-b border-amber-200" 
+      : "hover:bg-gray-50/70 border-b border-gray-100";
+
+    const badgeMinuta = item.esMinuta ? `<span class="bg-amber-500 text-white font-bold text-[9px] px-1.5 py-0.2 rounded mr-1">PILOTO</span>` : '';
 
     tr.innerHTML = `
       <td class="p-2.5 text-center">
         <input type="checkbox" value="${item.id}" checked class="chk-articulo-informe h-4 w-4 accent-[#D61B28] cursor-pointer">
       </td>
       <td class="p-2.5 font-bold text-gray-700 font-mono">${item.semana}</td>
-      <td class="p-2.5 font-bold text-gray-800">${item.proyecto}</td>
+      <td class="p-2.5 font-bold text-gray-800">${badgeMinuta}${item.proyecto}</td>
       <td class="p-2.5 font-mono text-gray-700">${item.articulo}</td>
       <td class="p-2.5 text-gray-600 max-w-xs truncate" title="${item.boxCambio}">${item.boxCambio}</td>
       <td class="p-2.5 text-center">
@@ -1161,7 +1228,7 @@ function actualizarConteoSeleccionados() {
   const total = document.querySelectorAll(".chk-articulo-informe").length;
   const marcados = document.querySelectorAll(".chk-articulo-informe:checked").length;
   const label = document.getElementById("label-conteo-seleccionados");
-  if (label) label.textContent = `${marcados} de ${total} artículos seleccionados`;
+  if (label) label.textContent = `${marcados} de ${total} seleccionados`;
 }
 
 function generarTextoNotificacionBata() {
