@@ -99,7 +99,7 @@
     </div>
   </div>
 
-  <!-- MODAL: REGISTRO -->
+  <!-- MODAL: REGISTRO (CON PLANEAMIENTO Y RETAIL) -->
   <div id="modal-register" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
       <button type="button" id="close-register" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -132,6 +132,8 @@
             <option value="Costos">Costos</option>
             <option value="Compras">Compras</option>
             <option value="Producción">Producción</option>
+            <option value="Planeamiento">Planeamiento</option>
+            <option value="Retail">Retail</option>
             <option value="Desarrollo de producto">Desarrollo de producto</option>
           </select>
         </div>
@@ -213,19 +215,16 @@
           <span>Informe</span>
         </button>
 
-        <!-- NUEVO MÓDULO ENTREGAS -->
         <button type="button" id="menu-btn-entregas" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-gray-600 hover:bg-gray-100 transition cursor-pointer">
           <i class="fa-solid fa-truck-ramp-box text-sm text-[#D61B28]"></i>
           <span>Entregas</span>
         </button>
 
-        <!-- Minuta de Cambios: Exclusiva para Jefe de Desarrollo (o Super Admin) -->
         <button type="button" id="menu-btn-minuta" class="w-full hidden flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs bg-amber-50 text-amber-800 hover:bg-amber-100 transition cursor-pointer border border-amber-200">
           <i class="fa-solid fa-clipboard-list text-sm text-amber-600"></i>
           <span>Minuta de Cambios</span>
         </button>
 
-        <!-- Super Admin: Exclusivo para jd.olmitos@gmail.com -->
         <button type="button" id="menu-btn-usuarios" class="w-full hidden flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-gray-600 hover:bg-gray-100 transition cursor-pointer">
           <i class="fa-solid fa-user-shield text-[#D61B28] text-sm"></i>
           <span>Super Admin</span>
@@ -281,15 +280,15 @@
           </div>
         </section>
 
-        <!-- VISTA 2: INFORME EJECUTIVO -->
+        <!-- VISTA 2: INFORME EJECUTIVO OPTIMIZADO POR SEMANA -->
         <section id="view-informe" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <h2 class="text-lg font-bold text-[#D61B28] flex items-center space-x-2">
                 <i class="fa-regular fa-file-lines"></i>
-                <span>Informe Ejecutivo de Avance</span>
+                <span>Informe Ejecutivo y Congelamiento de Producción</span>
               </h2>
-              <p class="text-xs text-gray-400">Selecciona y ordena proyectos para generar reportes y minutas de texto.</p>
+              <p class="text-xs text-gray-400">Selecciona la semana para auditar el avance y emitir las notificaciones oficiales.</p>
             </div>
             <div class="flex items-center space-x-2">
               <button type="button" id="btn-generar-texto-wsp" class="bg-green-600 hover:bg-green-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
@@ -303,69 +302,80 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex items-center space-x-3">
-              <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg"><i class="fa-solid fa-list-check"></i></div>
-              <div>
-                <span class="text-[11px] font-semibold text-gray-400 block">Total Solicitudes</span>
-                <span id="metric-total" class="text-xl font-black text-gray-800">0</span>
-              </div>
-            </div>
-            <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex items-center space-x-3">
-              <div class="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center font-bold text-lg"><i class="fa-solid fa-clock"></i></div>
-              <div>
-                <span class="text-[11px] font-semibold text-gray-400 block">En Proceso</span>
-                <span id="metric-proceso" class="text-xl font-black text-orange-600">0</span>
-              </div>
-            </div>
-            <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex items-center space-x-3">
-              <div class="w-10 h-10 rounded-xl bg-green-50 text-green-600 flex items-center justify-center font-bold text-lg"><i class="fa-solid fa-circle-check"></i></div>
-              <div>
-                <span class="text-[11px] font-semibold text-gray-400 block">Realizados</span>
-                <span id="metric-realizado" class="text-xl font-black text-green-600">0</span>
-              </div>
-            </div>
-            <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex items-center space-x-3">
-              <div class="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center font-bold text-lg"><i class="fa-solid fa-triangle-exclamation"></i></div>
-              <div>
-                <span class="text-[11px] font-semibold text-gray-400 block">Retrasados</span>
-                <span id="metric-retrasado" class="text-xl font-black text-red-600">0</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <!-- PANEL DE FILTRO DE SEMANA Y ESTADO DE CONGELAMIENTO -->
+          <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div class="flex items-center space-x-3">
-                <label class="text-xs font-bold text-gray-700">Ordenar Proyectos por:</label>
-                <select id="select-ordenar-informe" class="border border-gray-300 rounded-lg px-2.5 py-1 text-xs font-semibold bg-gray-50 focus:ring-1 focus:ring-[#D61B28]">
-                  <option value="todos">Todos (Por Defecto)</option>
-                  <option value="semana">Semana de Producción</option>
-                  <option value="estado">Estado (Realizado / En proceso)</option>
-                  <option value="fecha">Fecha de Solicitud (Recientes)</option>
-                  <option value="proyecto">Nombre del Proyecto (A-Z)</option>
+                <label class="text-xs font-bold text-gray-700">Seleccionar Semana:</label>
+                <select id="select-filtro-semana" class="border border-red-200 bg-red-50/50 text-[#D61B28] font-bold text-xs px-3 py-1.5 rounded-xl focus:ring-2 focus:ring-[#D61B28] focus:outline-none">
+                  <!-- Se puebla dinámicamente con las semanas disponibles -->
                 </select>
               </div>
-              <div class="space-x-2">
-                <button type="button" id="btn-select-all" class="text-[11px] text-blue-600 font-bold hover:underline cursor-pointer">Todos</button>
-                <button type="button" id="btn-deselect-all" class="text-[11px] text-gray-500 font-bold hover:underline cursor-pointer">Ninguno</button>
+              <div id="badge-congelamiento-container">
+                <!-- Alerta dinámica de congelamiento -->
               </div>
             </div>
-            <div id="report-project-selection-list" class="max-h-36 overflow-y-auto border border-gray-200 rounded-xl p-3 grid grid-cols-1 md:grid-cols-4 gap-2"></div>
+
+            <!-- Mini-KPIs de la semana seleccionada -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-gray-100 text-xs">
+              <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                <span class="text-gray-400 font-semibold block text-[10px]">Artículos Semana</span>
+                <span id="kpi-sem-total" class="text-base font-black text-gray-800">0</span>
+              </div>
+              <div class="bg-orange-50/70 p-3 rounded-xl border border-orange-100">
+                <span class="text-orange-600 font-semibold block text-[10px]">En Proceso</span>
+                <span id="kpi-sem-proceso" class="text-base font-black text-orange-600">0</span>
+              </div>
+              <div class="bg-green-50/70 p-3 rounded-xl border border-green-100">
+                <span class="text-green-600 font-semibold block text-[10px]">Realizados</span>
+                <span id="kpi-sem-realizados" class="text-base font-black text-green-600">0</span>
+              </div>
+              <div class="bg-blue-50/70 p-3 rounded-xl border border-blue-100">
+                <span class="text-blue-600 font-semibold block text-[10px]">Validados por Costos</span>
+                <span id="kpi-sem-costos" class="text-base font-black text-blue-600">0</span>
+              </div>
+            </div>
           </div>
 
+          <!-- TABLA DE ARTÍCULOS DE LA SEMANA SELECCIONADA -->
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="p-3 bg-gray-50/75 border-b border-gray-200 flex justify-between items-center text-xs">
+              <div class="flex items-center space-x-2">
+                <input type="checkbox" id="chk-toggle-all-semana" checked class="h-4 w-4 accent-[#D61B28] cursor-pointer">
+                <span class="font-bold text-gray-700">Artículos Afectados en la Semana Seleccionada</span>
+              </div>
+              <span id="label-conteo-seleccionados" class="text-gray-400 font-medium">0 seleccionados</span>
+            </div>
+            <div class="overflow-x-auto max-h-72">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="bg-gray-50/50 border-b border-gray-200 text-gray-500 font-semibold">
+                    <th class="p-2.5 text-center w-10">Sel.</th>
+                    <th class="p-2.5">Proyecto</th>
+                    <th class="p-2.5">Artículo</th>
+                    <th class="p-2.5">Descripción del Cambio</th>
+                    <th class="p-2.5 text-center">Estado</th>
+                    <th class="p-2.5 text-center">Validación Costos</th>
+                  </tr>
+                </thead>
+                <tbody id="table-informe-articulos-body" class="divide-y divide-gray-100"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Diagrama de Torres -->
           <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
             <div class="flex justify-between items-center mb-4">
-              <h3 class="text-xs font-bold text-gray-700">Diagrama de Torres: % de Solicitudes Realizadas por Proyecto</h3>
+              <h3 class="text-xs font-bold text-gray-700">Diagrama de Torres: % de Avance por Proyecto en la Semana</h3>
               <span class="text-[11px] text-gray-400 font-medium">Escala: 0% a 100%</span>
             </div>
-            <div class="h-80 w-full">
+            <div class="h-72 w-full">
               <canvas id="chartAvance"></canvas>
             </div>
           </div>
         </section>
 
-        <!-- VISTA 3: ENTREGAS (NUEVO MÓDULO) -->
+        <!-- VISTA 3: ENTREGAS -->
         <section id="view-entregas" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -406,7 +416,7 @@
           </div>
         </section>
 
-        <!-- VISTA 4: SUPER ADMIN (EXCLUSIVO JD.OLMITOS@GMAIL.COM) -->
+        <!-- VISTA 4: SUPER ADMIN -->
         <section id="view-usuarios" class="hidden space-y-6">
           <h2 class="text-lg font-bold text-[#D61B28] flex items-center space-x-2">
             <i class="fa-solid fa-user-shield"></i>
@@ -474,7 +484,7 @@
         <div class="grid grid-cols-3 gap-3">
           <div>
             <label class="block font-bold text-gray-700 mb-1">Semana</label>
-            <input type="text" id="ent-semana" placeholder="Ej: 632" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]">
+            <input type="text" id="ent-semana" placeholder="Ej: 37 o 632" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]">
           </div>
           <div>
             <label class="block font-bold text-gray-700 mb-1">Proyecto</label>
@@ -489,14 +499,14 @@
         <div>
           <label class="block font-bold text-gray-700 mb-1">¿Qué elemento estás entregando?</label>
           <select id="ent-tipo" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28] bg-white font-medium">
-            <!-- Las opciones se cargan dinámicamente según el rol de usuario -->
+            <!-- Opciones dinámicas -->
           </select>
         </div>
 
         <div>
           <label class="block font-bold text-gray-700 mb-1">Área / Departamento de Destino</label>
           <select id="ent-destino" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28] bg-white font-medium">
-            <!-- Se actualiza según el tipo de elemento entregado -->
+            <!-- Destinos dinámicos -->
           </select>
         </div>
 
@@ -516,7 +526,7 @@
     </div>
   </div>
 
-  <!-- MODAL: MINUTA DE CAMBIOS ESTRUCTURADA (PROYECTO, ARTÍCULO, CAMBIOS) -->
+  <!-- MODAL: MINUTA DE CAMBIOS ESTRUCTURADA -->
   <div id="modal-minuta" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl relative text-xs">
       <button type="button" id="close-minuta" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -528,7 +538,7 @@
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block font-semibold text-gray-600 mb-1">Semana de Producción</label>
-            <input type="text" id="minuta-semana" required placeholder="Ej: 632" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-600">
+            <input type="text" id="minuta-semana" required placeholder="Ej: 37 o 632" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-600">
           </div>
           <div>
             <label class="block font-semibold text-gray-600 mb-1">Nombre del Proyecto</label>
@@ -588,7 +598,7 @@
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block font-bold text-gray-700 mb-1">Semana</label>
-            <input type="text" id="change-semana" placeholder="Ej: 632 o Sem 36" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]">
+            <input type="text" id="change-semana" placeholder="Ej: 37 o 632" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]">
           </div>
           <div>
             <label class="block font-bold text-gray-700 mb-1">Nombre del Proyecto</label>
@@ -614,7 +624,7 @@
     </div>
   </div>
 
-  <!-- MODAL: TEXTO NOTIFICACIÓN WHATSAPP (FORMATO OFICIAL) -->
+  <!-- MODAL: TEXTO NOTIFICACIÓN WHATSAPP OFICIAL -->
   <div id="modal-texto-wsp" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-xl rounded-3xl p-6 shadow-2xl relative text-xs">
       <button type="button" id="close-texto-wsp" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
