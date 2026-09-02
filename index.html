@@ -8,6 +8,30 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="style.css">
+  <style>
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #modal-resumen-reporte:not(.hidden), #modal-resumen-reporte:not(.hidden) *,
+      #modal-reporte-entregas-print:not(.hidden), #modal-reporte-entregas-print:not(.hidden) * {
+        visibility: visible;
+      }
+      #modal-resumen-reporte:not(.hidden), #modal-reporte-entregas-print:not(.hidden) {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 10px;
+        box-shadow: none !important;
+        background: white !important;
+      }
+      button, #close-modal-resumen, #close-modal-entregas-print {
+        display: none !important;
+      }
+    }
+  </style>
 </head>
 <body class="bg-[#F4F5F7] font-sans text-gray-800 antialiased min-h-screen">
 
@@ -569,7 +593,7 @@
         </div>
         <div>
           <label class="block font-semibold text-gray-600 mb-1">Fotografía del Prototipo / Guía (Opcional)</label>
-          <input type="file" id="minuta-photo" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-amber-50 file:text-amber-800">
+          <input type="file" id="minuta-photo" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-red-50 file:text-[#D61B28]">
         </div>
         <div>
           <label class="block font-semibold text-gray-600 mb-1">Cambios Técnicos Solicitados (Plan Piloto)</label>
@@ -678,7 +702,7 @@
     </div>
   </div>
 
-  <!-- MODAL: INFORME RESUMEN EJECUTIVO -->
+  <!-- MODAL: INFORME RESUMEN EJECUTIVO (CON FOTOS) -->
   <div id="modal-resumen-reporte" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-4xl rounded-3xl p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto text-xs">
       <button type="button" id="close-modal-resumen" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -701,7 +725,7 @@
     </div>
   </div>
 
-  <!-- MODAL: REPORTE IMPRESO / PDF DE ENTREGAS -->
+  <!-- MODAL: REPORTE IMPRESO / PDF DE ENTREGAS (CON FOTOS) -->
   <div id="modal-reporte-entregas-print" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-4xl rounded-3xl p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto text-xs">
       <button type="button" id="close-modal-entregas-print" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
