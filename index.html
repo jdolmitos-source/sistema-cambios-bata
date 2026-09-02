@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistema de Gestión de Cambios - Bata Bolivia</title>
+  <title>Sistema de Gestión de Cambios y Entregas - Bata Bolivia</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -25,7 +25,7 @@
       <div class="relative z-10">
         <div class="flex items-center space-x-2 text-white border-t border-white/20 pt-4 text-xs font-semibold drop-shadow select-none">
           <i class="fa-solid fa-chart-line text-sm"></i>
-          <span>Seguimiento de Cambios</span>
+          <span>Seguimiento de Cambios y Entregas</span>
         </div>
       </div>
     </div>
@@ -177,6 +177,7 @@
     </header>
 
     <div class="flex flex-1 relative z-10">
+      <!-- Menú Lateral -->
       <aside class="w-64 bg-white border-r border-gray-200 p-4 space-y-3">
         <div>
           <button type="button" id="menu-btn-cambios" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition bg-red-50 text-[#D61B28] cursor-pointer">
@@ -212,12 +213,19 @@
           <span>Informe</span>
         </button>
 
+        <!-- NUEVO MÓDULO ENTREGAS -->
+        <button type="button" id="menu-btn-entregas" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-gray-600 hover:bg-gray-100 transition cursor-pointer">
+          <i class="fa-solid fa-truck-ramp-box text-sm text-[#D61B28]"></i>
+          <span>Entregas</span>
+        </button>
+
+        <!-- Minuta de Cambios: Exclusiva para Jefe de Desarrollo (o Super Admin) -->
         <button type="button" id="menu-btn-minuta" class="w-full hidden flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs bg-amber-50 text-amber-800 hover:bg-amber-100 transition cursor-pointer border border-amber-200">
           <i class="fa-solid fa-clipboard-list text-sm text-amber-600"></i>
           <span>Minuta de Cambios</span>
         </button>
 
-        <!-- Pestaña Super Admin: Solo visible para jd.olmitos@gmail.com -->
+        <!-- Super Admin: Exclusivo para jd.olmitos@gmail.com -->
         <button type="button" id="menu-btn-usuarios" class="w-full hidden flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-gray-600 hover:bg-gray-100 transition cursor-pointer">
           <i class="fa-solid fa-user-shield text-[#D61B28] text-sm"></i>
           <span>Super Admin</span>
@@ -225,7 +233,7 @@
       </aside>
 
       <main class="flex-1 p-6 md:p-8 overflow-y-auto">
-        <!-- VISTA CAMBIOS -->
+        <!-- VISTA 1: CAMBIOS -->
         <section id="view-cambios" class="space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -273,7 +281,7 @@
           </div>
         </section>
 
-        <!-- VISTA INFORME EJECUTIVO -->
+        <!-- VISTA 2: INFORME EJECUTIVO -->
         <section id="view-informe" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -295,7 +303,6 @@
             </div>
           </div>
 
-          <!-- Métricas -->
           <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex items-center space-x-3">
               <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg"><i class="fa-solid fa-list-check"></i></div>
@@ -327,7 +334,6 @@
             </div>
           </div>
 
-          <!-- Selector y Filtros de Ordenación -->
           <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div class="flex items-center space-x-3">
@@ -359,14 +365,54 @@
           </div>
         </section>
 
-        <!-- VISTA SUPER ADMIN (SOLO JD.OLMITOS@GMAIL.COM) -->
+        <!-- VISTA 3: ENTREGAS (NUEVO MÓDULO) -->
+        <section id="view-entregas" class="hidden space-y-6">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h2 class="text-lg font-bold text-[#D61B28] flex items-center space-x-2">
+                <i class="fa-solid fa-truck-ramp-box"></i>
+                <span>Control de Entregas a Departamentos</span>
+              </h2>
+              <p class="text-xs text-gray-400">Entrega de Guías de Producción, Cortes y Muestras Definitivas entre secciones.</p>
+            </div>
+            <button type="button" id="btn-open-nueva-entrega" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
+              <i class="fa-solid fa-box-open"></i>
+              <span>Registrar Nueva Entrega</span>
+            </button>
+          </div>
+
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="bg-gray-50/75 border-b border-gray-200 text-gray-600 font-semibold">
+                    <th class="p-3 border-r border-gray-200">Semana</th>
+                    <th class="p-3 border-r border-gray-200">Fecha/Hora</th>
+                    <th class="p-3 border-r border-gray-200">Proyecto</th>
+                    <th class="p-3 border-r border-gray-200">Artículo</th>
+                    <th class="p-3 border-r border-gray-200">Tipo de Entrega</th>
+                    <th class="p-3 border-r border-gray-200">Entregado Por</th>
+                    <th class="p-3 border-r border-gray-200">Área Destino</th>
+                    <th class="p-3 text-center">Recepción</th>
+                  </tr>
+                </thead>
+                <tbody id="table-entregas-body" class="divide-y divide-gray-200"></tbody>
+              </table>
+            </div>
+            <div id="entregas-empty-state" class="hidden p-8 text-center text-gray-400 text-xs">
+              <i class="fa-solid fa-box-open text-3xl mb-2 text-gray-300"></i>
+              <p>No hay registros de entregas efectuadas en el sistema.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- VISTA 4: SUPER ADMIN (EXCLUSIVO JD.OLMITOS@GMAIL.COM) -->
         <section id="view-usuarios" class="hidden space-y-6">
           <h2 class="text-lg font-bold text-[#D61B28] flex items-center space-x-2">
             <i class="fa-solid fa-user-shield"></i>
             <span>Panel de Administración (Super Admin: jd.olmitos@gmail.com)</span>
           </h2>
           
-          <!-- TABLA 1: USUARIOS Y ASIGNACIÓN DE ROLES -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <div class="bg-gray-50/75 p-3 border-b border-gray-200 font-bold text-xs text-gray-700 flex items-center space-x-2">
               <i class="fa-solid fa-users text-[#D61B28]"></i>
@@ -387,7 +433,6 @@
             </table>
           </div>
 
-          <!-- TABLA 2: ELIMINACIÓN DE SOLICITUDES Y PROYECTOS -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <div class="bg-gray-50/75 p-3 border-b border-gray-200 font-bold text-xs text-gray-700 flex items-center space-x-2">
               <i class="fa-solid fa-folder-minus text-[#D61B28]"></i>
@@ -415,22 +460,88 @@
     </div>
   </div>
 
-  <!-- MODAL: MINUTA DE CAMBIOS -->
+  <!-- MODAL: NUEVA ENTREGA -->
+  <div id="modal-nueva-entrega" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden text-xs">
+      <div class="bg-[#D61B28] px-6 py-4 flex justify-between items-center text-white">
+        <h3 class="font-bold text-sm flex items-center space-x-2">
+          <i class="fa-solid fa-truck-ramp-box"></i>
+          <span>Registrar Nueva Entrega Física</span>
+        </h3>
+        <button type="button" id="close-nueva-entrega" class="text-white hover:text-gray-200 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="form-nueva-entrega" class="p-6 space-y-4">
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block font-bold text-gray-700 mb-1">Semana</label>
+            <input type="text" id="ent-semana" placeholder="Ej: 632" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]">
+          </div>
+          <div>
+            <label class="block font-bold text-gray-700 mb-1">Proyecto</label>
+            <input type="text" id="ent-proyecto" placeholder="Ej: SKATER" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]">
+          </div>
+          <div>
+            <label class="block font-bold text-gray-700 mb-1">Artículo</label>
+            <input type="text" id="ent-articulo" placeholder="Ej: 58961/91236" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28] font-mono">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-gray-700 mb-1">¿Qué elemento estás entregando?</label>
+          <select id="ent-tipo" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28] bg-white font-medium">
+            <!-- Las opciones se cargan dinámicamente según el rol de usuario -->
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-bold text-gray-700 mb-1">Área / Departamento de Destino</label>
+          <select id="ent-destino" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28] bg-white font-medium">
+            <!-- Se actualiza según el tipo de elemento entregado -->
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-bold text-gray-700 mb-1">Observaciones / Notas (Opcional)</label>
+          <input type="text" id="ent-notas" placeholder="Ej: Aprobado para corte final" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]">
+        </div>
+
+        <div class="pt-2 flex justify-end space-x-2">
+          <button type="button" id="cancel-nueva-entrega" class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg font-bold cursor-pointer">Cancelar</button>
+          <button type="submit" class="px-5 py-2 bg-[#25D366] hover:bg-green-600 text-white rounded-lg font-bold flex items-center space-x-2 shadow cursor-pointer">
+            <i class="fa-brands fa-whatsapp text-sm"></i>
+            <span>Confirmar y Notificar Entrega</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: MINUTA DE CAMBIOS ESTRUCTURADA (PROYECTO, ARTÍCULO, CAMBIOS) -->
   <div id="modal-minuta" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-white w-full max-w-xl rounded-3xl p-6 shadow-2xl relative text-xs">
+    <div class="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl relative text-xs">
       <button type="button" id="close-minuta" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
       <div class="flex items-center space-x-2 text-amber-700 font-bold text-sm mb-3">
         <i class="fa-solid fa-clipboard-list text-lg"></i>
-        <span>Generar Minuta de Cambios (Plan Piloto)</span>
+        <span>Generar Minuta de Cambios (Desarrollo - Jefe)</span>
       </div>
       <form id="form-minuta" class="space-y-3">
-        <div>
-          <label class="block font-semibold text-gray-600 mb-1">Título / Proyecto de la Minuta</label>
-          <input type="text" id="minuta-title" required placeholder="Ej: Minuta Plan Piloto Colección 2026" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-600">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-gray-600 mb-1">Semana de Producción</label>
+            <input type="text" id="minuta-semana" required placeholder="Ej: 632" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-600">
+          </div>
+          <div>
+            <label class="block font-semibold text-gray-600 mb-1">Nombre del Proyecto</label>
+            <input type="text" id="minuta-proyecto" required placeholder="Ej: SKATER" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-600">
+          </div>
         </div>
         <div>
-          <label class="block font-semibold text-gray-600 mb-1">Box de Cambios Solicitados (Detalle completo)</label>
-          <textarea id="minuta-box" rows="6" required placeholder="Escribe todos los cambios técnicos solicitados para el plan piloto..." class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-600"></textarea>
+          <label class="block font-semibold text-gray-600 mb-1">Artículo Afectado</label>
+          <input type="text" id="minuta-articulo" required placeholder="Ej: 58961/91236 o 1-2419519V" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-600 font-mono">
+        </div>
+        <div>
+          <label class="block font-semibold text-gray-600 mb-1">Cambios Técnicos Solicitados</label>
+          <textarea id="minuta-box" rows="5" required placeholder="Describe las modificaciones técnicas en guías, piezas, suelas o costuras..." class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-600"></textarea>
         </div>
         <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl transition shadow flex items-center justify-center space-x-2 cursor-pointer">
           <i class="fa-brands fa-whatsapp"></i>
@@ -503,16 +614,16 @@
     </div>
   </div>
 
-  <!-- MODAL: TEXTO NOTIFICACIÓN WHATSAPP (IMAGEN 2) -->
+  <!-- MODAL: TEXTO NOTIFICACIÓN WHATSAPP (FORMATO OFICIAL) -->
   <div id="modal-texto-wsp" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-xl rounded-3xl p-6 shadow-2xl relative text-xs">
       <button type="button" id="close-texto-wsp" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
       <div class="flex items-center space-x-2 text-green-700 font-bold text-sm mb-3">
         <i class="fa-brands fa-whatsapp text-lg"></i>
-        <span>Texto Generado para Notificación de Cambios</span>
+        <span>Texto Oficial para Notificación de Cambios Realizados</span>
       </div>
       <div class="bg-gray-50 border border-gray-200 rounded-2xl p-4 mb-4">
-        <textarea id="texto-wsp-output" rows="11" readonly class="w-full bg-transparent font-mono text-xs text-gray-800 focus:outline-none resize-none leading-relaxed"></textarea>
+        <textarea id="texto-wsp-output" rows="12" readonly class="w-full bg-transparent font-mono text-xs text-gray-800 focus:outline-none resize-none leading-relaxed"></textarea>
       </div>
       <div class="flex justify-end space-x-2">
         <button type="button" id="btn-copiar-texto-wsp" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center space-x-1.5 cursor-pointer">
