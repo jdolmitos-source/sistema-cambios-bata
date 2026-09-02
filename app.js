@@ -32,7 +32,7 @@ const firebaseConfig = {
   measurementId: "G-0XXGS651PJ"
 };
 
-// ⚠️ CORREO Y NÚMERO DIRECTO DE SUPER ADMINISTRADOR
+// ⚠️ CORREO Y WHATSAPP DE SUPER ADMINISTRADOR
 const SUPER_ADMIN_EMAIL = "jd.olmitos@gmail.com";
 const SUPER_ADMIN_WHATSAPP = "59174812364";
 
@@ -46,22 +46,46 @@ let solicitudes = [];
 let entregas = [];
 let chartInstance = null;
 
-// Filtros en cabecera de Informe
+// Filtros de cabecera en Informe
 let colFiltroSemanaInforme = "";
 let colFiltroProyectoInforme = "";
 
-// Filtros en cabecera de Entregas
+// Filtros de cabecera en Entregas
 let colFiltroSemanaEntregas = "";
 let colFiltroProyectoEntregas = "";
 
-const fileToBase64 = (file) => new Promise((resolve, reject) => {
+// Compresor de imágenes a tamaño liviano (~30 KB)
+const comprimirImagen = (file, maxWidth = 600, calidad = 0.75) => new Promise((resolve) => {
   if (!file) return resolve(null);
   const reader = new FileReader();
   reader.readAsDataURL(file);
-  reader.onload = () => resolve(reader.result);
-  reader.onerror = error => reject(error);
+  reader.onload = (event) => {
+    const img = new Image();
+    img.src = event.target.result;
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      let width = img.width;
+      let height = img.height;
+
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, width, height);
+
+      const base64Comprimido = canvas.toDataURL("image/jpeg", calidad);
+      resolve(base64Comprimido);
+    };
+    img.onerror = () => resolve(null);
+  };
+  reader.onerror = () => resolve(null);
 });
 
+// Comprobar estrictamente si es Super Admin (SOLO jd.olmitos@gmail.com)
 function esSuperAdmin() {
   if (!currentUser || !currentUser.email) return false;
   return currentUser.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
@@ -79,6 +103,7 @@ const modalTextoWsp = document.getElementById("modal-texto-wsp");
 const modalNuevaEntrega = document.getElementById("modal-nueva-entrega");
 const modalReporteEntregasPrint = document.getElementById("modal-reporte-entregas-print");
 const modalEntregasTexto = document.getElementById("modal-entregas-texto");
+const modalVisorFoto = document.getElementById("modal-visor-foto");
 
 document.getElementById("btn-show-login").onclick = () => modalLogin.classList.remove("hidden");
 document.getElementById("btn-show-register").onclick = () => modalRegister.classList.remove("hidden");
@@ -106,12 +131,23 @@ if (document.getElementById("close-modal-entregas-print")) {
 if (document.getElementById("close-modal-entregas-texto")) {
   document.getElementById("close-modal-entregas-texto").onclick = () => modalEntregasTexto.classList.add("hidden");
 }
+if (document.getElementById("close-visor-foto")) {
+  document.getElementById("close-visor-foto").onclick = () => modalVisorFoto.classList.add("hidden");
+}
+
+// Visor de Foto Grande
+window.verFotoGrande = (src, titulo) => {
+  if (!src) return;
+  document.getElementById("visor-foto-img").src = src;
+  document.getElementById("visor-foto-titulo").textContent = titulo || "Visualización de Prototipo / Guía";
+  modalVisorFoto.classList.remove("hidden");
+};
 
 // Reset de Contraseña dirigido siempre al WhatsApp de Super Admin (+591 74812364)
 document.getElementById("btn-forgot-pass").onclick = () => {
   const email = document.getElementById("login-email").value.trim();
   if (!email) {
-    alert("Por favor ingresa tu correo electrónico en el campo superior antes de solicitar el reseteo.");
+    alert("Por favor ingresa tu correo en la casilla antes de solicitar el reseteo.");
     return;
   }
 
@@ -119,7 +155,7 @@ document.getElementById("btn-forgot-pass").onclick = () => {
     `🔐 *SOLICITUD DE RESTABLECIMIENTO DE CONTRASEÑA*\n` +
     `*Sistema de Cambios - Bata Bolivia*\n\n` +
     `👤 *Correo del Solicitante:* ${email}\n\n` +
-    `_Hola Daniel, solicito por favor generar el enlace de reseteo de mi contraseña en Firebase Console para este correo._`
+    `_Hola Daniel, solicito generar el correo de restablecimiento de contraseña en Firebase Console para este correo._`
   );
 
   window.open(`https://wa.me/${SUPER_ADMIN_WHATSAPP}?text=${msg}`, "_blank");
@@ -141,7 +177,7 @@ document.getElementById("form-update-profile").onsubmit = async (e) => {
 
   const updateData = { nombre: name, celular: phone };
   if (photoFile) {
-    updateData.foto = await fileToBase64(photoFile);
+    updateData.foto = await comprimirImagen(photoFile, 200, 0.7);
   }
 
   try {
@@ -164,7 +200,7 @@ document.getElementById("form-register").onsubmit = async (e) => {
   const role = document.getElementById("reg-role").value;
   const pass = document.getElementById("reg-pass").value;
   const photoFile = document.getElementById("reg-photo").files[0];
-  const photoBase64 = photoFile ? await fileToBase64(photoFile) : null;
+  const photoBase64 = photoFile ? await comprimirImagen(photoFile, 200, 0.7) : null;
 
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
@@ -228,16 +264,13 @@ function actualizarHeaderUsuario() {
     }
   }
 
-  // Visibilidad Minuta: Exclusiva para Jefe de Desarrollo (o Super Admin)
+  // Visibilidad botón Generar Minuta en el encabezado de Cambios
   const esJefe = userData.rol === "Desarrollo de producto - Jefe";
-  const btnMinutaMenu = document.getElementById("menu-btn-minuta");
   const btnMinutaHeader = document.getElementById("btn-open-minuta-header");
-  if (btnMinutaMenu && btnMinutaHeader) {
+  if (btnMinutaHeader) {
     if (esJefe || esAdmin) {
-      btnMinutaMenu.classList.remove("hidden");
       btnMinutaHeader.classList.remove("hidden");
     } else {
-      btnMinutaMenu.classList.add("hidden");
       btnMinutaHeader.classList.add("hidden");
     }
   }
@@ -280,7 +313,6 @@ const menuBtnCambios = document.getElementById("menu-btn-cambios");
 const menuBtnInforme = document.getElementById("menu-btn-informe");
 const menuBtnEntregas = document.getElementById("menu-btn-entregas");
 const menuBtnUsuarios = document.getElementById("menu-btn-usuarios");
-const menuBtnMinuta = document.getElementById("menu-btn-minuta");
 
 function resetMenuStyles() {
   [menuBtnCambios, menuBtnInforme, menuBtnEntregas, menuBtnUsuarios].forEach(b => {
@@ -325,9 +357,6 @@ menuBtnUsuarios.onclick = () => {
   cargarPanelSuperAdmin();
 };
 
-if (menuBtnMinuta) {
-  menuBtnMinuta.onclick = () => modalMinuta.classList.remove("hidden");
-}
 if (document.getElementById("btn-open-minuta-header")) {
   document.getElementById("btn-open-minuta-header").onclick = () => modalMinuta.classList.remove("hidden");
 }
@@ -406,7 +435,7 @@ async function cargarPanelSuperAdmin() {
     tbodySols.appendChild(tr);
   });
 
-  // 3. Tabla Entregas (Limpieza Super Admin)
+  // 3. Tabla Entregas
   const tbodyEnts = document.getElementById("table-admin-entregas-body");
   tbodyEnts.innerHTML = "";
 
@@ -506,7 +535,7 @@ document.getElementById("btn-close-whatsapp-modal").onclick = () => {
   document.getElementById("modal-whatsapp").classList.add("hidden");
 };
 
-// Envío y Publicación de Minuta
+// Envío y Publicación de Minuta (Con Foto Comprimida)
 if (document.getElementById("form-minuta")) {
   document.getElementById("form-minuta").onsubmit = async (e) => {
     e.preventDefault();
@@ -514,12 +543,16 @@ if (document.getElementById("form-minuta")) {
     const proyecto = document.getElementById("minuta-proyecto").value.trim();
     const articulo = document.getElementById("minuta-articulo").value.trim();
     const detalle = document.getElementById("minuta-box").value.trim();
+    const photoFile = document.getElementById("minuta-photo").files[0];
+
+    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
 
     try {
       await addDoc(collection(db, "solicitudes_cambios"), {
         semana,
         proyecto,
         articulo,
+        foto: fotoBase64,
         boxCambio: detalle,
         esMinuta: true,
         solicitanteNombre: userData.nombre,
@@ -548,7 +581,7 @@ if (document.getElementById("form-minuta")) {
   };
 }
 
-// Crear Solicitud de Cambio Regular
+// Crear Solicitud de Cambio (Con Foto Comprimida)
 const modalNewChange = document.getElementById("modal-new-change");
 document.getElementById("btn-open-new-change").onclick = () => modalNewChange.classList.remove("hidden");
 document.getElementById("modal-btn-close").onclick = () => modalNewChange.classList.add("hidden");
@@ -560,12 +593,16 @@ document.getElementById("form-new-change").onsubmit = async (e) => {
   const proyecto = document.getElementById("change-project").value.trim();
   const articulo = document.getElementById("change-article").value.trim();
   const boxCambio = document.getElementById("change-box").value.trim();
+  const photoFile = document.getElementById("change-photo").files[0];
+
+  const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
 
   try {
     await addDoc(collection(db, "solicitudes_cambios"), {
       semana,
       proyecto,
       articulo,
+      foto: fotoBase64,
       boxCambio,
       esMinuta: false,
       solicitanteNombre: userData.nombre,
@@ -650,6 +687,9 @@ document.getElementById("form-nueva-entrega").onsubmit = async (e) => {
   const tipo = document.getElementById("ent-tipo").value;
   const destino = document.getElementById("ent-destino").value;
   const notas = document.getElementById("ent-notas").value.trim();
+  const photoFile = document.getElementById("ent-photo").files[0];
+
+  const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
 
   try {
     await addDoc(collection(db, "entregas_departamentos"), {
@@ -658,6 +698,7 @@ document.getElementById("form-nueva-entrega").onsubmit = async (e) => {
       articulo,
       tipo,
       destino,
+      foto: fotoBase64,
       notas,
       entregadoPorNombre: userData.nombre,
       entregadoPorRol: userData.rol,
@@ -762,7 +803,13 @@ function renderTablaEntregas() {
       }
     }
 
+    // Miniatura
+    const fotoHTML = ent.foto 
+      ? `<img src="${ent.foto}" onclick="window.verFotoGrande('${ent.foto}', '${ent.proyecto} - ${ent.articulo}')" class="w-10 h-7 object-cover rounded border border-gray-200 shadow-xs cursor-pointer hover:opacity-80 transition mx-auto" title="Click para ampliar">`
+      : `<div class="w-10 h-7 rounded border border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-[10px] mx-auto"><i class="fa-regular fa-image"></i></div>`;
+
     tr.innerHTML = `
+      <td class="p-2 border-r border-gray-100 text-center">${fotoHTML}</td>
       <td class="p-3 font-bold text-gray-700 border-r border-gray-100 font-mono">${ent.semana}</td>
       <td class="p-3 text-gray-600 border-r border-gray-100 whitespace-nowrap">${formatearFecha(ent.fechaEntrega)}</td>
       <td class="p-3 font-bold text-gray-800 border-r border-gray-100">${ent.proyecto}</td>
@@ -870,12 +917,11 @@ function abrirResumenTextoEntregas() {
     alert("Texto de entregas copiado al portapapeles.");
   };
 
-  // Conexión con Outlook PWA / Web para Entregas
+  // Abrir Outlook (PWA / Escritorio)
   document.getElementById("btn-enviar-correo-entregas").onclick = () => {
     const asunto = encodeURIComponent("Bata Bolivia - Control de Entregas a Departamentos");
     const cuerpo = encodeURIComponent(texto);
-    const outlookWebUrl = `https://outlook.office.com/mail/deeplink/compose?subject=${asunto}&body=${cuerpo}`;
-    window.open(outlookWebUrl, "_blank");
+    window.location.href = `mailto:?subject=${asunto}&body=${cuerpo}`;
   };
 
   document.getElementById("btn-enviar-wsp-entregas").onclick = () => {
@@ -997,7 +1043,13 @@ function renderTabla() {
       costosHTML = `<input type="checkbox" disabled class="h-4 w-4 text-gray-300 rounded border-gray-200 opacity-40">`;
     }
 
+    // Miniatura
+    const fotoHTML = item.foto 
+      ? `<img src="${item.foto}" onclick="window.verFotoGrande('${item.foto}', '${item.proyecto} - ${item.articulo}')" class="w-10 h-7 object-cover rounded border border-gray-200 shadow-xs cursor-pointer hover:opacity-80 transition mx-auto" title="Click para ampliar">`
+      : `<div class="w-10 h-7 rounded border border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-[10px] mx-auto"><i class="fa-regular fa-image"></i></div>`;
+
     tr.innerHTML = `
+      <td class="p-2 border-r border-gray-100 text-center">${fotoHTML}</td>
       <td class="p-3 font-bold text-gray-700 border-r border-gray-100 font-mono">${item.semana || '—'}</td>
       <td class="p-3 text-gray-600 border-r border-gray-100 whitespace-nowrap">${formatearFecha(item.fechaCreacion)}</td>
       <td class="p-3 border-r border-gray-100 whitespace-nowrap">
@@ -1161,7 +1213,7 @@ function actualizarInformePorSemana() {
   tbody.innerHTML = "";
 
   if (total === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-400 italic">No hay artículos que coincidan con la búsqueda.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400 italic">No hay artículos que coincidan con la búsqueda.</td></tr>`;
     actualizarConteoSeleccionados();
     actualizarGraficoTorresSemana();
     return;
@@ -1175,10 +1227,15 @@ function actualizarInformePorSemana() {
 
     const badgeMinuta = item.esMinuta ? `<span class="bg-amber-500 text-white font-bold text-[9px] px-1.5 py-0.2 rounded mr-1">PILOTO</span>` : '';
 
+    const fotoHTML = item.foto 
+      ? `<img src="${item.foto}" onclick="window.verFotoGrande('${item.foto}', '${item.proyecto} - ${item.articulo}')" class="w-10 h-7 object-cover rounded border border-gray-200 shadow-xs cursor-pointer hover:opacity-80 transition mx-auto" title="Click para ampliar">`
+      : `<div class="w-10 h-7 rounded border border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-[10px] mx-auto"><i class="fa-regular fa-image"></i></div>`;
+
     tr.innerHTML = `
       <td class="p-2.5 text-center">
         <input type="checkbox" value="${item.id}" checked class="chk-articulo-informe h-4 w-4 accent-[#D61B28] cursor-pointer">
       </td>
+      <td class="p-2 border-r border-gray-100 text-center">${fotoHTML}</td>
       <td class="p-2.5 font-bold text-gray-700 font-mono">${item.semana}</td>
       <td class="p-2.5 font-bold text-gray-800">${badgeMinuta}${item.proyecto}</td>
       <td class="p-2.5 font-mono text-gray-700">${item.articulo}</td>
@@ -1211,7 +1268,7 @@ function actualizarConteoSeleccionados() {
   if (label) label.textContent = `${marcados} de ${total} seleccionados`;
 }
 
-// Generador de Texto Oficial para WhatsApp / Outlook Web (Informe)
+// Generador de Texto Oficial para WhatsApp / Outlook PWA (Informe)
 function generarTextoNotificacionBata() {
   const seleccionadosIds = Array.from(document.querySelectorAll(".chk-articulo-informe:checked")).map(c => c.value);
   if (seleccionadosIds.length === 0) {
@@ -1239,12 +1296,11 @@ function generarTextoNotificacionBata() {
     alert("Texto copiado al portapapeles con éxito.");
   };
 
-  // Conexión con Outlook PWA / Web para Informe
+  // Abrir Outlook (PWA / Escritorio)
   document.getElementById("btn-enviar-correo-informe").onclick = () => {
     const asunto = encodeURIComponent(`Bata Bolivia - Cambios Realizados para Semana ${semanaTitulo}`);
     const cuerpo = encodeURIComponent(texto);
-    const outlookWebUrl = `https://outlook.office.com/mail/deeplink/compose?subject=${asunto}&body=${cuerpo}`;
-    window.open(outlookWebUrl, "_blank");
+    window.location.href = `mailto:?subject=${asunto}&body=${cuerpo}`;
   };
 
   document.getElementById("btn-enviar-wsp-directo").onclick = () => {
