@@ -45,8 +45,14 @@ let solicitudes = [];
 let entregas = [];
 let filtroSubmenuActivo = "todos";
 let chartInstance = null;
-let semanaSeleccionadaInforme = "todas";
-let criterioOrdenEntregas = "fecha";
+
+// Filtros de Informe
+let filtroSemanaInforme = "";
+let filtroProyectoInforme = "";
+
+// Filtros de Entregas
+let filtroSemanaEntregas = "";
+let filtroProyectoEntregas = "";
 
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
   if (!file) return resolve(null);
@@ -229,7 +235,7 @@ function actualizarHeaderUsuario() {
     avatarIcon.classList.remove("hidden");
   }
 
-  // Permisos Super Admin (SOLO jd.olmitos@gmail.com)
+  // Visibilidad Super Admin: SOLO jd.olmitos@gmail.com
   const menuAdmin = document.getElementById("menu-btn-usuarios");
   if (esAdmin) {
     menuAdmin.classList.remove("hidden");
@@ -240,7 +246,7 @@ function actualizarHeaderUsuario() {
     }
   }
 
-  // Minuta: Exclusiva para Jefe de Desarrollo (o Super Admin)
+  // Visibilidad Minuta: Exclusiva para Jefe de Desarrollo (o Super Admin)
   const esJefe = userData.rol === "Desarrollo de producto - Jefe";
   const btnMinutaMenu = document.getElementById("menu-btn-minuta");
   const btnMinutaHeader = document.getElementById("btn-open-minuta-header");
@@ -407,7 +413,7 @@ async function cargarPanelSuperAdmin() {
     const tr = document.createElement("tr");
     tr.className = "hover:bg-gray-50 border-b border-gray-100";
     tr.innerHTML = `
-      <td class="p-3 font-semibold text-gray-500">${sol.semana || '—'}</td>
+      <td class="p-3 font-semibold text-gray-500 font-mono">${sol.semana || '—'}</td>
       <td class="p-3 text-gray-600 whitespace-nowrap">${formatearFecha(sol.fechaCreacion)}</td>
       <td class="p-3 font-bold text-gray-800">${sol.proyecto}</td>
       <td class="p-3 font-mono text-gray-700">${sol.articulo}</td>
@@ -494,7 +500,7 @@ document.getElementById("btn-close-whatsapp-modal").onclick = () => {
   document.getElementById("modal-whatsapp").classList.add("hidden");
 };
 
-// Envío de Minuta Estructurada (Jefe de Desarrollo)
+// Envío de Minuta Estructurada
 if (document.getElementById("form-minuta")) {
   document.getElementById("form-minuta").onsubmit = async (e) => {
     e.preventDefault();
@@ -515,7 +521,7 @@ if (document.getElementById("form-minuta")) {
   };
 }
 
-// Crear Solicitud de Cambio
+// Crear Solicitud de Cambio (Validación de 3 dígitos)
 const modalNewChange = document.getElementById("modal-new-change");
 document.getElementById("btn-open-new-change").onclick = () => modalNewChange.classList.remove("hidden");
 document.getElementById("modal-btn-close").onclick = () => modalNewChange.classList.add("hidden");
@@ -639,7 +645,7 @@ document.getElementById("form-nueva-entrega").onsubmit = async (e) => {
     abrirModalWhatsApp({
       titulo: "Entrega Registrada",
       subtitulo: `Notificar recepción a los encargados de ${destino}:`,
-      mensajeTexto: `📦 *ENTREGA REALIZADA - PD BOLIVIA*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n🏷️ *Elemento:* ${tipo}\n👤 *Entregado por:* ${userData.nombre} (${userData.rol})\n🏢 *Destino:* ${destino}\n📝 *Notas:* ${notas || 'Sin notas adicionales'}\n\n_Favor de confirmar la recepción física en el sistema._`,
+      mensajeTexto: `📦 ENTREGA REALIZADA - PD BOLIVIA\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n🏷️ *Elemento:* ${tipo}\n👤 *Entregado por:* ${userData.nombre} (${userData.rol})\n🏢 *Destino:* ${destino}\n📝 *Notas:* ${notas || 'Sin notas adicionales'}\n\n_Favor de confirmar la recepción física en el sistema._`,
       rolFiltro: destino
     });
   } catch (err) {
@@ -655,10 +661,16 @@ function escucharEntregas() {
   });
 }
 
-// Selector de ordenamiento de entregas
-if (document.getElementById("select-ordenar-entregas")) {
-  document.getElementById("select-ordenar-entregas").onchange = (e) => {
-    criterioOrdenEntregas = e.target.value;
+// Filtros directos de Entregas (Semana y Proyecto)
+if (document.getElementById("input-filtro-semana-entregas")) {
+  document.getElementById("input-filtro-semana-entregas").oninput = (e) => {
+    filtroSemanaEntregas = e.target.value.trim();
+    renderTablaEntregas();
+  };
+}
+if (document.getElementById("input-filtro-proyecto-entregas")) {
+  document.getElementById("input-filtro-proyecto-entregas").oninput = (e) => {
+    filtroProyectoEntregas = e.target.value.trim().toLowerCase();
     renderTablaEntregas();
   };
 }
@@ -675,34 +687,31 @@ function renderTablaEntregas() {
   tbody.innerHTML = "";
   const empty = document.getElementById("entregas-empty-state");
 
-  if (entregas.length === 0) {
+  let entregasFiltradas = entregas.filter(item => {
+    const coincideSem = !filtroSemanaEntregas || (item.semana || "").toString().includes(filtroSemanaEntregas);
+    const coincideProy = !filtroProyectoEntregas || (item.proyecto || "").toLowerCase().includes(filtroProyectoEntregas);
+    return coincideSem && coincideProy;
+  });
+
+  // Ordenar siempre por código de semana numérico ascendente (ej. 635, 636...)
+  entregasFiltradas.sort((a, b) => (a.semana || "").localeCompare(b.semana || "", undefined, { numeric: true }));
+
+  if (entregasFiltradas.length === 0) {
     empty.classList.remove("hidden");
     const badge = document.getElementById("badge-total-entregas");
-    if (badge) badge.textContent = "0 entregas registradas";
+    if (badge) badge.textContent = "0 entregas coincidentes";
     return;
   }
   empty.classList.add("hidden");
 
-  let entregasOrdenadas = [...entregas];
-
-  if (criterioOrdenEntregas === "semana") {
-    entregasOrdenadas.sort((a, b) => (a.semana || "").localeCompare(b.semana || "", undefined, { numeric: true }));
-  } else if (criterioOrdenEntregas === "proyecto") {
-    entregasOrdenadas.sort((a, b) => (a.proyecto || "").localeCompare(b.proyecto || ""));
-  } else if (criterioOrdenEntregas === "estado") {
-    entregasOrdenadas.sort((a, b) => (a.recibido === b.recibido ? 0 : a.recibido ? 1 : -1));
-  } else {
-    entregasOrdenadas.sort((a, b) => new Date(b.fechaEntrega || 0) - new Date(a.fechaEntrega || 0));
-  }
-
   const esAdmin = esSuperAdmin();
-  const recibidasCount = entregas.filter(e => e.recibido).length;
+  const recibidasCount = entregasFiltradas.filter(e => e.recibido).length;
   const badge = document.getElementById("badge-total-entregas");
   if (badge) {
-    badge.textContent = `Total: ${entregas.length} | Recibidas: ${recibidasCount} | En Tránsito: ${entregas.length - recibidasCount}`;
+    badge.textContent = `Mostrando: ${entregasFiltradas.length} | Recibidas: ${recibidasCount} | En Tránsito: ${entregasFiltradas.length - recibidasCount}`;
   }
 
-  entregasOrdenadas.forEach(ent => {
+  entregasFiltradas.forEach(ent => {
     const tr = document.createElement("tr");
     tr.className = "hover:bg-gray-50/80 transition border-b border-gray-100";
 
@@ -729,7 +738,7 @@ function renderTablaEntregas() {
     }
 
     tr.innerHTML = `
-      <td class="p-3 font-semibold text-gray-500 border-r border-gray-100">${ent.semana}</td>
+      <td class="p-3 font-bold text-gray-700 border-r border-gray-100 font-mono">${ent.semana}</td>
       <td class="p-3 text-gray-600 border-r border-gray-100 whitespace-nowrap">${formatearFecha(ent.fechaEntrega)}</td>
       <td class="p-3 font-bold text-gray-800 border-r border-gray-100">${ent.proyecto}</td>
       <td class="p-3 font-mono text-gray-700 border-r border-gray-100">${ent.articulo}</td>
@@ -786,7 +795,7 @@ function abrirReporteImpresoEntregas() {
   entregas.forEach(it => {
     html += `
       <tr class="border-b">
-        <td class="p-2 border font-semibold">${it.semana}</td>
+        <td class="p-2 border font-bold font-mono">${it.semana}</td>
         <td class="p-2 border whitespace-nowrap">${formatearFecha(it.fechaEntrega)}</td>
         <td class="p-2 border font-bold text-gray-800">${it.proyecto}</td>
         <td class="p-2 border font-mono">${it.articulo}</td>
@@ -964,7 +973,7 @@ function renderTabla() {
     }
 
     tr.innerHTML = `
-      <td class="p-3 font-semibold text-gray-500 border-r border-gray-100">${item.semana || '—'}</td>
+      <td class="p-3 font-bold text-gray-700 border-r border-gray-100 font-mono">${item.semana || '—'}</td>
       <td class="p-3 text-gray-600 border-r border-gray-100 whitespace-nowrap">${formatearFecha(item.fechaCreacion)}</td>
       <td class="p-3 border-r border-gray-100 whitespace-nowrap">
         <span class="font-bold text-gray-800 block">${item.solicitanteNombre || '—'}</span>
@@ -1050,15 +1059,27 @@ window.editarTextoBox = async (id, textoActual) => {
   }
 };
 
-// ==================== INFORMES OPTIMIZADOS POR SEMANA ====================
+// ==================== INFORMES OPTIMIZADOS ====================
 function renderInformeView() {
-  poblarSelectorSemanasInforme();
   actualizarInformePorSemana();
 
-  document.getElementById("select-filtro-semana").onchange = (e) => {
-    semanaSeleccionadaInforme = e.target.value;
-    actualizarInformePorSemana();
-  };
+  // Filtros de entrada directa por semana y proyecto
+  const inputSem = document.getElementById("input-filtro-semana-informe");
+  const inputProy = document.getElementById("input-filtro-proyecto-informe");
+
+  if (inputSem) {
+    inputSem.oninput = (e) => {
+      filtroSemanaInforme = e.target.value.trim();
+      actualizarInformePorSemana();
+    };
+  }
+
+  if (inputProy) {
+    inputProy.oninput = (e) => {
+      filtroProyectoInforme = e.target.value.trim().toLowerCase();
+      actualizarInformePorSemana();
+    };
+  }
 
   document.getElementById("chk-toggle-all-semana").onchange = (e) => {
     const chks = document.querySelectorAll(".chk-articulo-informe");
@@ -1071,58 +1092,37 @@ function renderInformeView() {
   document.getElementById("btn-generar-informe-resumen").onclick = generarModalInformeResumen;
 }
 
-function poblarSelectorSemanasInforme() {
-  const selectSemana = document.getElementById("select-filtro-semana");
-  const semanasUnicas = [...new Set(solicitudes.map(s => (s.semana || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-
-  const valorActual = selectSemana.value;
-  selectSemana.innerHTML = "";
-
-  if (semanasUnicas.length === 0) {
-    selectSemana.innerHTML = `<option value="todas">Sin semanas registradas</option>`;
-    return;
-  }
-
-  selectSemana.innerHTML += `<option value="todas">Todas las Semanas</option>`;
-
-  semanasUnicas.forEach(sem => {
-    selectSemana.innerHTML += `<option value="${sem}">Semana ${sem}</option>`;
+function actualizarInformePorSemana() {
+  // 1. Filtrar solicitudes según semana y proyecto ingresados
+  let articulosFiltrados = solicitudes.filter(item => {
+    const coincideSem = !filtroSemanaInforme || (item.semana || "").toString().includes(filtroSemanaInforme);
+    const coincideProy = !filtroProyectoInforme || (item.proyecto || "").toLowerCase().includes(filtroProyectoInforme);
+    return coincideSem && coincideProy;
   });
 
-  if (valorActual && (semanasUnicas.includes(valorActual) || valorActual === "todas")) {
-    selectSemana.value = valorActual;
-    semanaSeleccionadaInforme = valorActual;
-  } else if (semanasUnicas.length > 0) {
-    const ultima = semanasUnicas[semanasUnicas.length - 1];
-    selectSemana.value = ultima;
-    semanaSeleccionadaInforme = ultima;
-  }
-}
+  // Ordenar siempre por código de semana numérico ascendente (ej: 635, 636...)
+  articulosFiltrados.sort((a, b) => (a.semana || "").localeCompare(b.semana || "", undefined, { numeric: true }));
 
-function actualizarInformePorSemana() {
-  let articulosSemana = solicitudes;
-  if (semanaSeleccionadaInforme !== "todas") {
-    articulosSemana = solicitudes.filter(s => (s.semana || "").trim() === semanaSeleccionadaInforme);
-  }
-
-  const total = articulosSemana.length;
-  const realizados = articulosSemana.filter(s => s.estado === "Realizado").length;
-  const enProceso = articulosSemana.filter(s => s.estado === "En proceso").length;
-  const validadosCostos = articulosSemana.filter(s => s.validadoCostos).length;
+  // 2. Actualizar Mini-KPIs
+  const total = articulosFiltrados.length;
+  const realizados = articulosFiltrados.filter(s => s.estado === "Realizado").length;
+  const enProceso = articulosFiltrados.filter(s => s.estado === "En proceso").length;
+  const validadosCostos = articulosFiltrados.filter(s => s.validadoCostos).length;
 
   document.getElementById("kpi-sem-total").textContent = total;
   document.getElementById("kpi-sem-proceso").textContent = enProceso;
   document.getElementById("kpi-sem-realizados").textContent = realizados;
   document.getElementById("kpi-sem-costos").textContent = `${validadosCostos} de ${total}`;
 
+  // 3. Alerta de Congelamiento de Producción
   const badgeContainer = document.getElementById("badge-congelamiento-container");
   if (total === 0) {
-    badgeContainer.innerHTML = `<span class="bg-gray-100 text-gray-500 font-bold text-[11px] px-3 py-1 rounded-full border border-gray-200">Sin artículos registrados</span>`;
+    badgeContainer.innerHTML = `<span class="bg-gray-100 text-gray-500 font-bold text-[11px] px-3 py-1 rounded-full border border-gray-200">Sin artículos con ese filtro</span>`;
   } else if (realizados === total && validadosCostos === total) {
     badgeContainer.innerHTML = `
       <span class="bg-green-100 text-green-800 font-bold text-[11px] px-3.5 py-1.5 rounded-full border border-green-300 inline-flex items-center space-x-1.5 shadow-sm">
         <i class="fa-solid fa-circle-check text-green-600"></i>
-        <span>Semana Lista para Congelamiento (100% Realizado y Validado por Costos)</span>
+        <span>Listo para Congelamiento (100% Realizado y Validado en Costos)</span>
       </span>
     `;
   } else {
@@ -1130,22 +1130,23 @@ function actualizarInformePorSemana() {
     badgeContainer.innerHTML = `
       <span class="bg-amber-50 text-amber-800 font-bold text-[11px] px-3.5 py-1.5 rounded-full border border-amber-200 inline-flex items-center space-x-1.5">
         <i class="fa-solid fa-clock text-amber-600"></i>
-        <span>En proceso: ${pendientes} artículo(s) faltan por validar en Costos</span>
+        <span>${pendientes} artículo(s) pendientes por validar en Costos</span>
       </span>
     `;
   }
 
+  // 4. Renderizar Tabla de Artículos
   const tbody = document.getElementById("table-informe-articulos-body");
   tbody.innerHTML = "";
 
   if (total === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400 italic">No hay artículos para esta semana.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-400 italic">No hay artículos que coincidan con la búsqueda.</td></tr>`;
     actualizarConteoSeleccionados();
     actualizarGraficoTorresSemana();
     return;
   }
 
-  articulosSemana.forEach(item => {
+  articulosFiltrados.forEach(item => {
     const tr = document.createElement("tr");
     tr.className = "hover:bg-gray-50/70 border-b border-gray-100";
 
@@ -1153,6 +1154,7 @@ function actualizarInformePorSemana() {
       <td class="p-2.5 text-center">
         <input type="checkbox" value="${item.id}" checked class="chk-articulo-informe h-4 w-4 accent-[#D61B28] cursor-pointer">
       </td>
+      <td class="p-2.5 font-bold text-gray-700 font-mono">${item.semana}</td>
       <td class="p-2.5 font-bold text-gray-800">${item.proyecto}</td>
       <td class="p-2.5 font-mono text-gray-700">${item.articulo}</td>
       <td class="p-2.5 text-gray-600 max-w-xs truncate" title="${item.boxCambio}">${item.boxCambio}</td>
@@ -1184,6 +1186,7 @@ function actualizarConteoSeleccionados() {
   if (label) label.textContent = `${marcados} de ${total} artículos seleccionados`;
 }
 
+// Generador de Texto Oficial para WhatsApp (Formato Exacto Bata Bolivia)
 function generarTextoNotificacionBata() {
   const seleccionadosIds = Array.from(document.querySelectorAll(".chk-articulo-informe:checked")).map(c => c.value);
   if (seleccionadosIds.length === 0) {
@@ -1192,7 +1195,7 @@ function generarTextoNotificacionBata() {
   }
 
   const items = solicitudes.filter(s => seleccionadosIds.includes(s.id));
-  const semanaTitulo = semanaSeleccionadaInforme !== "todas" ? semanaSeleccionadaInforme : (items[0]?.semana || "GENERAL");
+  const semanaTitulo = filtroSemanaInforme ? filtroSemanaInforme : (items[0]?.semana || "GENERAL");
 
   let texto = `CAMBIOS REALIZADOS PARA SEM: ${semanaTitulo}\n\n`;
   texto += `Saludos Estimados, Todos los cambios en guías para el congelamiento de la semana mencionada filas arriba han sido realizados y se puede continuar con el proceso.\n\n`;
@@ -1251,7 +1254,7 @@ function generarModalInformeResumen() {
   items.forEach(it => {
     html += `
       <tr class="border-b">
-        <td class="p-2 border font-semibold">${it.semana || '—'}</td>
+        <td class="p-2 border font-bold font-mono">${it.semana || '—'}</td>
         <td class="p-2 border whitespace-nowrap">${formatearFecha(it.fechaCreacion)}</td>
         <td class="p-2 border whitespace-nowrap font-medium">${it.solicitanteNombre} <span class="text-[10px] text-gray-400">(${it.solicitanteRol})</span></td>
         <td class="p-2 border font-bold text-gray-800">${it.proyecto}</td>
