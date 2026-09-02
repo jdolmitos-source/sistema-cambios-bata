@@ -45,7 +45,7 @@ let solicitudes = [];
 let entregas = [];
 let filtroSubmenuActivo = "todos";
 let chartInstance = null;
-let criterioOrdenInforme = "todos";
+let semanaSeleccionadaInforme = "todas";
 
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
   if (!file) return resolve(null);
@@ -55,7 +55,6 @@ const fileToBase64 = (file) => new Promise((resolve, reject) => {
   reader.onerror = error => reject(error);
 });
 
-// Comprobar estrictamente si es el Super Admin (SOLO jd.olmitos@gmail.com)
 function esSuperAdmin() {
   if (!currentUser || !currentUser.email) return false;
   return currentUser.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
@@ -319,7 +318,7 @@ menuBtnEntregas.onclick = () => {
 
 menuBtnUsuarios.onclick = () => {
   if (!esSuperAdmin()) {
-    alert("Acceso denegado: solo el usuario jd.olmitos@gmail.com puede entrar al panel de administración.");
+    alert("Acceso denegado: solo el usuario jd.olmitos@gmail.com puede acceder al panel de administración.");
     return;
   }
   resetMenuStyles();
@@ -349,7 +348,6 @@ window.filtrarPorSubmenu = (estado) => {
 async function cargarPanelSuperAdmin() {
   if (!esSuperAdmin()) return;
 
-  // 1. Tabla de Usuarios
   const tbodyUsers = document.getElementById("table-users-body");
   tbodyUsers.innerHTML = "";
   const snap = await getDocs(collection(db, "usuarios"));
@@ -374,6 +372,8 @@ async function cargarPanelSuperAdmin() {
           <option value="Costos" ${u.rol === 'Costos' ? 'selected' : ''}>Costos</option>
           <option value="Compras" ${u.rol === 'Compras' ? 'selected' : ''}>Compras</option>
           <option value="Producción" ${u.rol === 'Producción' ? 'selected' : ''}>Producción</option>
+          <option value="Planeamiento" ${u.rol === 'Planeamiento' ? 'selected' : ''}>Planeamiento</option>
+          <option value="Retail" ${u.rol === 'Retail' ? 'selected' : ''}>Retail</option>
           <option value="Desarrollo de producto" ${u.rol === 'Desarrollo de producto' ? 'selected' : ''}>Desarrollo (General)</option>
           <option value="Desarrollo de producto - Técnico" ${u.rol === 'Desarrollo de producto - Técnico' ? 'selected' : ''}>Desarrollo - Técnico (Modelista)</option>
           <option value="Desarrollo de producto - Jefe" ${u.rol === 'Desarrollo de producto - Jefe' ? 'selected' : ''}>Desarrollo - Jefe</option>
@@ -390,7 +390,6 @@ async function cargarPanelSuperAdmin() {
     tbodyUsers.appendChild(tr);
   });
 
-  // 2. Tabla de Solicitudes para Eliminar
   const tbodySols = document.getElementById("table-admin-solicitudes-body");
   tbodySols.innerHTML = "";
 
@@ -552,7 +551,7 @@ document.getElementById("form-new-change").onsubmit = async (e) => {
 // ==================== MÓDULO ENTREGAS ====================
 document.getElementById("btn-open-nueva-entrega").onclick = () => {
   const esAdmin = esSuperAdmin();
-  const rol = userData.rol || "";
+  const rol = (userData && userData.rol) || "";
   const esDesarrollo = rol.includes("Desarrollo") || esAdmin;
   const esCostos = rol === "Costos" || esAdmin;
 
@@ -569,7 +568,6 @@ document.getElementById("btn-open-nueva-entrega").onclick = () => {
     selectTipo.innerHTML += `<option value="CORTE">Corte</option>`;
     selectTipo.innerHTML += `<option value="MUESTRA DEFINITIVA">Muestra Definitiva</option>`;
   } else if (esCostos) {
-    // Costos solo puede entregar Corte
     selectTipo.innerHTML += `<option value="CORTE">Corte (De Costos a Producción)</option>`;
   }
 
@@ -590,7 +588,6 @@ function actualizarDestinosEntrega() {
   if (esCostos) {
     selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
   } else {
-    // Desarrollo entregando
     if (tipo === "GUÍA DE PRODUCCIÓN" || tipo === "CORTE") {
       selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
     } else if (tipo === "MUESTRA DEFINITIVA") {
@@ -632,7 +629,7 @@ document.getElementById("form-nueva-entrega").onsubmit = async (e) => {
     abrirModalWhatsApp({
       titulo: "Entrega Registrada",
       subtitulo: `Notificar recepción a los encargados de ${destino}:`,
-      mensajeTexto: `📦 *ENTREGA DE MATERIAL - BATA BOLIVIA*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n🏷️ *Elemento Entregado:* ${tipo}\n👤 *Entregado por:* ${userData.nombre} (${userData.rol})\n🏢 *Destino:* ${destino}\n📝 *Notas:* ${notas || 'Sin notas adicionales'}\n\n_Por favor confirmar la recepción física en el sistema._`,
+      mensajeTexto: `📦 *ENTREGA REALIZADA - PD BOLIVIA*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n🏷️ *Elemento:* ${tipo}\n👤 *Entregado por:* ${userData.nombre} (${userData.rol})\n🏢 *Destino:* ${destino}\n📝 *Notas:* ${notas || 'Sin notas adicionales'}\n\n_Favor de confirmar la recepción física en el sistema._`,
       rolFiltro: destino
     });
   } catch (err) {
@@ -738,6 +735,9 @@ function escucharCambios() {
       return { id, ...data };
     });
     renderTabla();
+    if (!viewInforme.classList.contains("hidden")) {
+      renderInformeView();
+    }
     if (esSuperAdmin() && !viewUsuarios.classList.contains("hidden")) {
       cargarPanelSuperAdmin();
     }
@@ -914,84 +914,158 @@ window.editarTextoBox = async (id, textoActual) => {
   }
 };
 
-// ==================== INFORMES Y NOTIFICACIÓN TEXTO ====================
+// ==================== INFORMES OPTIMIZADOS POR SEMANA ====================
 function renderInformeView() {
-  document.getElementById("metric-total").textContent = solicitudes.length;
-  document.getElementById("metric-proceso").textContent = solicitudes.filter(s => s.estado === "En proceso").length;
-  document.getElementById("metric-realizado").textContent = solicitudes.filter(s => s.estado === "Realizado").length;
-  document.getElementById("metric-retrasado").textContent = solicitudes.filter(s => s.estado === "Retrasado").length;
+  poblarSelectorSemanasInforme();
+  actualizarInformePorSemana();
 
-  poblarListaProyectosInforme();
-
-  document.getElementById("select-ordenar-informe").onchange = (e) => {
-    criterioOrdenInforme = e.target.value;
-    poblarListaProyectosInforme();
-    actualizarGraficoTorres();
+  document.getElementById("select-filtro-semana").onchange = (e) => {
+    semanaSeleccionadaInforme = e.target.value;
+    actualizarInformePorSemana();
   };
 
-  document.getElementById("btn-select-all").onclick = () => {
-    document.querySelectorAll(".report-chk").forEach(c => c.checked = true);
-    actualizarGraficoTorres();
+  document.getElementById("chk-toggle-all-semana").onchange = (e) => {
+    const chks = document.querySelectorAll(".chk-articulo-informe");
+    chks.forEach(c => c.checked = e.target.checked);
+    actualizarConteoSeleccionados();
+    actualizarGraficoTorresSemana();
   };
 
-  document.getElementById("btn-deselect-all").onclick = () => {
-    document.querySelectorAll(".report-chk").forEach(c => c.checked = false);
-    actualizarGraficoTorres();
-  };
-
-  document.getElementById("btn-generar-informe-resumen").onclick = generarModalInformeResumen;
   document.getElementById("btn-generar-texto-wsp").onclick = generarTextoNotificacionBata;
-
-  actualizarGraficoTorres();
+  document.getElementById("btn-generar-informe-resumen").onclick = generarModalInformeResumen;
 }
 
-function poblarListaProyectosInforme() {
-  const container = document.getElementById("report-project-selection-list");
-  container.innerHTML = "";
+function poblarSelectorSemanasInforme() {
+  const selectSemana = document.getElementById("select-filtro-semana");
+  const semanasUnicas = [...new Set(solicitudes.map(s => (s.semana || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
-  let listaOrdenada = [...solicitudes];
+  const valorActual = selectSemana.value;
+  selectSemana.innerHTML = "";
 
-  if (criterioOrdenInforme === "semana") {
-    listaOrdenada.sort((a, b) => (a.semana || "").localeCompare(b.semana || "", undefined, { numeric: true }));
-  } else if (criterioOrdenInforme === "estado") {
-    listaOrdenada.sort((a, b) => (a.estado || "").localeCompare(b.estado || ""));
-  } else if (criterioOrdenInforme === "fecha") {
-    listaOrdenada.sort((a, b) => new Date(b.fechaCreacion || 0) - new Date(a.fechaCreacion || 0));
-  } else if (criterioOrdenInforme === "proyecto") {
-    listaOrdenada.sort((a, b) => (a.proyecto || "").localeCompare(b.proyecto || ""));
-  }
-
-  const proyectosUnicos = [...new Set(listaOrdenada.map(s => s.proyecto))];
-
-  proyectosUnicos.forEach((proy) => {
-    const itemReferencia = listaOrdenada.find(s => s.proyecto === proy);
-    const labelSemana = itemReferencia && itemReferencia.semana ? `(${itemReferencia.semana})` : '';
-
-    const div = document.createElement("div");
-    div.className = "flex items-center space-x-2 bg-gray-50 p-2 rounded-xl border border-gray-100";
-    div.innerHTML = `
-      <input type="checkbox" value="${proy}" checked class="report-chk h-4 w-4 accent-[#D61B28]">
-      <span class="text-xs font-semibold text-gray-700 truncate">${proy} <span class="text-[10px] text-gray-400">${labelSemana}</span></span>
-    `;
-    container.appendChild(div);
-  });
-
-  document.querySelectorAll(".report-chk").forEach(chk => {
-    chk.onchange = actualizarGraficoTorres;
-  });
-}
-
-function generarTextoNotificacionBata() {
-  const seleccionados = Array.from(document.querySelectorAll(".report-chk:checked")).map(c => c.value);
-  if (seleccionados.length === 0) {
-    alert("Selecciona al menos un proyecto para generar el texto.");
+  if (semanasUnicas.length === 0) {
+    selectSemana.innerHTML = `<option value="todas">Sin semanas registradas</option>`;
     return;
   }
 
-  const items = solicitudes.filter(s => seleccionados.includes(s.proyecto));
-  const semanaDetectada = items[0] && items[0].semana ? items[0].semana : "GENERAL";
+  // Opción para ver todas
+  selectSemana.innerHTML += `<option value="todas">Todas las Semanas</option>`;
 
-  let texto = `CAMBIOS REALIZADOS PARA SEM: ${semanaDetectada}\n\n`;
+  semanasUnicas.forEach(sem => {
+    selectSemana.innerHTML += `<option value="${sem}">Semana ${sem}</option>`;
+  });
+
+  // Si ya había una selección previa la conservamos, sino seleccionamos la última semana activa
+  if (valorActual && (semanasUnicas.includes(valorActual) || valorActual === "todas")) {
+    selectSemana.value = valorActual;
+    semanaSeleccionadaInforme = valorActual;
+  } else if (semanasUnicas.length > 0) {
+    const ultima = semanasUnicas[semanasUnicas.length - 1];
+    selectSemana.value = ultima;
+    semanaSeleccionadaInforme = ultima;
+  }
+}
+
+function actualizarInformePorSemana() {
+  // 1. Filtrar solicitudes según la semana seleccionada
+  let articulosSemana = solicitudes;
+  if (semanaSeleccionadaInforme !== "todas") {
+    articulosSemana = solicitudes.filter(s => (s.semana || "").trim() === semanaSeleccionadaInforme);
+  }
+
+  // 2. Actualizar Mini-KPIs
+  const total = articulosSemana.length;
+  const realizados = articulosSemana.filter(s => s.estado === "Realizado").length;
+  const enProceso = articulosSemana.filter(s => s.estado === "En proceso").length;
+  const validadosCostos = articulosSemana.filter(s => s.validadoCostos).length;
+
+  document.getElementById("kpi-sem-total").textContent = total;
+  document.getElementById("kpi-sem-proceso").textContent = enProceso;
+  document.getElementById("kpi-sem-realizados").textContent = realizados;
+  document.getElementById("kpi-sem-costos").textContent = `${validadosCostos} de ${total}`;
+
+  // 3. Alerta de Congelamiento de Producción
+  const badgeContainer = document.getElementById("badge-congelamiento-container");
+  if (total === 0) {
+    badgeContainer.innerHTML = `<span class="bg-gray-100 text-gray-500 font-bold text-[11px] px-3 py-1 rounded-full border border-gray-200">Sin artículos registrados</span>`;
+  } else if (realizados === total && validadosCostos === total) {
+    badgeContainer.innerHTML = `
+      <span class="bg-green-100 text-green-800 font-bold text-[11px] px-3.5 py-1.5 rounded-full border border-green-300 inline-flex items-center space-x-1.5 shadow-sm">
+        <i class="fa-solid fa-circle-check text-green-600"></i>
+        <span>Semana Lista para Congelamiento (100% Realizado y Validado por Costos)</span>
+      </span>
+    `;
+  } else {
+    const pendientes = total - validadosCostos;
+    badgeContainer.innerHTML = `
+      <span class="bg-amber-50 text-amber-800 font-bold text-[11px] px-3.5 py-1.5 rounded-full border border-amber-200 inline-flex items-center space-x-1.5">
+        <i class="fa-solid fa-clock text-amber-600"></i>
+        <span>En proceso: ${pendientes} artículo(s) faltan por validar en Costos</span>
+      </span>
+    `;
+  }
+
+  // 4. Renderizar Tabla de Artículos de la Semana
+  const tbody = document.getElementById("table-informe-articulos-body");
+  tbody.innerHTML = "";
+
+  if (total === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400 italic">No hay artículos para esta semana.</td></tr>`;
+    actualizarConteoSeleccionados();
+    actualizarGraficoTorresSemana();
+    return;
+  }
+
+  articulosSemana.forEach(item => {
+    const tr = document.createElement("tr");
+    tr.className = "hover:bg-gray-50/70 border-b border-gray-100";
+
+    tr.innerHTML = `
+      <td class="p-2.5 text-center">
+        <input type="checkbox" value="${item.id}" checked class="chk-articulo-informe h-4 w-4 accent-[#D61B28] cursor-pointer">
+      </td>
+      <td class="p-2.5 font-bold text-gray-800">${item.proyecto}</td>
+      <td class="p-2.5 font-mono text-gray-700">${item.articulo}</td>
+      <td class="p-2.5 text-gray-600 max-w-xs truncate" title="${item.boxCambio}">${item.boxCambio}</td>
+      <td class="p-2.5 text-center">
+        <span class="px-2 py-0.5 rounded font-bold text-[10px] ${item.estado === 'Realizado' ? 'bg-green-50 text-green-700 border border-green-200' : (item.estado === 'Retrasado' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-orange-50 text-orange-700 border border-orange-200')}">${item.estado}</span>
+      </td>
+      <td class="p-2.5 text-center font-bold text-[11px]">
+        ${item.validadoCostos ? '<span class="text-green-600"><i class="fa-solid fa-check"></i> Validado</span>' : '<span class="text-gray-300">Pendiente</span>'}
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.querySelectorAll(".chk-articulo-informe").forEach(chk => {
+    chk.onchange = () => {
+      actualizarConteoSeleccionados();
+      actualizarGraficoTorresSemana();
+    };
+  });
+
+  actualizarConteoSeleccionados();
+  actualizarGraficoTorresSemana();
+}
+
+function actualizarConteoSeleccionados() {
+  const total = document.querySelectorAll(".chk-articulo-informe").length;
+  const marcados = document.querySelectorAll(".chk-articulo-informe:checked").length;
+  const label = document.getElementById("label-conteo-seleccionados");
+  if (label) label.textContent = `${marcados} de ${total} artículos seleccionados`;
+}
+
+// Generador de Texto Oficial para WhatsApp (Formato Exacto Imagen 2)
+function generarTextoNotificacionBata() {
+  const seleccionadosIds = Array.from(document.querySelectorAll(".chk-articulo-informe:checked")).map(c => c.value);
+  if (seleccionadosIds.length === 0) {
+    alert("Selecciona al menos un artículo para generar el texto de notificación.");
+    return;
+  }
+
+  const items = solicitudes.filter(s => seleccionadosIds.includes(s.id));
+  const semanaTitulo = semanaSeleccionadaInforme !== "todas" ? semanaSeleccionadaInforme : (items[0]?.semana || "GENERAL");
+
+  let texto = `CAMBIOS REALIZADOS PARA SEM: ${semanaTitulo}\n\n`;
   texto += `Saludos Estimados, Todos los cambios en guías para el congelamiento de la semana mencionada filas arriba han sido realizados y se puede continuar con el proceso.\n\n`;
   texto += `Detalle de Artículos Afectados:\n`;
 
@@ -1005,7 +1079,7 @@ function generarTextoNotificacionBata() {
   document.getElementById("btn-copiar-texto-wsp").onclick = () => {
     textarea.select();
     navigator.clipboard.writeText(texto);
-    alert("Texto copiado al portapapeles.");
+    alert("Texto copiado al portapapeles con éxito.");
   };
 
   document.getElementById("btn-enviar-wsp-directo").onclick = () => {
@@ -1017,19 +1091,19 @@ function generarTextoNotificacionBata() {
 }
 
 function generarModalInformeResumen() {
-  const seleccionados = Array.from(document.querySelectorAll(".report-chk:checked")).map(c => c.value);
-  if (seleccionados.length === 0) {
-    alert("Selecciona al menos un proyecto para generar el informe.");
+  const seleccionadosIds = Array.from(document.querySelectorAll(".chk-articulo-informe:checked")).map(c => c.value);
+  if (seleccionadosIds.length === 0) {
+    alert("Selecciona al menos un artículo para generar el informe PDF.");
     return;
   }
 
-  const items = solicitudes.filter(s => seleccionados.includes(s.proyecto));
+  const items = solicitudes.filter(s => seleccionadosIds.includes(s.id));
   const contenedor = document.getElementById("reporte-resumen-contenido");
 
   let html = `
     <div class="overflow-x-auto">
       <table class="w-full text-left border-collapse border border-gray-200 text-xs">
-        <thead class="bg-gray-100">
+        <thead class="bg-gray-100 font-bold">
           <tr>
             <th class="p-2 border">Semana</th>
             <th class="p-2 border">Fecha Solicitud</th>
@@ -1071,38 +1145,40 @@ function generarModalInformeResumen() {
   modalResumen.classList.remove("hidden");
 }
 
-function actualizarGraficoTorres() {
-  const seleccionados = Array.from(document.querySelectorAll(".report-chk:checked")).map(c => c.value);
+function actualizarGraficoTorresSemana() {
+  const seleccionadosIds = Array.from(document.querySelectorAll(".chk-articulo-informe:checked")).map(c => c.value);
+  const items = solicitudes.filter(s => seleccionadosIds.includes(s.id));
 
-  const labels = seleccionados;
+  const proyectosUnicos = [...new Set(items.map(s => s.proyecto))];
+  const labels = proyectosUnicos;
   const dataProgreso = [];
   const backgroundColors = [];
   const borderColors = [];
 
   labels.forEach(proy => {
-    const items = solicitudes.filter(s => s.proyecto === proy);
-    if (items.length === 0) {
+    const articulosProy = items.filter(s => s.proyecto === proy);
+    if (articulosProy.length === 0) {
       dataProgreso.push(0);
       backgroundColors.push("rgba(214, 27, 40, 0.7)");
       borderColors.push("#D61B28");
       return;
     }
 
-    const realizados = items.filter(s => s.estado === "Realizado").length;
-    const porcentajeRealizados = Math.round((realizados / items.length) * 100);
+    const realizados = articulosProy.filter(s => s.estado === "Realizado").length;
+    const porcentajeRealizados = Math.round((realizados / articulosProy.length) * 100);
     dataProgreso.push(porcentajeRealizados);
 
-    const tieneRetraso = items.some(s => s.estado === "Retrasado");
-    const todosRealizados = items.every(s => s.estado === "Realizado");
+    const tieneRetraso = articulosProy.some(s => s.estado === "Retrasado");
+    const todosRealizados = articulosProy.every(s => s.estado === "Realizado");
 
     if (todosRealizados) {
-      backgroundColors.push("rgba(34, 197, 94, 0.8)");
+      backgroundColors.push("rgba(34, 197, 94, 0.85)");
       borderColors.push("#16a34a");
     } else if (tieneRetraso) {
       backgroundColors.push("rgba(239, 68, 68, 0.85)");
       borderColors.push("#dc2626");
     } else {
-      backgroundColors.push("rgba(249, 115, 22, 0.8)");
+      backgroundColors.push("rgba(249, 115, 22, 0.85)");
       borderColors.push("#ea580c");
     }
   });
@@ -1115,13 +1191,13 @@ function actualizarGraficoTorres() {
     data: {
       labels: labels,
       datasets: [{
-        label: "% Solicitudes Realizadas",
+        label: "% Realizado",
         data: dataProgreso,
         backgroundColor: backgroundColors,
         borderColor: borderColors,
         borderWidth: 1.5,
         borderRadius: 8,
-        barPercentage: 0.45
+        barPercentage: 0.4
       }]
     },
     options: {
@@ -1131,7 +1207,7 @@ function actualizarGraficoTorres() {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: (ctx) => ` Realizado: ${ctx.raw}%`
+            label: (ctx) => ` Avance Proyecto: ${ctx.raw}%`
           }
         }
       },
