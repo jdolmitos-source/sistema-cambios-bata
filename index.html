@@ -215,19 +215,16 @@
           <span>Informe</span>
         </button>
 
-        <!-- Pestaña Entregas -->
         <button type="button" id="menu-btn-entregas" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-gray-600 hover:bg-gray-100 transition cursor-pointer">
           <i class="fa-solid fa-truck-ramp-box text-sm text-[#D61B28]"></i>
           <span>Entregas</span>
         </button>
 
-        <!-- Minuta de Cambios -->
         <button type="button" id="menu-btn-minuta" class="w-full hidden flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs bg-amber-50 text-amber-800 hover:bg-amber-100 transition cursor-pointer border border-amber-200">
           <i class="fa-solid fa-clipboard-list text-sm text-amber-600"></i>
           <span>Minuta de Cambios</span>
         </button>
 
-        <!-- Super Admin: Solo para jd.olmitos@gmail.com -->
         <button type="button" id="menu-btn-usuarios" class="w-full hidden flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-gray-600 hover:bg-gray-100 transition cursor-pointer">
           <i class="fa-solid fa-user-shield text-[#D61B28] text-sm"></i>
           <span>Super Admin</span>
@@ -283,7 +280,7 @@
           </div>
         </section>
 
-        <!-- VISTA 2: INFORME EJECUTIVO OPTIMIZADO POR SEMANA -->
+        <!-- VISTA 2: INFORME EJECUTIVO CON BÚSQUEDA Y FILTROS -->
         <section id="view-informe" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -291,7 +288,7 @@
                 <i class="fa-regular fa-file-lines"></i>
                 <span>Informe Ejecutivo y Congelamiento de Producción</span>
               </h2>
-              <p class="text-xs text-gray-400">Selecciona la semana para auditar el avance y emitir las notificaciones oficiales.</p>
+              <p class="text-xs text-gray-400">Filtra por código de semana o proyecto para auditar el congelamiento.</p>
             </div>
             <div class="flex items-center space-x-2">
               <button type="button" id="btn-generar-texto-wsp" class="bg-green-600 hover:bg-green-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
@@ -305,24 +302,34 @@
             </div>
           </div>
 
-          <!-- PANEL DE FILTRO DE SEMANA Y ESTADO DE CONGELAMIENTO -->
+          <!-- FILTROS DIRECTOS POR SEMANA Y POR PROYECTO -->
           <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div class="flex items-center space-x-3">
-                <label class="text-xs font-bold text-gray-700">Seleccionar Semana:</label>
-                <select id="select-filtro-semana" class="border border-red-200 bg-red-50/50 text-[#D61B28] font-bold text-xs px-3 py-1.5 rounded-xl focus:ring-2 focus:ring-[#D61B28] focus:outline-none">
-                  <!-- Se puebla dinámicamente -->
-                </select>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+              <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1">Filtrar por Semana (Ej: 636, 701):</label>
+                <div class="relative">
+                  <input type="text" id="input-filtro-semana-informe" maxlength="3" pattern="[0-9]{3}" placeholder="Todas o ej: 636" class="w-full pl-8 pr-3 py-1.5 border border-red-200 bg-red-50/40 text-xs font-bold rounded-xl focus:ring-2 focus:ring-[#D61B28] focus:outline-none">
+                  <i class="fa-solid fa-calendar-week text-gray-400 text-xs absolute left-2.5 top-2.5"></i>
+                </div>
               </div>
-              <div id="badge-congelamiento-container">
+
+              <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1">Buscar por Proyecto:</label>
+                <div class="relative">
+                  <input type="text" id="input-filtro-proyecto-informe" placeholder="Ej: SKATER o POL" class="w-full pl-8 pr-3 py-1.5 border border-gray-300 text-xs font-bold rounded-xl focus:ring-2 focus:ring-[#D61B28] focus:outline-none">
+                  <i class="fa-solid fa-magnifying-glass text-gray-400 text-xs absolute left-2.5 top-2.5"></i>
+                </div>
+              </div>
+
+              <div class="flex sm:justify-end items-center pt-4 sm:pt-0" id="badge-congelamiento-container">
                 <!-- Alerta dinámica -->
               </div>
             </div>
 
             <!-- Mini-KPIs -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-gray-100 text-xs">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-gray-100 text-xs">
               <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
-                <span class="text-gray-400 font-semibold block text-[10px]">Artículos Semana</span>
+                <span class="text-gray-400 font-semibold block text-[10px]">Total Artículos</span>
                 <span id="kpi-sem-total" class="text-base font-black text-gray-800">0</span>
               </div>
               <div class="bg-orange-50/70 p-3 rounded-xl border border-orange-100">
@@ -340,12 +347,12 @@
             </div>
           </div>
 
-          <!-- TABLA DE ARTÍCULOS DE LA SEMANA SELECCIONADA -->
+          <!-- TABLA DE ARTÍCULOS ORDENADOS POR SEMANA -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <div class="p-3 bg-gray-50/75 border-b border-gray-200 flex justify-between items-center text-xs">
               <div class="flex items-center space-x-2">
                 <input type="checkbox" id="chk-toggle-all-semana" checked class="h-4 w-4 accent-[#D61B28] cursor-pointer">
-                <span class="font-bold text-gray-700">Artículos Afectados en la Semana Seleccionada</span>
+                <span class="font-bold text-gray-700">Artículos Afectados (Ordenados por Semana)</span>
               </div>
               <span id="label-conteo-seleccionados" class="text-gray-400 font-medium">0 seleccionados</span>
             </div>
@@ -354,6 +361,7 @@
                 <thead>
                   <tr class="bg-gray-50/50 border-b border-gray-200 text-gray-500 font-semibold">
                     <th class="p-2.5 text-center w-10">Sel.</th>
+                    <th class="p-2.5">Semana</th>
                     <th class="p-2.5">Proyecto</th>
                     <th class="p-2.5">Artículo</th>
                     <th class="p-2.5">Descripción del Cambio</th>
@@ -369,7 +377,7 @@
           <!-- Diagrama de Torres -->
           <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
             <div class="flex justify-between items-center mb-4">
-              <h3 class="text-xs font-bold text-gray-700">Diagrama de Torres: % de Avance por Proyecto en la Semana</h3>
+              <h3 class="text-xs font-bold text-gray-700">Diagrama de Torres: % de Avance por Proyecto</h3>
               <span class="text-[11px] text-gray-400 font-medium">Escala: 0% a 100%</span>
             </div>
             <div class="h-72 w-full">
@@ -378,7 +386,7 @@
           </div>
         </section>
 
-        <!-- VISTA 3: ENTREGAS OPTIMIZADA -->
+        <!-- VISTA 3: ENTREGAS CON FILTROS DIRECTOS -->
         <section id="view-entregas" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -404,19 +412,17 @@
             </div>
           </div>
 
-          <!-- Barra de Controles y Ordenamiento -->
+          <!-- Filtros de Entregas por Semana y Proyecto -->
           <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-            <div class="flex items-center space-x-3">
-              <label class="font-bold text-gray-700 flex items-center space-x-1.5">
-                <i class="fa-solid fa-arrow-down-short-wide text-[#D61B28]"></i>
-                <span>Ordenar entregas por:</span>
-              </label>
-              <select id="select-ordenar-entregas" class="border border-gray-300 rounded-xl px-3 py-1.5 font-semibold bg-gray-50 text-gray-700 focus:ring-2 focus:ring-[#D61B28] focus:outline-none">
-                <option value="fecha">Fecha Reciente (Por defecto)</option>
-                <option value="semana">Semana de Producción</option>
-                <option value="proyecto">Nombre del Proyecto (A-Z)</option>
-                <option value="estado">Estado (Pendientes primero)</option>
-              </select>
+            <div class="flex flex-wrap items-center gap-3">
+              <div class="relative">
+                <input type="text" id="input-filtro-semana-entregas" maxlength="3" pattern="[0-9]{3}" placeholder="Filtrar Semana (Ej: 636)" class="pl-8 pr-3 py-1.5 border border-gray-300 rounded-xl font-bold bg-gray-50 focus:ring-2 focus:ring-[#D61B28] focus:outline-none">
+                <i class="fa-solid fa-calendar-week text-gray-400 text-xs absolute left-2.5 top-2.5"></i>
+              </div>
+              <div class="relative">
+                <input type="text" id="input-filtro-proyecto-entregas" placeholder="Buscar Proyecto (Ej: POL)" class="pl-8 pr-3 py-1.5 border border-gray-300 rounded-xl font-bold bg-gray-50 focus:ring-2 focus:ring-[#D61B28] focus:outline-none">
+                <i class="fa-solid fa-magnifying-glass text-gray-400 text-xs absolute left-2.5 top-2.5"></i>
+              </div>
             </div>
             <div id="badge-total-entregas" class="text-gray-500 font-semibold text-[11px]">
               Cargando registros...
@@ -443,7 +449,7 @@
             </div>
             <div id="entregas-empty-state" class="hidden p-8 text-center text-gray-400 text-xs">
               <i class="fa-solid fa-box-open text-3xl mb-2 text-gray-300"></i>
-              <p>No hay registros de entregas efectuadas en el sistema.</p>
+              <p>No hay registros de entregas que coincidan con el filtro.</p>
             </div>
           </div>
         </section>
@@ -502,7 +508,7 @@
     </div>
   </div>
 
-  <!-- MODAL: NUEVA ENTREGA -->
+  <!-- MODAL: NUEVA ENTREGA (FORMATO DE SEMANA 3 DÍGITOS) -->
   <div id="modal-nueva-entrega" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden text-xs">
       <div class="bg-[#D61B28] px-6 py-4 flex justify-between items-center text-white">
@@ -515,8 +521,8 @@
       <form id="form-nueva-entrega" class="p-6 space-y-4">
         <div class="grid grid-cols-3 gap-3">
           <div>
-            <label class="block font-bold text-gray-700 mb-1">Semana</label>
-            <input type="text" id="ent-semana" placeholder="Ej: 37 o 632" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]">
+            <label class="block font-bold text-gray-700 mb-1">Semana (Ej: 636)</label>
+            <input type="text" id="ent-semana" maxlength="3" pattern="[0-9]{3}" placeholder="636" required title="Debe contener exactamente 3 dígitos numéricos (Ej: 636 o 701)" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28] font-mono">
           </div>
           <div>
             <label class="block font-bold text-gray-700 mb-1">Proyecto</label>
@@ -558,7 +564,7 @@
     </div>
   </div>
 
-  <!-- MODAL: MINUTA DE CAMBIOS ESTRUCTURADA -->
+  <!-- MODAL: MINUTA DE CAMBIOS ESTRUCTURADA (3 DÍGITOS EN SEMANA) -->
   <div id="modal-minuta" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl relative text-xs">
       <button type="button" id="close-minuta" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -569,8 +575,8 @@
       <form id="form-minuta" class="space-y-3">
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block font-semibold text-gray-600 mb-1">Semana de Producción</label>
-            <input type="text" id="minuta-semana" required placeholder="Ej: 37 o 632" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-600">
+            <label class="block font-semibold text-gray-600 mb-1">Semana (Formato Ej: 636)</label>
+            <input type="text" id="minuta-semana" maxlength="3" pattern="[0-9]{3}" required placeholder="636" title="Debe contener exactamente 3 dígitos numéricos (Ej: 636 o 701)" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-600 font-mono">
           </div>
           <div>
             <label class="block font-semibold text-gray-600 mb-1">Nombre del Proyecto</label>
@@ -619,7 +625,7 @@
     </div>
   </div>
 
-  <!-- MODAL: NUEVA SOLICITUD -->
+  <!-- MODAL: NUEVA SOLICITUD (SEMANA 3 DÍGITOS OBLIGATORIO) -->
   <div id="modal-new-change" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden">
       <div class="bg-[#D61B28] px-6 py-4 flex justify-between items-center text-white">
@@ -629,8 +635,8 @@
       <form id="form-new-change" class="p-6 space-y-4 text-xs">
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block font-bold text-gray-700 mb-1">Semana</label>
-            <input type="text" id="change-semana" placeholder="Ej: 37 o 632" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]">
+            <label class="block font-bold text-gray-700 mb-1">Semana (Formato Ej: 636)</label>
+            <input type="text" id="change-semana" maxlength="3" pattern="[0-9]{3}" placeholder="636" required title="Debe contener exactamente 3 dígitos numéricos (Ej: 636 o 701)" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28] font-mono">
           </div>
           <div>
             <label class="block font-bold text-gray-700 mb-1">Nombre del Proyecto</label>
