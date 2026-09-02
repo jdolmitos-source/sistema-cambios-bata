@@ -32,7 +32,7 @@ const firebaseConfig = {
   measurementId: "G-0XXGS651PJ"
 };
 
-// ⚠️ CORREO Y WHATSAPP DE SUPER ADMINISTRADOR
+// ⚠️ CONFIGURACIÓN DE ACCESO SUPER ADMIN
 const SUPER_ADMIN_EMAIL = "jd.olmitos@gmail.com";
 const SUPER_ADMIN_WHATSAPP = "59174812364";
 
@@ -143,7 +143,7 @@ window.verFotoGrande = (src, titulo) => {
   modalVisorFoto.classList.remove("hidden");
 };
 
-// Reset de Contraseña dirigido siempre al WhatsApp de Super Admin (+591 74812364)
+// Reset de Contraseña dirigido al WhatsApp de Super Admin
 document.getElementById("btn-forgot-pass").onclick = () => {
   const email = document.getElementById("login-email").value.trim();
   if (!email) {
@@ -155,7 +155,7 @@ document.getElementById("btn-forgot-pass").onclick = () => {
     `🔐 *SOLICITUD DE RESTABLECIMIENTO DE CONTRASEÑA*\n` +
     `*Sistema de Cambios - Bata Bolivia*\n\n` +
     `👤 *Correo del Solicitante:* ${email}\n\n` +
-    `_Hola Daniel, solicito generar el correo de restablecimiento de contraseña en Firebase Console para este correo._`
+    `_Hola Daniel, solicito generar el correo de restablecimiento de contraseña en Firebase Console para este usuario._`
   );
 
   window.open(`https://wa.me/${SUPER_ADMIN_WHATSAPP}?text=${msg}`, "_blank");
@@ -264,7 +264,7 @@ function actualizarHeaderUsuario() {
     }
   }
 
-  // Visibilidad botón Generar Minuta en el encabezado de Cambios
+  // Visibilidad del botón Generar Minuta en el encabezado de Cambios
   const esJefe = userData.rol === "Desarrollo de producto - Jefe";
   const btnMinutaHeader = document.getElementById("btn-open-minuta-header");
   if (btnMinutaHeader) {
@@ -535,7 +535,7 @@ document.getElementById("btn-close-whatsapp-modal").onclick = () => {
   document.getElementById("modal-whatsapp").classList.add("hidden");
 };
 
-// Envío y Publicación de Minuta (Con Foto Comprimida)
+// Envío y Publicación de Minuta
 if (document.getElementById("form-minuta")) {
   document.getElementById("form-minuta").onsubmit = async (e) => {
     e.preventDefault();
@@ -581,7 +581,7 @@ if (document.getElementById("form-minuta")) {
   };
 }
 
-// Crear Solicitud de Cambio (Con Foto Comprimida)
+// Crear Solicitud de Cambio Regular
 const modalNewChange = document.getElementById("modal-new-change");
 document.getElementById("btn-open-new-change").onclick = () => modalNewChange.classList.remove("hidden");
 document.getElementById("modal-btn-close").onclick = () => modalNewChange.classList.add("hidden");
@@ -803,7 +803,6 @@ function renderTablaEntregas() {
       }
     }
 
-    // Miniatura
     const fotoHTML = ent.foto 
       ? `<img src="${ent.foto}" onclick="window.verFotoGrande('${ent.foto}', '${ent.proyecto} - ${ent.articulo}')" class="w-10 h-7 object-cover rounded border border-gray-200 shadow-xs cursor-pointer hover:opacity-80 transition mx-auto" title="Click para ampliar">`
       : `<div class="w-10 h-7 rounded border border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-[10px] mx-auto"><i class="fa-regular fa-image"></i></div>`;
@@ -917,7 +916,7 @@ function abrirResumenTextoEntregas() {
     alert("Texto de entregas copiado al portapapeles.");
   };
 
-  // Abrir Outlook (PWA / Escritorio)
+  // Apertura directa en Outlook (PWA / Escritorio)
   document.getElementById("btn-enviar-correo-entregas").onclick = () => {
     const asunto = encodeURIComponent("Bata Bolivia - Control de Entregas a Departamentos");
     const cuerpo = encodeURIComponent(texto);
@@ -1043,7 +1042,6 @@ function renderTabla() {
       costosHTML = `<input type="checkbox" disabled class="h-4 w-4 text-gray-300 rounded border-gray-200 opacity-40">`;
     }
 
-    // Miniatura
     const fotoHTML = item.foto 
       ? `<img src="${item.foto}" onclick="window.verFotoGrande('${item.foto}', '${item.proyecto} - ${item.articulo}')" class="w-10 h-7 object-cover rounded border border-gray-200 shadow-xs cursor-pointer hover:opacity-80 transition mx-auto" title="Click para ampliar">`
       : `<div class="w-10 h-7 rounded border border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-[10px] mx-auto"><i class="fa-regular fa-image"></i></div>`;
@@ -1268,7 +1266,7 @@ function actualizarConteoSeleccionados() {
   if (label) label.textContent = `${marcados} de ${total} seleccionados`;
 }
 
-// Generador de Texto Oficial para WhatsApp / Outlook PWA (Informe)
+// Generador de Texto Oficial para WhatsApp / Outlook (Informe)
 function generarTextoNotificacionBata() {
   const seleccionadosIds = Array.from(document.querySelectorAll(".chk-articulo-informe:checked")).map(c => c.value);
   if (seleccionadosIds.length === 0) {
