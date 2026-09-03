@@ -225,6 +225,11 @@
             <span class="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>
             <span>Hoja de Desbaste</span>
           </button>
+
+          <button type="button" onclick="window.cambiarSubmenuEntrega('TIZADORES')" class="sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-100 transition cursor-pointer pl-6">
+            <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+            <span>Tizadores (Copias)</span>
+          </button>
         </div>
 
         <div class="pt-2 border-t border-gray-100">
@@ -352,7 +357,7 @@
                     <th class="p-2.5 w-40">
                       <div class="space-y-1">
                         <span>Proyecto</span>
-                        <input type="text" id="col-filter-proyecto-informe" placeholder="Filtrar..." class="w-full px-2 py-1 bg-white border border-gray-300 rounded font-normal text-[11px] focus:outline-none focus:border-[#D61B28]">
+                        <input type="text" id="col-filter-proyecto-informe" placeholder="Filtrar (ej: OMAR)..." class="w-full px-2 py-1 bg-white border border-gray-300 rounded font-normal text-[11px] focus:outline-none focus:border-[#D61B28]">
                       </div>
                     </th>
                     <th class="p-2.5">Artículo</th>
@@ -375,7 +380,7 @@
                 <i class="fa-solid fa-truck-ramp-box"></i>
                 <span>Control de Entregas a Departamentos</span>
               </h2>
-              <p id="entregas-vista-subtitulo" class="text-xs text-gray-400">Entrega de Guías de Producción, Cortes y Muestras Definitivas entre secciones.</p>
+              <p id="entregas-vista-subtitulo" class="text-xs text-gray-400">Entrega de Guías de Producción, Cortes, Muestras, Tizadores y Materiales.</p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
               <button type="button" id="btn-reporte-entregas-texto" class="bg-slate-700 hover:bg-slate-800 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow flex items-center space-x-1.5 transition cursor-pointer">
@@ -492,7 +497,7 @@
                     <th class="p-3">Semana</th>
                     <th class="p-3">Fecha</th>
                     <th class="p-3">Elemento</th>
-                    <th class="p-3">Proyecto / Nombre</th>
+                    <th class="p-3">Proyecto / Detalle</th>
                     <th class="p-3">Artículo</th>
                     <th class="p-3">Destino</th>
                     <th class="p-3 text-center">Eliminar</th>
@@ -507,7 +512,7 @@
     </div>
   </div>
 
-  <!-- MODAL: NUEVA ENTREGA DINÁMICA SEGÚN CATEGORÍA -->
+  <!-- MODAL: NUEVA ENTREGA DINÁMICA SEGÚN DESTINOS Y REGLAS -->
   <div id="modal-nueva-entrega" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden text-xs">
       <div class="bg-[#D61B28] px-6 py-4 flex justify-between items-center text-white">
@@ -539,9 +544,38 @@
           </div>
         </div>
 
+        <!-- CAMPO EXCLUSIVO PARA TIZADORES -->
+        <div id="box-field-copias" class="hidden">
+          <label class="block font-bold text-rose-700 mb-1">Número de Copias de Tizadores</label>
+          <input type="number" min="1" max="100" id="ent-copias" placeholder="Ej: 3" class="w-full px-3 py-2 border border-rose-300 rounded-lg focus:ring-2 focus:ring-rose-500 font-bold">
+        </div>
+
+        <!-- DESTINO CON DESPLEGABLE NORMAL O CHECKBOXES MÚLTIPLES (PARA MUESTRAS DEFINITIVAS) -->
         <div>
           <label class="block font-bold text-gray-700 mb-1">Área / Departamento de Destino</label>
-          <select id="ent-destino" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28] bg-white font-medium"></select>
+          
+          <div id="container-destino-single">
+            <select id="ent-destino" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28] bg-white font-medium"></select>
+          </div>
+
+          <!-- CHECKBOXES PARA MUESTRAS DEFINITIVAS -->
+          <div id="container-destino-multiple" class="hidden bg-purple-50 p-3 rounded-xl border border-purple-200 space-y-2">
+            <p class="text-[11px] text-purple-900 font-bold">Selecciona los departamentos destinatarios de la muestra (1 por departamento):</p>
+            <div class="flex items-center space-x-4">
+              <label class="flex items-center space-x-1.5 font-bold text-gray-700 cursor-pointer">
+                <input type="checkbox" value="Producción" class="chk-muestras-dest h-4 w-4 accent-purple-600" checked>
+                <span>Producción</span>
+              </label>
+              <label class="flex items-center space-x-1.5 font-bold text-gray-700 cursor-pointer">
+                <input type="checkbox" value="Planeamiento" class="chk-muestras-dest h-4 w-4 accent-purple-600" checked>
+                <span>Planeamiento</span>
+              </label>
+              <label class="flex items-center space-x-1.5 font-bold text-gray-700 cursor-pointer">
+                <input type="checkbox" value="Retail" class="chk-muestras-dest h-4 w-4 accent-purple-600" checked>
+                <span>Retail</span>
+              </label>
+            </div>
+          </div>
         </div>
 
         <div id="box-field-foto">
