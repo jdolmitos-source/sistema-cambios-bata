@@ -5,47 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sistema de Gestión de Cambios y Entregas - Bata Bolivia</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="style.css">
   <style>
     @media print {
-      body * {
-        visibility: hidden;
-      }
+      body * { visibility: hidden; }
       #modal-resumen-reporte:not(.hidden), #modal-resumen-reporte:not(.hidden) *,
       #modal-reporte-entregas-print:not(.hidden), #modal-reporte-entregas-print:not(.hidden) * {
         visibility: visible;
       }
       #modal-resumen-reporte:not(.hidden), #modal-reporte-entregas-print:not(.hidden) {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        margin: 0;
-        padding: 10px;
-        box-shadow: none !important;
-        background: white !important;
+        position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 10px;
+        box-shadow: none !important; background: white !important;
       }
-      button, #close-modal-resumen, #close-modal-entregas-print {
-        display: none !important;
-      }
+      button, #close-modal-resumen, #close-modal-entregas-print { display: none !important; }
     }
   </style>
 </head>
 <body class="bg-[#F4F5F7] font-sans text-gray-800 antialiased min-h-screen">
 
-  <!-- ==================== VISTA 1: PORTADA ==================== -->
+  <!-- ==================== PORTADA ==================== -->
   <div id="welcome-container" class="relative min-h-screen w-full flex flex-col md:flex-row bg-[#F4F5F7] overflow-hidden">
-    
     <div class="relative w-full md:w-[42%] min-h-[360px] md:min-h-screen flex flex-col justify-between p-8 md:p-12 z-0 overflow-hidden">
       <img src="./banner-lateral.png" alt="Bata Bolivia" class="absolute inset-0 w-full h-full object-cover object-left md:object-right pointer-events-none select-none z-0">
-
       <div class="relative z-10 pt-4">
         <img src="./logo-bata-blanco.png" alt="Bata" class="w-44 md:w-56 h-auto drop-shadow-md select-none">
         <p class="text-xs uppercase tracking-[0.4em] text-white font-bold mt-2 ml-1 drop-shadow select-none">Bolivia</p>
       </div>
-
       <div class="relative z-10">
         <div class="flex items-center space-x-2 text-white border-t border-white/20 pt-4 text-xs font-semibold drop-shadow select-none">
           <i class="fa-solid fa-chart-line text-sm"></i>
@@ -65,7 +51,6 @@
 
       <div class="bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-gray-100 w-full max-w-lg">
         <h3 class="text-center font-bold text-gray-700 text-sm mb-6">¿Qué deseas hacer?</h3>
-        
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div class="border border-red-200 rounded-2xl p-6 text-center flex flex-col justify-between items-center hover:shadow-md transition bg-white">
             <div class="w-14 h-14 rounded-full border border-red-200 flex items-center justify-center text-[#D61B28] text-2xl mb-3">
@@ -73,9 +58,7 @@
             </div>
             <h4 class="font-bold text-sm text-[#D61B28]">Iniciar sesión</h4>
             <p class="text-[11px] text-gray-500 my-2 leading-relaxed">Accede con tu cuenta autorizada.</p>
-            <button type="button" id="btn-show-login" class="w-full mt-2 bg-[#D61B28] hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-sm cursor-pointer active:scale-95">
-              Iniciar sesión
-            </button>
+            <button type="button" id="btn-show-login" class="w-full mt-2 bg-[#D61B28] hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-sm cursor-pointer active:scale-95">Iniciar sesión</button>
           </div>
 
           <div class="border border-red-200 rounded-2xl p-6 text-center flex flex-col justify-between items-center hover:shadow-md transition bg-white">
@@ -84,9 +67,7 @@
             </div>
             <h4 class="font-bold text-sm text-[#D61B28]">Registrarse</h4>
             <p class="text-[11px] text-gray-500 my-2 leading-relaxed">Crea una nueva cuenta de usuario.</p>
-            <button type="button" id="btn-show-register" class="w-full mt-2 border border-[#D61B28] text-[#D61B28] hover:bg-red-50 font-bold py-2.5 rounded-xl text-xs transition cursor-pointer active:scale-95">
-              Registrarse
-            </button>
+            <button type="button" id="btn-show-register" class="w-full mt-2 border border-[#D61B28] text-[#D61B28] hover:bg-red-50 font-bold py-2.5 rounded-xl text-xs transition cursor-pointer active:scale-95">Registrarse</button>
           </div>
         </div>
       </div>
@@ -98,9 +79,7 @@
     <div class="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl relative">
       <button type="button" id="close-login" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
       <div class="text-center mb-6">
-        <div class="w-12 h-12 rounded-full border border-red-200 text-[#D61B28] flex items-center justify-center text-xl mx-auto mb-2">
-          <i class="fa-solid fa-user"></i>
-        </div>
+        <div class="w-12 h-12 rounded-full border border-red-200 text-[#D61B28] flex items-center justify-center text-xl mx-auto mb-2"><i class="fa-solid fa-user"></i></div>
         <h3 class="font-bold text-base text-[#D61B28]">Inicio de sesión</h3>
       </div>
       <form id="form-login" class="space-y-4 text-xs">
@@ -128,9 +107,7 @@
     <div class="bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
       <button type="button" id="close-register" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
       <div class="text-center mb-5">
-        <div class="w-12 h-12 rounded-full border border-red-200 text-[#D61B28] flex items-center justify-center text-xl mx-auto mb-2">
-          <i class="fa-solid fa-user-plus"></i>
-        </div>
+        <div class="w-12 h-12 rounded-full border border-red-200 text-[#D61B28] flex items-center justify-center text-xl mx-auto mb-2"><i class="fa-solid fa-user-plus"></i></div>
         <h3 class="font-bold text-base text-[#D61B28]">Registro de usuario</h3>
       </div>
       <form id="form-register" class="space-y-3 text-xs">
@@ -174,7 +151,7 @@
     </div>
   </div>
 
-  <!-- ==================== VISTA 2: DASHBOARD ==================== -->
+  <!-- ==================== DASHBOARD ==================== -->
   <div id="app-container" class="hidden min-h-screen flex flex-col relative bg-slate-50">
     <div class="corte-rojo-dashboard"></div>
 
@@ -203,8 +180,8 @@
     </header>
 
     <div class="flex flex-1 relative z-10">
-      <!-- Menú Lateral -->
-      <aside class="w-64 bg-white border-r border-gray-200 p-4 space-y-3">
+      <!-- MENÚ LATERAL -->
+      <aside class="w-64 bg-white border-r border-gray-200 p-4 space-y-2 select-none">
         <button type="button" id="menu-btn-cambios" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs transition bg-red-50 text-[#D61B28] cursor-pointer">
           <i class="fa-solid fa-arrow-right-arrow-left"></i>
           <span>Cambios</span>
@@ -215,15 +192,47 @@
           <span>Informe</span>
         </button>
 
-        <button type="button" id="menu-btn-entregas" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-gray-600 hover:bg-gray-100 transition cursor-pointer">
-          <i class="fa-solid fa-truck-ramp-box text-sm text-[#D61B28]"></i>
-          <span>Entregas</span>
-        </button>
+        <!-- SECCIÓN ENTREGAS CON SUBMENÚS -->
+        <div class="pt-2 border-t border-gray-100 space-y-1">
+          <div class="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Módulos de Entregas</div>
+          
+          <button type="button" id="menu-btn-entregas-todas" onclick="window.cambiarSubmenuEntrega('todas')" class="sub-ent-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl font-bold text-xs text-gray-600 hover:bg-gray-100 transition cursor-pointer">
+            <i class="fa-solid fa-truck-ramp-box text-sm text-[#D61B28]"></i>
+            <span>Entregas (Todas)</span>
+          </button>
 
-        <button type="button" id="menu-btn-usuarios" class="w-full hidden flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-gray-600 hover:bg-gray-100 transition cursor-pointer">
-          <i class="fa-solid fa-user-shield text-[#D61B28] text-sm"></i>
-          <span>Super Admin</span>
-        </button>
+          <button type="button" onclick="window.cambiarSubmenuEntrega('MATERIALES')" class="sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-100 transition cursor-pointer pl-6">
+            <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+            <span>Entrega Materiales</span>
+          </button>
+
+          <button type="button" onclick="window.cambiarSubmenuEntrega('GUÍA DE PRODUCCIÓN')" class="sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-100 transition cursor-pointer pl-6">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            <span>Guías de Producción</span>
+          </button>
+
+          <button type="button" onclick="window.cambiarSubmenuEntrega('CORTE')" class="sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-100 transition cursor-pointer pl-6">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            <span>Entrega de Cortes</span>
+          </button>
+
+          <button type="button" onclick="window.cambiarSubmenuEntrega('MUESTRA DEFINITIVA')" class="sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-100 transition cursor-pointer pl-6">
+            <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+            <span>Muestras Definitivas</span>
+          </button>
+
+          <button type="button" onclick="window.cambiarSubmenuEntrega('HOJA DE DESBASTE')" class="sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-100 transition cursor-pointer pl-6">
+            <span class="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>
+            <span>Hoja de Desbaste</span>
+          </button>
+        </div>
+
+        <div class="pt-2 border-t border-gray-100">
+          <button type="button" id="menu-btn-usuarios" class="w-full hidden flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-gray-600 hover:bg-gray-100 transition cursor-pointer">
+            <i class="fa-solid fa-user-shield text-[#D61B28] text-sm"></i>
+            <span>Super Admin</span>
+          </button>
+        </div>
       </aside>
 
       <main class="flex-1 p-6 md:p-8 overflow-y-auto">
@@ -276,7 +285,7 @@
           </div>
         </section>
 
-        <!-- VISTA 2: INFORME EJECUTIVO CON FILTRO TIPO EXCEL -->
+        <!-- VISTA 2: INFORME EJECUTIVO SIN TORRES -->
         <section id="view-informe" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -326,7 +335,7 @@
 
           <!-- TABLA CON FILTROS EN ENCABEZADOS -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-            <div class="overflow-x-auto max-h-96">
+            <div class="overflow-x-auto max-h-[600px]">
               <table class="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr class="bg-gray-100/80 border-b border-gray-200 text-gray-700 font-bold">
@@ -334,16 +343,16 @@
                       <input type="checkbox" id="chk-toggle-all-semana" checked class="h-4 w-4 accent-[#D61B28] cursor-pointer">
                     </th>
                     <th class="p-2.5 text-center w-14">Foto</th>
-                    <th class="p-2.5 w-24">
+                    <th class="p-2.5 w-28">
                       <div class="space-y-1">
                         <span>Semana</span>
                         <input type="text" id="col-filter-semana-informe" placeholder="Filtrar..." class="w-full px-2 py-1 bg-white border border-gray-300 rounded font-normal font-mono text-[11px] focus:outline-none focus:border-[#D61B28]">
                       </div>
                     </th>
-                    <th class="p-2.5 w-36">
+                    <th class="p-2.5 w-40">
                       <div class="space-y-1">
                         <span>Proyecto</span>
-                        <input type="text" id="col-filter-proyecto-informe" placeholder="Filtrar (ej: OMAR)..." class="w-full px-2 py-1 bg-white border border-gray-300 rounded font-normal text-[11px] focus:outline-none focus:border-[#D61B28]">
+                        <input type="text" id="col-filter-proyecto-informe" placeholder="Filtrar..." class="w-full px-2 py-1 bg-white border border-gray-300 rounded font-normal text-[11px] focus:outline-none focus:border-[#D61B28]">
                       </div>
                     </th>
                     <th class="p-2.5">Artículo</th>
@@ -356,27 +365,17 @@
               </table>
             </div>
           </div>
-
-          <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-            <div class="flex justify-between items-center mb-4">
-              <h3 class="text-xs font-bold text-gray-700">Diagrama de Torres: % de Avance por Proyecto</h3>
-              <span class="text-[11px] text-gray-400 font-medium">Escala: 0% a 100%</span>
-            </div>
-            <div class="h-72 w-full">
-              <canvas id="chartAvance"></canvas>
-            </div>
-          </div>
         </section>
 
         <!-- VISTA 3: ENTREGAS -->
         <section id="view-entregas" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <h2 class="text-lg font-bold text-[#D61B28] flex items-center space-x-2">
+              <h2 id="entregas-vista-titulo" class="text-lg font-bold text-[#D61B28] flex items-center space-x-2">
                 <i class="fa-solid fa-truck-ramp-box"></i>
                 <span>Control de Entregas a Departamentos</span>
               </h2>
-              <p class="text-xs text-gray-400">Entrega de Guías de Producción, Cortes y Muestras Definitivas entre secciones.</p>
+              <p id="entregas-vista-subtitulo" class="text-xs text-gray-400">Entrega de Guías de Producción, Cortes y Muestras Definitivas entre secciones.</p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
               <button type="button" id="btn-reporte-entregas-texto" class="bg-slate-700 hover:bg-slate-800 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow flex items-center space-x-1.5 transition cursor-pointer">
@@ -389,7 +388,7 @@
               </button>
               <button type="button" id="btn-open-nueva-entrega" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
                 <i class="fa-solid fa-box-open"></i>
-                <span>Registrar Entrega</span>
+                <span id="btn-text-nueva-entrega">Registrar Entrega</span>
               </button>
             </div>
           </div>
@@ -399,7 +398,7 @@
               <table class="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr class="bg-gray-100/80 border-b border-gray-200 text-gray-700 font-bold">
-                    <th class="p-2.5 border-r border-gray-200 text-center w-14">Foto</th>
+                    <th class="p-2.5 border-r border-gray-200 text-center w-14" id="th-ent-foto">Foto</th>
                     <th class="p-2.5 border-r border-gray-200 w-24">
                       <div class="space-y-1">
                         <span>Semana</span>
@@ -407,14 +406,14 @@
                       </div>
                     </th>
                     <th class="p-2.5 border-r border-gray-200">Fecha/Hora</th>
-                    <th class="p-2.5 border-r border-gray-200 w-36">
+                    <th class="p-2.5 border-r border-gray-200 w-36" id="th-ent-proy">
                       <div class="space-y-1">
-                        <span>Proyecto</span>
+                        <span id="label-th-proy">Proyecto</span>
                         <input type="text" id="col-filter-proyecto-entregas" placeholder="Filtrar..." class="w-full px-2 py-1 bg-white border border-gray-300 rounded font-normal text-[11px] focus:outline-none focus:border-[#D61B28]">
                       </div>
                     </th>
-                    <th class="p-2.5 border-r border-gray-200">Artículo</th>
-                    <th class="p-2.5 border-r border-gray-200">Tipo de Entrega</th>
+                    <th class="p-2.5 border-r border-gray-200" id="th-ent-art">Artículo</th>
+                    <th class="p-2.5 border-r border-gray-200">Elemento Entregado</th>
                     <th class="p-2.5 border-r border-gray-200">Entregado Por</th>
                     <th class="p-2.5 border-r border-gray-200">Área Destino</th>
                     <th class="p-2.5 text-center">Recepción</th>
@@ -425,7 +424,7 @@
             </div>
             <div id="entregas-empty-state" class="hidden p-8 text-center text-gray-400 text-xs">
               <i class="fa-solid fa-box-open text-3xl mb-2 text-gray-300"></i>
-              <p>No hay registros de entregas que coincidan con el filtro.</p>
+              <p>No hay registros de entregas que coincidan con la categoría o filtro.</p>
             </div>
           </div>
         </section>
@@ -437,7 +436,6 @@
             <span>Panel de Administración (Super Admin: jd.olmitos@gmail.com)</span>
           </h2>
           
-          <!-- TABLA 1: USUARIOS -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <div class="bg-gray-50/75 p-3 border-b border-gray-200 font-bold text-xs text-gray-700 flex items-center space-x-2">
               <i class="fa-solid fa-users text-[#D61B28]"></i>
@@ -458,7 +456,6 @@
             </table>
           </div>
 
-          <!-- TABLA 2: ELIMINAR CAMBIOS Y MINUTAS -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <div class="bg-gray-50/75 p-3 border-b border-gray-200 font-bold text-xs text-gray-700 flex items-center space-x-2">
               <i class="fa-solid fa-folder-minus text-[#D61B28]"></i>
@@ -483,7 +480,6 @@
             </div>
           </div>
 
-          <!-- TABLA 3: ELIMINAR ENTREGAS -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <div class="bg-gray-50/75 p-3 border-b border-gray-200 font-bold text-xs text-gray-700 flex items-center space-x-2">
               <i class="fa-solid fa-trash-can text-[#D61B28]"></i>
@@ -495,9 +491,9 @@
                   <tr class="bg-gray-50/50 border-b border-gray-200 text-gray-600 font-semibold">
                     <th class="p-3">Semana</th>
                     <th class="p-3">Fecha</th>
-                    <th class="p-3">Proyecto</th>
+                    <th class="p-3">Elemento</th>
+                    <th class="p-3">Proyecto / Nombre</th>
                     <th class="p-3">Artículo</th>
-                    <th class="p-3">Elemento Entregado</th>
                     <th class="p-3">Destino</th>
                     <th class="p-3 text-center">Eliminar</th>
                   </tr>
@@ -511,35 +507,36 @@
     </div>
   </div>
 
-  <!-- MODAL: NUEVA ENTREGA -->
+  <!-- MODAL: NUEVA ENTREGA DINÁMICA SEGÚN CATEGORÍA -->
   <div id="modal-nueva-entrega" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden text-xs">
       <div class="bg-[#D61B28] px-6 py-4 flex justify-between items-center text-white">
         <h3 class="font-bold text-sm flex items-center space-x-2">
           <i class="fa-solid fa-truck-ramp-box"></i>
-          <span>Registrar Nueva Entrega Física</span>
+          <span id="modal-entrega-titulo-header">Registrar Entrega</span>
         </h3>
         <button type="button" id="close-nueva-entrega" class="text-white hover:text-gray-200 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <form id="form-nueva-entrega" class="p-6 space-y-4">
+        
+        <div>
+          <label class="block font-bold text-gray-700 mb-1">Tipo de Entrega</label>
+          <select id="ent-tipo" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28] bg-white font-bold text-[#D61B28]"></select>
+        </div>
+
         <div class="grid grid-cols-3 gap-3">
           <div>
             <label class="block font-bold text-gray-700 mb-1">Semana (Ej: 636)</label>
-            <input type="text" id="ent-semana" maxlength="3" pattern="[0-9]{3}" placeholder="636" required title="Debe contener exactamente 3 dígitos numéricos (Ej: 636 o 701)" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28] font-mono">
+            <input type="text" id="ent-semana" maxlength="3" pattern="[0-9]{3}" placeholder="636" required title="3 dígitos numéricos" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28] font-mono">
           </div>
-          <div>
-            <label class="block font-bold text-gray-700 mb-1">Proyecto</label>
+          <div id="box-field-proyecto">
+            <label id="label-field-proyecto" class="block font-bold text-gray-700 mb-1">Proyecto</label>
             <input type="text" id="ent-proyecto" placeholder="Ej: SKATER" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]">
           </div>
-          <div>
+          <div id="box-field-articulo">
             <label class="block font-bold text-gray-700 mb-1">Artículo</label>
-            <input type="text" id="ent-articulo" placeholder="Ej: 58961/91236" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28] font-mono">
+            <input type="text" id="ent-articulo" placeholder="Ej: 58961/91236" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28] font-mono">
           </div>
-        </div>
-
-        <div>
-          <label class="block font-bold text-gray-700 mb-1">¿Qué elemento estás entregando?</label>
-          <select id="ent-tipo" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28] bg-white font-medium"></select>
         </div>
 
         <div>
@@ -547,21 +544,21 @@
           <select id="ent-destino" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28] bg-white font-medium"></select>
         </div>
 
-        <div>
-          <label class="block font-bold text-gray-700 mb-1">Fotografía del Prototipo / Guía (Opcional)</label>
+        <div id="box-field-foto">
+          <label class="block font-bold text-gray-700 mb-1">Fotografía del Prototipo / Muestra (Opcional)</label>
           <input type="file" id="ent-photo" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-red-50 file:text-[#D61B28]">
         </div>
 
-        <div>
+        <div id="box-field-notas">
           <label class="block font-bold text-gray-700 mb-1">Observaciones / Notas (Opcional)</label>
-          <input type="text" id="ent-notas" placeholder="Ej: Aprobado para corte final" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]">
+          <input type="text" id="ent-notas" placeholder="Ej: Entrega conforme para lote inicial" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]">
         </div>
 
         <div class="pt-2 flex justify-end space-x-2">
           <button type="button" id="cancel-nueva-entrega" class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg font-bold cursor-pointer">Cancelar</button>
           <button type="submit" class="px-5 py-2 bg-[#25D366] hover:bg-green-600 text-white rounded-lg font-bold flex items-center space-x-2 shadow cursor-pointer">
             <i class="fa-brands fa-whatsapp text-sm"></i>
-            <span>Confirmar y Notificar Entrega</span>
+            <span>Confirmar y Notificar</span>
           </button>
         </div>
       </form>
@@ -580,7 +577,7 @@
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block font-semibold text-gray-600 mb-1">Semana (Formato Ej: 636)</label>
-            <input type="text" id="minuta-semana" maxlength="3" pattern="[0-9]{3}" required placeholder="636" title="Debe contener exactamente 3 dígitos numéricos (Ej: 636 o 701)" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-600 font-mono">
+            <input type="text" id="minuta-semana" maxlength="3" pattern="[0-9]{3}" required placeholder="636" title="3 dígitos numéricos" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-600 font-mono">
           </div>
           <div>
             <label class="block font-semibold text-gray-600 mb-1">Nombre del Proyecto</label>
@@ -593,15 +590,15 @@
         </div>
         <div>
           <label class="block font-semibold text-gray-600 mb-1">Fotografía del Prototipo / Guía (Opcional)</label>
-          <input type="file" id="minuta-photo" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-red-50 file:text-[#D61B28]">
+          <input type="file" id="minuta-photo" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-amber-50 file:text-amber-800">
         </div>
         <div>
           <label class="block font-semibold text-gray-600 mb-1">Cambios Técnicos Solicitados (Plan Piloto)</label>
-          <textarea id="minuta-box" rows="4" required placeholder="Describe las modificaciones técnicas en guías, piezas, suelas o costuras..." class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-600"></textarea>
+          <textarea id="minuta-box" rows="4" required placeholder="Describe las modificaciones técnicas..." class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-600"></textarea>
         </div>
         <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl transition shadow flex items-center justify-center space-x-2 cursor-pointer">
           <i class="fa-brands fa-whatsapp"></i>
-          <span>Publicar Minuta y Notificar a Técnicos</span>
+          <span>Publicar Minuta y Notificar</span>
         </button>
       </form>
     </div>
@@ -644,7 +641,7 @@
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block font-bold text-gray-700 mb-1">Semana (Formato Ej: 636)</label>
-            <input type="text" id="change-semana" maxlength="3" pattern="[0-9]{3}" placeholder="636" required title="Debe contener exactamente 3 dígitos numéricos (Ej: 636 o 701)" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28] font-mono">
+            <input type="text" id="change-semana" maxlength="3" pattern="[0-9]{3}" placeholder="636" required title="3 dígitos numéricos" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28] font-mono">
           </div>
           <div>
             <label class="block font-bold text-gray-700 mb-1">Nombre del Proyecto</label>
@@ -674,7 +671,7 @@
     </div>
   </div>
 
-  <!-- MODAL: TEXTO NOTIFICACIÓN WHATSAPP E INFORME (OUTLOOK PWA / MAILTO) -->
+  <!-- MODAL: TEXTO NOTIFICACIÓN INFORME -->
   <div id="modal-texto-wsp" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-xl rounded-3xl p-6 shadow-2xl relative text-xs">
       <button type="button" id="close-texto-wsp" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -706,7 +703,6 @@
   <div id="modal-resumen-reporte" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-4xl rounded-3xl p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto text-xs">
       <button type="button" id="close-modal-resumen" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
-      
       <div class="border-b border-gray-200 pb-4 mb-4 flex justify-between items-center">
         <div class="flex items-center space-x-3">
           <img src="./logo-bata-rojo.png" alt="Bata" class="w-16 h-auto">
@@ -720,7 +716,6 @@
           <span>Imprimir / Guardar PDF</span>
         </button>
       </div>
-
       <div id="reporte-resumen-contenido" class="space-y-4"></div>
     </div>
   </div>
@@ -729,7 +724,6 @@
   <div id="modal-reporte-entregas-print" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-4xl rounded-3xl p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto text-xs">
       <button type="button" id="close-modal-entregas-print" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
-      
       <div class="border-b border-gray-200 pb-4 mb-4 flex justify-between items-center">
         <div class="flex items-center space-x-3">
           <img src="./logo-bata-rojo.png" alt="Bata" class="w-16 h-auto">
@@ -743,12 +737,11 @@
           <span>Imprimir / Guardar PDF</span>
         </button>
       </div>
-
       <div id="contenido-impresion-entregas" class="space-y-4"></div>
     </div>
   </div>
 
-  <!-- MODAL: RESUMEN TEXTO ENTREGAS (OUTLOOK PWA / MAILTO) -->
+  <!-- MODAL: RESUMEN TEXTO ENTREGAS -->
   <div id="modal-entregas-texto" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-xl rounded-3xl p-6 shadow-2xl relative text-xs">
       <button type="button" id="close-modal-entregas-texto" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -776,7 +769,7 @@
     </div>
   </div>
 
-  <!-- MODAL: VISOR DE FOTOGRAFÍA / PROTOTIPO EN TAMAÑO COMPLETO -->
+  <!-- MODAL: VISOR DE FOTO GRANDE -->
   <div id="modal-visor-foto" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white rounded-3xl p-4 shadow-2xl relative max-w-2xl max-h-[90vh] flex flex-col items-center">
       <button type="button" id="close-visor-foto" class="absolute top-3 right-3 text-gray-500 hover:text-gray-800 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
