@@ -45,7 +45,7 @@ let userData = null;
 let solicitudes = [];
 let entregas = [];
 
-// Categoría seleccionada en Entregas ('todas' | 'MATERIALES' | 'GUÍA DE PRODUCCIÓN' | 'CORTE' | 'MUESTRA DEFINITIVA' | 'HOJA DE DESBASTE')
+// Categoría seleccionada en Entregas ('todas' | 'MATERIALES' | 'GUÍA DE PRODUCCIÓN' | 'CORTE' | 'MUESTRA DEFINITIVA' | 'HOJA DE DESBASTE' | 'TIZADORES')
 let categoriaEntregaActiva = "todas";
 
 // Filtros en cabecera de Informe
@@ -87,7 +87,6 @@ const comprimirImagen = (file, maxWidth = 600, calidad = 0.75) => new Promise((r
   reader.onerror = () => resolve(null);
 });
 
-// Comprobar si es Super Admin (SOLO jd.olmitos@gmail.com)
 function esSuperAdmin() {
   if (!currentUser || !currentUser.email) return false;
   return currentUser.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
@@ -137,7 +136,6 @@ if (document.getElementById("close-visor-foto")) {
   document.getElementById("close-visor-foto").onclick = () => modalVisorFoto.classList.add("hidden");
 }
 
-// Visor de Foto Grande
 window.verFotoGrande = (src, titulo) => {
   if (!src) return;
   document.getElementById("visor-foto-img").src = src;
@@ -145,7 +143,6 @@ window.verFotoGrande = (src, titulo) => {
   modalVisorFoto.classList.remove("hidden");
 };
 
-// Reset de Contraseña dirigido al WhatsApp de Super Admin (+591 74812364)
 document.getElementById("btn-forgot-pass").onclick = () => {
   const email = document.getElementById("login-email").value.trim();
   if (!email) {
@@ -255,7 +252,6 @@ function actualizarHeaderUsuario() {
     avatarIcon.classList.remove("hidden");
   }
 
-  // Visibilidad Super Admin: SOLO jd.olmitos@gmail.com
   const menuAdmin = document.getElementById("menu-btn-usuarios");
   if (esAdmin) {
     menuAdmin.classList.remove("hidden");
@@ -266,7 +262,6 @@ function actualizarHeaderUsuario() {
     }
   }
 
-  // Visibilidad del botón Generar Minuta en el encabezado de Cambios
   const esJefe = userData.rol === "Desarrollo de producto - Jefe";
   const btnMinutaHeader = document.getElementById("btn-open-minuta-header");
   if (btnMinutaHeader) {
@@ -313,7 +308,6 @@ const viewEntregas = document.getElementById("view-entregas");
 const viewUsuarios = document.getElementById("view-usuarios");
 const menuBtnCambios = document.getElementById("menu-btn-cambios");
 const menuBtnInforme = document.getElementById("menu-btn-informe");
-const menuBtnEntregasTodas = document.getElementById("menu-btn-entregas-todas");
 const menuBtnUsuarios = document.getElementById("menu-btn-usuarios");
 
 function resetMenuStyles() {
@@ -366,7 +360,6 @@ window.cambiarSubmenuEntrega = (categoria) => {
   viewEntregas.classList.remove("hidden");
   categoriaEntregaActiva = categoria;
 
-  // Actualizar títulos dinámicos y textos
   const titulo = document.getElementById("entregas-vista-titulo");
   const subtitulo = document.getElementById("entregas-vista-subtitulo");
   const thFoto = document.getElementById("th-ent-foto");
@@ -374,42 +367,48 @@ window.cambiarSubmenuEntrega = (categoria) => {
   const labelThProy = document.getElementById("label-th-proy");
   const btnTextEntrega = document.getElementById("btn-text-nueva-entrega");
 
-  // Ajustar apariencia de tabla para Entrega Materiales (sólo semana, nombre y fecha)
   if (categoria === "MATERIALES") {
     titulo.innerHTML = `<i class="fa-solid fa-boxes-packing"></i><span>Entrega de Materiales</span>`;
-    subtitulo.textContent = "Registro simplificado de entrega de insumos y materiales (Semana y Nombre).";
+    subtitulo.textContent = "Registro simplificado de entrega de insumos y materiales (Semana y Nombre). Destinos: Desarrollo de producto, Producción.";
     if (thFoto) thFoto.classList.add("hidden");
     if (thArt) thArt.classList.add("hidden");
     if (labelThProy) labelThProy.textContent = "Nombre del Material";
-    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Entrega de Material";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Material";
   } else if (categoria === "MUESTRA DEFINITIVA") {
     titulo.innerHTML = `<i class="fa-solid fa-shoe-prints"></i><span>Entrega de Muestras Definitivas</span>`;
-    subtitulo.textContent = "Control físico con fotografía de muestra aprobada para Producción, Planeamiento o Retail.";
+    subtitulo.textContent = "Muestras definitivas con foto. Destinos: Producción, Planeamiento, Retail (posibilidad de entrega múltiple).";
     if (thFoto) thFoto.classList.remove("hidden");
     if (thArt) thArt.classList.remove("hidden");
     if (labelThProy) labelThProy.textContent = "Proyecto";
-    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Muestra Definitiva";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Muestra";
   } else if (categoria === "GUÍA DE PRODUCCIÓN") {
     titulo.innerHTML = `<i class="fa-solid fa-file-contract"></i><span>Entrega de Guías de Producción</span>`;
-    subtitulo.textContent = "Entrega física de guías de producción a Costos.";
+    subtitulo.textContent = "Entrega física de guías de producción. Destino exclusivo: Costos.";
     if (thFoto) thFoto.classList.remove("hidden");
     if (thArt) thArt.classList.remove("hidden");
     if (labelThProy) labelThProy.textContent = "Proyecto";
     if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Guía";
   } else if (categoria === "CORTE") {
     titulo.innerHTML = `<i class="fa-solid fa-scissors"></i><span>Entrega de Cortes</span>`;
-    subtitulo.textContent = "Entrega de cortes de muestra a Costos o de Costos a Producción.";
+    subtitulo.textContent = "Entrega de cortes. Destinos: Costos, Producción.";
     if (thFoto) thFoto.classList.remove("hidden");
     if (thArt) thArt.classList.remove("hidden");
     if (labelThProy) labelThProy.textContent = "Proyecto";
     if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Corte";
   } else if (categoria === "HOJA DE DESBASTE") {
     titulo.innerHTML = `<i class="fa-solid fa-layer-group"></i><span>Entrega de Hoja de Desbaste</span>`;
-    subtitulo.textContent = "Entrega técnica de especificaciones de desbaste.";
+    subtitulo.textContent = "Entrega de hoja de desbaste. Destinos: Costos, Producción.";
     if (thFoto) thFoto.classList.remove("hidden");
     if (thArt) thArt.classList.remove("hidden");
     if (labelThProy) labelThProy.textContent = "Proyecto";
-    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Hoja de Desbaste";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Desbaste";
+  } else if (categoria === "TIZADORES") {
+    titulo.innerHTML = `<i class="fa-solid fa-copy"></i><span>Entrega de Tizadores (Copias)</span>`;
+    subtitulo.textContent = "Entrega de tizadores a Producción con especificación de número de copias.";
+    if (thFoto) thFoto.classList.add("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Tizadores";
   } else {
     titulo.innerHTML = `<i class="fa-solid fa-truck-ramp-box"></i><span>Control de Entregas (Todas)</span>`;
     subtitulo.textContent = "Visualizador consolidado de todas las entregas físicas a departamentos.";
@@ -470,7 +469,6 @@ async function cargarPanelSuperAdmin() {
     tbodyUsers.appendChild(tr);
   });
 
-  // 2. Tabla Solicitudes y Minutas
   const tbodySols = document.getElementById("table-admin-solicitudes-body");
   tbodySols.innerHTML = "";
 
@@ -496,7 +494,6 @@ async function cargarPanelSuperAdmin() {
     tbodySols.appendChild(tr);
   });
 
-  // 3. Tabla Entregas (Limpieza Super Admin)
   const tbodyEnts = document.getElementById("table-admin-entregas-body");
   tbodyEnts.innerHTML = "";
 
@@ -507,7 +504,7 @@ async function cargarPanelSuperAdmin() {
       <td class="p-3 font-semibold text-gray-500 font-mono">${ent.semana || '—'}</td>
       <td class="p-3 text-gray-600 whitespace-nowrap">${formatearFecha(ent.fechaEntrega)}</td>
       <td class="p-3 font-semibold text-[#D61B28]">${ent.tipo}</td>
-      <td class="p-3 font-bold text-gray-800">${ent.proyecto}</td>
+      <td class="p-3 font-bold text-gray-800">${ent.proyecto} ${ent.copias ? '(' + ent.copias + ' copias)' : ''}</td>
       <td class="p-3 font-mono text-gray-700">${ent.articulo || '—'}</td>
       <td class="p-3 font-bold text-gray-700">${ent.destino}</td>
       <td class="p-3 text-center">
@@ -714,6 +711,7 @@ document.getElementById("btn-open-nueva-entrega").onclick = () => {
       selectTipo.innerHTML += `<option value="MUESTRA DEFINITIVA">MUESTRA DEFINITIVA</option>`;
       selectTipo.innerHTML += `<option value="MATERIALES">MATERIALES</option>`;
       selectTipo.innerHTML += `<option value="HOJA DE DESBASTE">HOJA DE DESBASTE</option>`;
+      selectTipo.innerHTML += `<option value="TIZADORES">TIZADORES</option>`;
     } else if (esCostos) {
       selectTipo.innerHTML += `<option value="CORTE">CORTE (De Costos a Producción)</option>`;
     }
@@ -732,39 +730,57 @@ function actualizarCamposSegunTipoEntrega() {
   const labelProy = document.getElementById("label-field-proyecto");
   const inputProy = document.getElementById("ent-proyecto");
   const boxFoto = document.getElementById("box-field-foto");
+  const boxCopias = document.getElementById("box-field-copias");
+  const containerSingle = document.getElementById("container-destino-single");
+  const containerMultiple = document.getElementById("container-destino-multiple");
 
   selectDestino.innerHTML = "";
+  boxCopias.classList.add("hidden");
+  containerMultiple.classList.add("hidden");
+  containerSingle.classList.remove("hidden");
+  boxFoto.classList.add("hidden");
 
-  // Caso especial: Entrega Materiales (solo semana, nombre, fecha auto)
+  // a. Materiales: Desarrollo de producto, Producción (solo semana, nombre, fecha auto)
   if (tipo === "MATERIALES") {
     labelProy.textContent = "Nombre del Material / Insumo";
     inputProy.placeholder = "Ej: Badana Beige 1.2mm";
     boxArticulo.classList.add("hidden");
-    boxFoto.classList.add("hidden");
+    selectDestino.innerHTML += `<option value="Desarrollo de producto">Desarrollo de producto</option>`;
     selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
-    selectDestino.innerHTML += `<option value="Compras">Compras</option>`;
     return;
   }
 
-  // Casos Regulares
   boxArticulo.classList.remove("hidden");
   labelProy.textContent = "Nombre del Proyecto";
   inputProy.placeholder = "Ej: SKATER";
 
-  if (tipo === "MUESTRA DEFINITIVA") {
+  // b. Guías: Costos
+  if (tipo === "GUÍA DE PRODUCCIÓN") {
     boxFoto.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
+  }
+  // c. Cortes: Costos, Producción
+  else if (tipo === "CORTE") {
+    boxFoto.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
     selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-    selectDestino.innerHTML += `<option value="Planeamiento">Planeamiento</option>`;
-    selectDestino.innerHTML += `<option value="Retail">Retail</option>`;
-  } else if (tipo === "GUÍA DE PRODUCCIÓN" || tipo === "CORTE" || tipo === "HOJA DE DESBASTE") {
+  }
+  // d. Muestras definitivas: Producción, Planeamiento, Retail (Checkboxes múltiples)
+  else if (tipo === "MUESTRA DEFINITIVA") {
     boxFoto.classList.remove("hidden");
-    if (userData.rol === "Costos") {
-      selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-    } else {
-      selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
-      selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-    }
+    containerSingle.classList.add("hidden");
+    containerMultiple.classList.remove("hidden"); // Muestra checkboxes
+  }
+  // e. Hoja de desbaste: Costos, Producción
+  else if (tipo === "HOJA DE DESBASTE") {
+    boxFoto.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+  }
+  // f. Tizadores: Producción (con número de copias)
+  else if (tipo === "TIZADORES") {
+    boxCopias.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
   }
 }
 
@@ -774,37 +790,58 @@ document.getElementById("form-nueva-entrega").onsubmit = async (e) => {
   const proyecto = document.getElementById("ent-proyecto").value.trim();
   const articulo = document.getElementById("ent-articulo").value.trim();
   const tipo = document.getElementById("ent-tipo").value;
-  const destino = document.getElementById("ent-destino").value;
   const notas = document.getElementById("ent-notas").value.trim();
+  const copias = document.getElementById("ent-copias").value.trim();
   const photoFile = document.getElementById("ent-photo").files[0];
 
   const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
 
   try {
-    await addDoc(collection(db, "entregas_departamentos"), {
-      semana,
-      proyecto,
-      articulo: tipo === "MATERIALES" ? "" : articulo,
-      tipo,
-      destino,
-      foto: fotoBase64,
-      notas,
-      entregadoPorNombre: userData.nombre,
-      entregadoPorRol: userData.rol,
-      entregadoPorId: currentUser.uid,
-      recibido: false,
-      fechaEntrega: new Date().toISOString(),
-      timestamp: serverTimestamp()
-    });
+    let destinosAEntregar = [];
+
+    // Si es Muestra Definitiva, puede crearse para múltiples áreas a la vez
+    if (tipo === "MUESTRA DEFINITIVA") {
+      destinosAEntregar = Array.from(document.querySelectorAll(".chk-muestras-dest:checked")).map(c => c.value);
+      if (destinosAEntregar.length === 0) {
+        alert("Selecciona al menos un departamento para la muestra definitiva.");
+        return;
+      }
+    } else {
+      destinosAEntregar = [document.getElementById("ent-destino").value];
+    }
+
+    // Crear un registro individual por cada área para que cada una confirme por separado
+    for (const destino of destinosAEntregar) {
+      await addDoc(collection(db, "entregas_departamentos"), {
+        semana,
+        proyecto,
+        articulo: tipo === "MATERIALES" ? "" : articulo,
+        tipo,
+        destino,
+        copias: tipo === "TIZADORES" ? (copias || "1") : null,
+        foto: fotoBase64,
+        notas,
+        entregadoPorNombre: userData.nombre,
+        entregadoPorRol: userData.rol,
+        entregadoPorId: currentUser.uid,
+        recibido: false,
+        fechaEntrega: new Date().toISOString(),
+        timestamp: serverTimestamp()
+      });
+    }
 
     document.getElementById("form-nueva-entrega").reset();
     modalNuevaEntrega.classList.add("hidden");
 
+    // Notificación consolidada por WhatsApp
+    const destinosTexto = destinosAEntregar.join(", ");
+    let detalleCopias = (tipo === "TIZADORES" && copias) ? `📑 *Copias:* ${copias}\n` : '';
+
     abrirModalWhatsApp({
       titulo: "Entrega Registrada",
-      subtitulo: `Notificar recepción a los encargados de ${destino}:`,
-      mensajeTexto: `📦 ENTREGA REALIZADA - PD BOLIVIA\n\n📅 *Semana:* ${semana}\n📌 *Elemento:* ${tipo}\n🏷️ *Detalle/Proyecto:* ${proyecto}\n${articulo ? '🔢 *Artículo:* ' + articulo + '\n' : ''}👤 *Entregado por:* ${userData.nombre} (${userData.rol})\n🏢 *Destino:* ${destino}\n📝 *Notas:* ${notas || 'Sin notas adicionales'}\n\n_Favor de confirmar la recepción física en el sistema._`,
-      rolFiltro: destino
+      subtitulo: `Notificar recepción a los encargados de ${destinosTexto}:`,
+      mensajeTexto: `📦 ENTREGA REALIZADA - PD BOLIVIA\n\n📅 *Semana:* ${semana}\n📌 *Elemento:* ${tipo}\n🏷️ *Detalle/Proyecto:* ${proyecto}\n${articulo ? '🔢 *Artículo:* ' + articulo + '\n' : ''}${detalleCopias}👤 *Entregado por:* ${userData.nombre} (${userData.rol})\n🏢 *Destino:* ${destinosTexto}\n📝 *Notas:* ${notas || 'Sin notas adicionales'}\n\n_Favor de confirmar la recepción física en el sistema._`,
+      rolFiltro: destinosAEntregar.length === 1 ? destinosAEntregar[0] : null
     });
   } catch (err) {
     alert("Error al registrar entrega: " + err.message);
@@ -897,8 +934,12 @@ function renderTablaEntregas() {
       ? `<img src="${ent.foto}" onclick="window.verFotoGrande('${ent.foto}', '${ent.proyecto} - ${ent.articulo || ent.tipo}')" class="w-10 h-7 object-cover rounded border border-gray-200 shadow-xs cursor-pointer hover:opacity-80 transition mx-auto" title="Click para ampliar">`
       : `<div class="w-10 h-7 rounded border border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-[10px] mx-auto"><i class="fa-regular fa-image"></i></div>`;
 
-    const tdFotoHTML = categoriaEntregaActiva !== "MATERIALES" ? `<td class="p-2 border-r border-gray-100 text-center">${fotoHTML}</td>` : '';
+    const tdFotoHTML = (categoriaEntregaActiva !== "MATERIALES" && categoriaEntregaActiva !== "TIZADORES") ? `<td class="p-2 border-r border-gray-100 text-center">${fotoHTML}</td>` : '';
     const tdArticuloHTML = categoriaEntregaActiva !== "MATERIALES" ? `<td class="p-3 font-mono text-gray-700 border-r border-gray-100">${ent.articulo || '—'}</td>` : '';
+
+    let detalleExtra = "";
+    if (ent.copias) detalleExtra += `<span class="bg-rose-100 text-rose-800 font-bold text-[9px] px-1.5 py-0.2 rounded ml-1">${ent.copias} copias</span>`;
+    if (ent.notas) detalleExtra += `<p class="text-[10px] text-gray-400 mt-0.5">${ent.notas}</p>`;
 
     tr.innerHTML = `
       ${tdFotoHTML}
@@ -908,7 +949,7 @@ function renderTablaEntregas() {
       ${tdArticuloHTML}
       <td class="p-3 border-r border-gray-100">
         <span class="bg-red-50 text-[#D61B28] px-2 py-0.5 rounded font-bold text-[10px] border border-red-100">${ent.tipo}</span>
-        ${ent.notas ? `<p class="text-[10px] text-gray-400 mt-0.5">${ent.notas}</p>` : ''}
+        ${detalleExtra}
       </td>
       <td class="p-3 border-r border-gray-100 whitespace-nowrap">
         <span class="font-bold text-gray-800 block">${ent.entregadoPorNombre}</span>
@@ -931,7 +972,7 @@ window.confirmarRecepcionEntrega = async (id, tipo, proyecto) => {
   }
 };
 
-// 1. Reporte Impreso / PDF Entregas (CON FOTOS)
+// 1. Reporte Impreso / PDF Entregas (CON FOTOS Y COPIAS)
 function abrirReporteImpresoEntregas() {
   const items = entregas.filter(item => (categoriaEntregaActiva === "todas") || (item.tipo === categoriaEntregaActiva));
   if (items.length === 0) {
@@ -948,7 +989,7 @@ function abrirReporteImpresoEntregas() {
             <th class="p-2 border text-center w-12">Foto</th>
             <th class="p-2 border">Sem.</th>
             <th class="p-2 border">Fecha/Hora</th>
-            <th class="p-2 border">Proyecto / Nombre</th>
+            <th class="p-2 border">Proyecto / Detalle</th>
             <th class="p-2 border">Artículo</th>
             <th class="p-2 border">Elemento Entregado</th>
             <th class="p-2 border">Entregado Por</th>
@@ -964,6 +1005,10 @@ function abrirReporteImpresoEntregas() {
       ? `<img src="${it.foto}" style="width: 44px; height: 30px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; margin: auto;">`
       : `<span style="color: #bbb;">—</span>`;
 
+    let elementoTexto = it.tipo;
+    if (it.copias) elementoTexto += ` (${it.copias} copias)`;
+    if (it.notas) elementoTexto += ` - ${it.notas}`;
+
     html += `
       <tr class="border-b">
         <td class="p-1 border text-center">${fotoPrint}</td>
@@ -971,7 +1016,7 @@ function abrirReporteImpresoEntregas() {
         <td class="p-2 border whitespace-nowrap">${formatearFecha(it.fechaEntrega)}</td>
         <td class="p-2 border font-bold text-gray-800">${it.proyecto}</td>
         <td class="p-2 border font-mono">${it.articulo || '—'}</td>
-        <td class="p-2 border">${it.tipo} ${it.notas ? `(${it.notas})` : ''}</td>
+        <td class="p-2 border">${elementoTexto}</td>
         <td class="p-2 border">${it.entregadoPorNombre} <span class="text-[10px] text-gray-400">(${it.entregadoPorRol})</span></td>
         <td class="p-2 border font-bold">${it.destino}</td>
         <td class="p-2 border text-center font-bold ${it.recibido ? 'text-green-600' : 'text-amber-600'}">
@@ -1003,8 +1048,9 @@ function abrirResumenTextoEntregas() {
   texto += `Fecha: ${new Date().toLocaleDateString("es-BO")}\n\n`;
 
   items.forEach((it, idx) => {
+    let extra = it.copias ? ` (${it.copias} copias)` : '';
     texto += `${idx + 1}. [Sem: ${it.semana}] ${it.proyecto.toUpperCase()} ${it.articulo ? '| Art: ' + it.articulo : ''}\n`;
-    texto += `   • Entrega: ${it.tipo}\n`;
+    texto += `   • Elemento: ${it.tipo}${extra}\n`;
     texto += `   • Entregado por: ${it.entregadoPorNombre} (${it.entregadoPorRol}) -> Destino: ${it.destino}\n`;
     texto += `   • Estado: ${it.recibido ? 'RECIBIDO' : 'EN TRÁNSITO'}\n\n`;
   });
