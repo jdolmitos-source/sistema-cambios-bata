@@ -313,14 +313,12 @@ const menuBtnEntregasTodas = document.getElementById("menu-btn-entregas-todas");
 const menuBtnUsuarios = document.getElementById("menu-btn-usuarios");
 
 function resetMenuStyles() {
-  // Quitar estilos activos de botones principales
   [menuBtnCambios, menuBtnInforme, menuBtnEntregasTodas, menuBtnUsuarios].forEach(b => {
     if (b) {
       b.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white/80 hover:bg-white/10 hover:text-white transition cursor-pointer";
     }
   });
 
-  // Resetear subcategorías de entregas
   document.querySelectorAll(".sub-ent-btn").forEach(b => {
     b.className = "sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white/80 hover:bg-white/10 hover:text-white transition cursor-pointer pl-5";
   });
@@ -374,7 +372,6 @@ window.cambiarSubmenuEntrega = (categoria) => {
   const labelThProy = document.getElementById("label-th-proy");
   const btnTextEntrega = document.getElementById("btn-text-nueva-entrega");
 
-  // Resaltar el botón activo en la barra lateral con el color del puntito
   if (categoria === "todas") {
     menuBtnEntregasTodas.className = "sub-ent-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl font-black text-xs text-white bg-white/20 shadow-inner border border-white/30 transition cursor-pointer";
     titulo.innerHTML = `<i class="fa-solid fa-truck-ramp-box"></i><span>Control de Entregas (Todas)</span>`;
@@ -643,7 +640,6 @@ if (document.getElementById("form-minuta")) {
         fechaRealizado: null,
         validadoCostos: false,
         fechaCreacion: new Date().toISOString(),
-        ultimaEdicion: null,
         timestamp: serverTimestamp()
       });
 
@@ -662,7 +658,7 @@ if (document.getElementById("form-minuta")) {
   };
 }
 
-// Crear Solicitud de Cambio Regular
+// Crear Solicitud de Cambio Regular (Sin posibilidad de editar texto posterior)
 const modalNewChange = document.getElementById("modal-new-change");
 document.getElementById("btn-open-new-change").onclick = () => modalNewChange.classList.remove("hidden");
 document.getElementById("modal-btn-close").onclick = () => modalNewChange.classList.add("hidden");
@@ -693,7 +689,6 @@ document.getElementById("form-new-change").onsubmit = async (e) => {
       fechaRealizado: null,
       validadoCostos: false,
       fechaCreacion: new Date().toISOString(),
-      ultimaEdicion: null,
       timestamp: serverTimestamp()
     });
 
@@ -1131,7 +1126,7 @@ function formatearFecha(iso) {
   return d.toLocaleDateString("es-BO", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-// Render Tabla de Cambios Pública
+// Render Tabla de Cambios Pública (Sin botón editar)
 function renderTabla() {
   const tbody = document.getElementById("table-cambios-body");
   tbody.innerHTML = "";
@@ -1152,11 +1147,6 @@ function renderTabla() {
     tr.className = item.esMinuta 
       ? "bg-amber-50/70 hover:bg-amber-100/70 transition border-b border-amber-200" 
       : "hover:bg-gray-50/80 transition border-b border-gray-100";
-
-    let textoBox = item.boxCambio;
-    if (item.ultimaEdicion) {
-      textoBox += `<br><span class="text-[10px] text-gray-400 italic"> (editado: ${formatearFecha(item.ultimaEdicion)})</span>`;
-    }
 
     let badgeMinuta = item.esMinuta 
       ? `<span class="bg-amber-500 text-white font-black text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider block mb-1 w-fit shadow-xs">PLAN PILOTO</span>` 
@@ -1223,12 +1213,7 @@ function renderTabla() {
       </td>
       <td class="p-3.5 font-bold text-gray-800 border-r border-gray-100">${badgeMinuta}${item.proyecto}</td>
       <td class="p-3.5 font-mono text-gray-700 border-r border-gray-100">${item.articulo}</td>
-      <td class="p-3.5 text-gray-700 border-r border-gray-100">
-        <div>${textoBox}</div>
-        <button onclick="window.editarTextoBox('${item.id}', '${item.boxCambio.replace(/'/g, "\\'")}')" class="text-[10px] text-blue-600 hover:underline mt-1 font-medium inline-flex items-center space-x-1 cursor-pointer">
-          <i class="fa-solid fa-pencil"></i> <span>editar</span>
-        </button>
-      </td>
+      <td class="p-3.5 text-gray-700 border-r border-gray-100 leading-relaxed">${item.boxCambio}</td>
       <td class="p-3.5 text-center border-r border-gray-100 whitespace-nowrap">${estadoHTML}</td>
       <td class="p-3.5 text-center border-r border-gray-100 whitespace-nowrap">${fechaRealizadoHTML}</td>
       <td class="p-3.5 text-center whitespace-nowrap">${costosHTML}</td>
@@ -1288,16 +1273,6 @@ window.confirmarValidacionCostos = async (id, proyecto, articulo, checkboxElem) 
 window.desbloquearValidacionCostos = async (id) => {
   if (confirm("¿Desbloquear validación de costos? (Acción de Super Admin)")) {
     await updateDoc(doc(db, "solicitudes_cambios", id), { validadoCostos: false });
-  }
-};
-
-window.editarTextoBox = async (id, textoActual) => {
-  const nuevoTexto = prompt("Modificar cambios a realizar:", textoActual);
-  if (nuevoTexto !== null && nuevoTexto.trim() !== "" && nuevoTexto !== textoActual) {
-    await updateDoc(doc(db, "solicitudes_cambios", id), {
-      boxCambio: nuevoTexto.trim(),
-      ultimaEdicion: new Date().toISOString()
-    });
   }
 };
 
@@ -1402,7 +1377,7 @@ function actualizarInformePorSemana() {
       <td class="p-2.5 font-bold text-gray-700 font-mono">${item.semana}</td>
       <td class="p-2.5 font-bold text-gray-800">${badgeMinuta}${item.proyecto}</td>
       <td class="p-2.5 font-mono text-gray-700">${item.articulo}</td>
-      <td class="p-2.5 text-gray-600 max-w-xs truncate" title="${item.boxCambio}">${item.boxCambio}</td>
+      <td class="p-2.5 text-gray-600 max-w-xs truncate leading-relaxed" title="${item.boxCambio}">${item.boxCambio}</td>
       <td class="p-2.5 text-center">
         <span class="px-2 py-0.5 rounded font-bold text-[10px] ${item.estado === 'Realizado' ? 'bg-green-50 text-green-700 border border-green-200' : (item.estado === 'Retrasado' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-orange-50 text-orange-700 border border-orange-200')}">${item.estado}</span>
       </td>
@@ -1455,7 +1430,6 @@ function generarTextoNotificacionBata() {
     alert("Texto copiado al portapapeles con éxito.");
   };
 
-  // Disparo a Outlook (PWA / Escritorio)
   document.getElementById("btn-enviar-correo-informe").onclick = () => {
     const asunto = encodeURIComponent(`Bata Bolivia - Cambios Realizados para Semana ${semanaTitulo}`);
     const cuerpo = encodeURIComponent(texto);
