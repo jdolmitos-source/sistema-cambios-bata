@@ -143,6 +143,7 @@ window.verFotoGrande = (src, titulo) => {
   modalVisorFoto.classList.remove("hidden");
 };
 
+// Reset de Contraseña
 document.getElementById("btn-forgot-pass").onclick = () => {
   const email = document.getElementById("login-email").value.trim();
   if (!email) {
@@ -301,23 +302,29 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// Navegación Principal
+// Navegación Principal y Resaltado Lateral
 const viewCambios = document.getElementById("view-cambios");
 const viewInforme = document.getElementById("view-informe");
 const viewEntregas = document.getElementById("view-entregas");
 const viewUsuarios = document.getElementById("view-usuarios");
 const menuBtnCambios = document.getElementById("menu-btn-cambios");
 const menuBtnInforme = document.getElementById("menu-btn-informe");
+const menuBtnEntregasTodas = document.getElementById("menu-btn-entregas-todas");
 const menuBtnUsuarios = document.getElementById("menu-btn-usuarios");
 
 function resetMenuStyles() {
-  [menuBtnCambios, menuBtnInforme, menuBtnUsuarios].forEach(b => {
-    if (b) b.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-gray-600 hover:bg-gray-100 transition cursor-pointer";
+  // Quitar estilos activos de botones principales
+  [menuBtnCambios, menuBtnInforme, menuBtnEntregasTodas, menuBtnUsuarios].forEach(b => {
+    if (b) {
+      b.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white/80 hover:bg-white/10 hover:text-white transition cursor-pointer";
+    }
   });
+
+  // Resetear subcategorías de entregas
   document.querySelectorAll(".sub-ent-btn").forEach(b => {
-    b.classList.remove("bg-red-50", "text-[#D61B28]", "font-bold");
-    b.classList.add("text-gray-600");
+    b.className = "sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white/80 hover:bg-white/10 hover:text-white transition cursor-pointer pl-5";
   });
+
   viewCambios.classList.add("hidden");
   viewInforme.classList.add("hidden");
   viewEntregas.classList.add("hidden");
@@ -327,7 +334,7 @@ function resetMenuStyles() {
 function activarVistaCambios() {
   resetMenuStyles();
   viewCambios.classList.remove("hidden");
-  menuBtnCambios.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs transition bg-red-50 text-[#D61B28] cursor-pointer";
+  menuBtnCambios.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-black text-xs transition bg-white/20 text-white shadow-inner border border-white/30 cursor-pointer";
 }
 
 menuBtnCambios.onclick = activarVistaCambios;
@@ -335,7 +342,7 @@ menuBtnCambios.onclick = activarVistaCambios;
 menuBtnInforme.onclick = () => {
   resetMenuStyles();
   viewInforme.classList.remove("hidden");
-  menuBtnInforme.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs transition bg-red-50 text-[#D61B28] cursor-pointer";
+  menuBtnInforme.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-black text-xs transition bg-white/20 text-white shadow-inner border border-white/30 cursor-pointer";
   renderInformeView();
 };
 
@@ -346,7 +353,7 @@ menuBtnUsuarios.onclick = () => {
   }
   resetMenuStyles();
   viewUsuarios.classList.remove("hidden");
-  menuBtnUsuarios.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs transition bg-red-50 text-[#D61B28] cursor-pointer";
+  menuBtnUsuarios.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-black text-xs transition bg-white/20 text-white shadow-inner border border-white/30 cursor-pointer";
   cargarPanelSuperAdmin();
 };
 
@@ -354,7 +361,7 @@ if (document.getElementById("btn-open-minuta-header")) {
   document.getElementById("btn-open-minuta-header").onclick = () => modalMinuta.classList.remove("hidden");
 }
 
-// Submenús de Entregas
+// Submenús de Entregas con Efecto Luminoso de Selección y Color de Puntito
 window.cambiarSubmenuEntrega = (categoria) => {
   resetMenuStyles();
   viewEntregas.classList.remove("hidden");
@@ -367,55 +374,69 @@ window.cambiarSubmenuEntrega = (categoria) => {
   const labelThProy = document.getElementById("label-th-proy");
   const btnTextEntrega = document.getElementById("btn-text-nueva-entrega");
 
-  if (categoria === "MATERIALES") {
-    titulo.innerHTML = `<i class="fa-solid fa-boxes-packing"></i><span>Entrega de Materiales</span>`;
-    subtitulo.textContent = "Registro simplificado de entrega de insumos y materiales (Semana y Nombre). Destinos: Desarrollo de producto, Producción.";
-    if (thFoto) thFoto.classList.add("hidden");
-    if (thArt) thArt.classList.add("hidden");
-    if (labelThProy) labelThProy.textContent = "Nombre del Material";
-    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Material";
-  } else if (categoria === "MUESTRA DEFINITIVA") {
-    titulo.innerHTML = `<i class="fa-solid fa-shoe-prints"></i><span>Entrega de Muestras Definitivas</span>`;
-    subtitulo.textContent = "Muestras definitivas con foto. Destinos: Producción, Planeamiento, Retail (posibilidad de entrega múltiple).";
-    if (thFoto) thFoto.classList.remove("hidden");
-    if (thArt) thArt.classList.remove("hidden");
-    if (labelThProy) labelThProy.textContent = "Proyecto";
-    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Muestra";
-  } else if (categoria === "GUÍA DE PRODUCCIÓN") {
-    titulo.innerHTML = `<i class="fa-solid fa-file-contract"></i><span>Entrega de Guías de Producción</span>`;
-    subtitulo.textContent = "Entrega física de guías de producción. Destino exclusivo: Costos.";
-    if (thFoto) thFoto.classList.remove("hidden");
-    if (thArt) thArt.classList.remove("hidden");
-    if (labelThProy) labelThProy.textContent = "Proyecto";
-    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Guía";
-  } else if (categoria === "CORTE") {
-    titulo.innerHTML = `<i class="fa-solid fa-scissors"></i><span>Entrega de Cortes</span>`;
-    subtitulo.textContent = "Entrega de cortes. Destinos: Costos, Producción.";
-    if (thFoto) thFoto.classList.remove("hidden");
-    if (thArt) thArt.classList.remove("hidden");
-    if (labelThProy) labelThProy.textContent = "Proyecto";
-    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Corte";
-  } else if (categoria === "HOJA DE DESBASTE") {
-    titulo.innerHTML = `<i class="fa-solid fa-layer-group"></i><span>Entrega de Hoja de Desbaste</span>`;
-    subtitulo.textContent = "Entrega de hoja de desbaste. Destinos: Costos, Producción.";
-    if (thFoto) thFoto.classList.remove("hidden");
-    if (thArt) thArt.classList.remove("hidden");
-    if (labelThProy) labelThProy.textContent = "Proyecto";
-    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Desbaste";
-  } else if (categoria === "TIZADORES") {
-    titulo.innerHTML = `<i class="fa-solid fa-copy"></i><span>Entrega de Tizadores (Copias)</span>`;
-    subtitulo.textContent = "Entrega de tizadores a Producción con especificación de número de copias.";
-    if (thFoto) thFoto.classList.add("hidden");
-    if (thArt) thArt.classList.remove("hidden");
-    if (labelThProy) labelThProy.textContent = "Proyecto";
-    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Tizadores";
-  } else {
+  // Resaltar el botón activo en la barra lateral con el color del puntito
+  if (categoria === "todas") {
+    menuBtnEntregasTodas.className = "sub-ent-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl font-black text-xs text-white bg-white/20 shadow-inner border border-white/30 transition cursor-pointer";
     titulo.innerHTML = `<i class="fa-solid fa-truck-ramp-box"></i><span>Control de Entregas (Todas)</span>`;
     subtitulo.textContent = "Visualizador consolidado de todas las entregas físicas a departamentos.";
     if (thFoto) thFoto.classList.remove("hidden");
     if (thArt) thArt.classList.remove("hidden");
     if (labelThProy) labelThProy.textContent = "Proyecto";
     if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Entrega";
+  } else if (categoria === "MATERIALES") {
+    const btn = document.getElementById("sub-btn-MATERIALES");
+    if (btn) btn.className = "sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-black text-blue-200 bg-white/20 border border-blue-400 shadow-inner transition cursor-pointer pl-5";
+    titulo.innerHTML = `<i class="fa-solid fa-boxes-packing text-blue-600"></i><span>Entrega de Materiales</span>`;
+    subtitulo.textContent = "Insumos y materiales (Semana y Nombre). Destinos: Desarrollo de producto, Producción.";
+    if (thFoto) thFoto.classList.add("hidden");
+    if (thArt) thArt.classList.add("hidden");
+    if (labelThProy) labelThProy.textContent = "Nombre del Material";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Material";
+  } else if (categoria === "GUÍA DE PRODUCCIÓN") {
+    const btn = document.getElementById("sub-btn-GUIA");
+    if (btn) btn.className = "sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-black text-emerald-200 bg-white/20 border border-emerald-400 shadow-inner transition cursor-pointer pl-5";
+    titulo.innerHTML = `<i class="fa-solid fa-file-contract text-emerald-600"></i><span>Entrega de Guías de Producción</span>`;
+    subtitulo.textContent = "Entrega física de guías de producción. Destino exclusivo: Costos.";
+    if (thFoto) thFoto.classList.remove("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Guía";
+  } else if (categoria === "CORTE") {
+    const btn = document.getElementById("sub-btn-CORTE");
+    if (btn) btn.className = "sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-black text-amber-200 bg-white/20 border border-amber-400 shadow-inner transition cursor-pointer pl-5";
+    titulo.innerHTML = `<i class="fa-solid fa-scissors text-amber-600"></i><span>Entrega de Cortes</span>`;
+    subtitulo.textContent = "Entrega de cortes. Destinos: Costos, Producción.";
+    if (thFoto) thFoto.classList.remove("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Corte";
+  } else if (categoria === "MUESTRA DEFINITIVA") {
+    const btn = document.getElementById("sub-btn-MUESTRA");
+    if (btn) btn.className = "sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-black text-purple-200 bg-white/20 border border-purple-400 shadow-inner transition cursor-pointer pl-5";
+    titulo.innerHTML = `<i class="fa-solid fa-shoe-prints text-purple-600"></i><span>Entrega de Muestras Definitivas</span>`;
+    subtitulo.textContent = "Muestras definitivas con foto. Destinos: Producción, Planeamiento, Retail (con opción de entrega múltiple).";
+    if (thFoto) thFoto.classList.remove("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Muestra";
+  } else if (categoria === "HOJA DE DESBASTE") {
+    const btn = document.getElementById("sub-btn-DESBASTE");
+    if (btn) btn.className = "sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-black text-cyan-200 bg-white/20 border border-cyan-400 shadow-inner transition cursor-pointer pl-5";
+    titulo.innerHTML = `<i class="fa-solid fa-layer-group text-cyan-600"></i><span>Entrega de Hoja de Desbaste</span>`;
+    subtitulo.textContent = "Entrega de especificaciones de desbaste. Destinos: Costos, Producción.";
+    if (thFoto) thFoto.classList.remove("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Desbaste";
+  } else if (categoria === "TIZADORES") {
+    const btn = document.getElementById("sub-btn-TIZADORES");
+    if (btn) btn.className = "sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-black text-rose-200 bg-white/20 border border-rose-400 shadow-inner transition cursor-pointer pl-5";
+    titulo.innerHTML = `<i class="fa-solid fa-copy text-rose-600"></i><span>Entrega de Tizadores (Copias)</span>`;
+    subtitulo.textContent = "Entrega de tizadores a Producción con especificación de número de copias.";
+    if (thFoto) thFoto.classList.add("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Tizadores";
   }
 
   renderTablaEntregas();
@@ -469,6 +490,7 @@ async function cargarPanelSuperAdmin() {
     tbodyUsers.appendChild(tr);
   });
 
+  // 2. Tabla Solicitudes y Minutas
   const tbodySols = document.getElementById("table-admin-solicitudes-body");
   tbodySols.innerHTML = "";
 
@@ -494,6 +516,7 @@ async function cargarPanelSuperAdmin() {
     tbodySols.appendChild(tr);
   });
 
+  // 3. Tabla Entregas
   const tbodyEnts = document.getElementById("table-admin-entregas-body");
   tbodyEnts.innerHTML = "";
 
@@ -769,7 +792,7 @@ function actualizarCamposSegunTipoEntrega() {
   else if (tipo === "MUESTRA DEFINITIVA") {
     boxFoto.classList.remove("hidden");
     containerSingle.classList.add("hidden");
-    containerMultiple.classList.remove("hidden"); // Muestra checkboxes
+    containerMultiple.classList.remove("hidden");
   }
   // e. Hoja de desbaste: Costos, Producción
   else if (tipo === "HOJA DE DESBASTE") {
@@ -799,7 +822,6 @@ document.getElementById("form-nueva-entrega").onsubmit = async (e) => {
   try {
     let destinosAEntregar = [];
 
-    // Si es Muestra Definitiva, puede crearse para múltiples áreas a la vez
     if (tipo === "MUESTRA DEFINITIVA") {
       destinosAEntregar = Array.from(document.querySelectorAll(".chk-muestras-dest:checked")).map(c => c.value);
       if (destinosAEntregar.length === 0) {
@@ -810,7 +832,6 @@ document.getElementById("form-nueva-entrega").onsubmit = async (e) => {
       destinosAEntregar = [document.getElementById("ent-destino").value];
     }
 
-    // Crear un registro individual por cada área para que cada una confirme por separado
     for (const destino of destinosAEntregar) {
       await addDoc(collection(db, "entregas_departamentos"), {
         semana,
@@ -833,7 +854,6 @@ document.getElementById("form-nueva-entrega").onsubmit = async (e) => {
     document.getElementById("form-nueva-entrega").reset();
     modalNuevaEntrega.classList.add("hidden");
 
-    // Notificación consolidada por WhatsApp
     const destinosTexto = destinosAEntregar.join(", ");
     let detalleCopias = (tipo === "TIZADORES" && copias) ? `📑 *Copias:* ${copias}\n` : '';
 
@@ -1450,7 +1470,7 @@ function generarTextoNotificacionBata() {
   modalTextoWsp.classList.remove("hidden");
 }
 
-// 2. Reporte Impreso / PDF Informe (CON FOTOS)
+// Reporte Impreso / PDF Informe (CON FOTOS)
 function generarModalInformeResumen() {
   const seleccionadosIds = Array.from(document.querySelectorAll(".chk-articulo-informe:checked")).map(c => c.value);
   if (seleccionadosIds.length === 0) {
