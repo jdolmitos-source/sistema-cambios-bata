@@ -32,7 +32,7 @@ const firebaseConfig = {
   measurementId: "G-0XXGS651PJ"
 };
 
-// ⚠️ CONFIGURACIÓN DE ACCESO SUPER ADMIN
+// ⚠️ CONFIGURACIÓN SUPER ADMIN
 const SUPER_ADMIN_EMAIL = "jd.olmitos@gmail.com";
 const SUPER_ADMIN_WHATSAPP = "59174812364";
 
@@ -44,13 +44,15 @@ let currentUser = null;
 let userData = null;
 let solicitudes = [];
 let entregas = [];
-let chartInstance = null;
 
-// Filtros de cabecera en Informe
+// Categoría seleccionada en Entregas ('todas' | 'MATERIALES' | 'GUÍA DE PRODUCCIÓN' | 'CORTE' | 'MUESTRA DEFINITIVA' | 'HOJA DE DESBASTE')
+let categoriaEntregaActiva = "todas";
+
+// Filtros en cabecera de Informe
 let colFiltroSemanaInforme = "";
 let colFiltroProyectoInforme = "";
 
-// Filtros de cabecera en Entregas
+// Filtros en cabecera de Entregas
 let colFiltroSemanaEntregas = "";
 let colFiltroProyectoEntregas = "";
 
@@ -85,7 +87,7 @@ const comprimirImagen = (file, maxWidth = 600, calidad = 0.75) => new Promise((r
   reader.onerror = () => resolve(null);
 });
 
-// Comprobar estrictamente si es Super Admin (SOLO jd.olmitos@gmail.com)
+// Comprobar si es Super Admin (SOLO jd.olmitos@gmail.com)
 function esSuperAdmin() {
   if (!currentUser || !currentUser.email) return false;
   return currentUser.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
@@ -143,7 +145,7 @@ window.verFotoGrande = (src, titulo) => {
   modalVisorFoto.classList.remove("hidden");
 };
 
-// Reset de Contraseña dirigido al WhatsApp de Super Admin
+// Reset de Contraseña dirigido al WhatsApp de Super Admin (+591 74812364)
 document.getElementById("btn-forgot-pass").onclick = () => {
   const email = document.getElementById("login-email").value.trim();
   if (!email) {
@@ -304,19 +306,23 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// Navegación
+// Navegación Principal
 const viewCambios = document.getElementById("view-cambios");
 const viewInforme = document.getElementById("view-informe");
 const viewEntregas = document.getElementById("view-entregas");
 const viewUsuarios = document.getElementById("view-usuarios");
 const menuBtnCambios = document.getElementById("menu-btn-cambios");
 const menuBtnInforme = document.getElementById("menu-btn-informe");
-const menuBtnEntregas = document.getElementById("menu-btn-entregas");
+const menuBtnEntregasTodas = document.getElementById("menu-btn-entregas-todas");
 const menuBtnUsuarios = document.getElementById("menu-btn-usuarios");
 
 function resetMenuStyles() {
-  [menuBtnCambios, menuBtnInforme, menuBtnEntregas, menuBtnUsuarios].forEach(b => {
+  [menuBtnCambios, menuBtnInforme, menuBtnUsuarios].forEach(b => {
     if (b) b.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-gray-600 hover:bg-gray-100 transition cursor-pointer";
+  });
+  document.querySelectorAll(".sub-ent-btn").forEach(b => {
+    b.classList.remove("bg-red-50", "text-[#D61B28]", "font-bold");
+    b.classList.add("text-gray-600");
   });
   viewCambios.classList.add("hidden");
   viewInforme.classList.add("hidden");
@@ -339,13 +345,6 @@ menuBtnInforme.onclick = () => {
   renderInformeView();
 };
 
-menuBtnEntregas.onclick = () => {
-  resetMenuStyles();
-  viewEntregas.classList.remove("hidden");
-  menuBtnEntregas.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs transition bg-red-50 text-[#D61B28] cursor-pointer";
-  renderTablaEntregas();
-};
-
 menuBtnUsuarios.onclick = () => {
   if (!esSuperAdmin()) {
     alert("Acceso denegado: solo el usuario jd.olmitos@gmail.com puede acceder al panel de administración.");
@@ -360,6 +359,68 @@ menuBtnUsuarios.onclick = () => {
 if (document.getElementById("btn-open-minuta-header")) {
   document.getElementById("btn-open-minuta-header").onclick = () => modalMinuta.classList.remove("hidden");
 }
+
+// Submenús de Entregas
+window.cambiarSubmenuEntrega = (categoria) => {
+  resetMenuStyles();
+  viewEntregas.classList.remove("hidden");
+  categoriaEntregaActiva = categoria;
+
+  // Actualizar títulos dinámicos y textos
+  const titulo = document.getElementById("entregas-vista-titulo");
+  const subtitulo = document.getElementById("entregas-vista-subtitulo");
+  const thFoto = document.getElementById("th-ent-foto");
+  const thArt = document.getElementById("th-ent-art");
+  const labelThProy = document.getElementById("label-th-proy");
+  const btnTextEntrega = document.getElementById("btn-text-nueva-entrega");
+
+  // Ajustar apariencia de tabla para Entrega Materiales (sólo semana, nombre y fecha)
+  if (categoria === "MATERIALES") {
+    titulo.innerHTML = `<i class="fa-solid fa-boxes-packing"></i><span>Entrega de Materiales</span>`;
+    subtitulo.textContent = "Registro simplificado de entrega de insumos y materiales (Semana y Nombre).";
+    if (thFoto) thFoto.classList.add("hidden");
+    if (thArt) thArt.classList.add("hidden");
+    if (labelThProy) labelThProy.textContent = "Nombre del Material";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Entrega de Material";
+  } else if (categoria === "MUESTRA DEFINITIVA") {
+    titulo.innerHTML = `<i class="fa-solid fa-shoe-prints"></i><span>Entrega de Muestras Definitivas</span>`;
+    subtitulo.textContent = "Control físico con fotografía de muestra aprobada para Producción, Planeamiento o Retail.";
+    if (thFoto) thFoto.classList.remove("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Muestra Definitiva";
+  } else if (categoria === "GUÍA DE PRODUCCIÓN") {
+    titulo.innerHTML = `<i class="fa-solid fa-file-contract"></i><span>Entrega de Guías de Producción</span>`;
+    subtitulo.textContent = "Entrega física de guías de producción a Costos.";
+    if (thFoto) thFoto.classList.remove("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Guía";
+  } else if (categoria === "CORTE") {
+    titulo.innerHTML = `<i class="fa-solid fa-scissors"></i><span>Entrega de Cortes</span>`;
+    subtitulo.textContent = "Entrega de cortes de muestra a Costos o de Costos a Producción.";
+    if (thFoto) thFoto.classList.remove("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Corte";
+  } else if (categoria === "HOJA DE DESBASTE") {
+    titulo.innerHTML = `<i class="fa-solid fa-layer-group"></i><span>Entrega de Hoja de Desbaste</span>`;
+    subtitulo.textContent = "Entrega técnica de especificaciones de desbaste.";
+    if (thFoto) thFoto.classList.remove("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Hoja de Desbaste";
+  } else {
+    titulo.innerHTML = `<i class="fa-solid fa-truck-ramp-box"></i><span>Control de Entregas (Todas)</span>`;
+    subtitulo.textContent = "Visualizador consolidado de todas las entregas físicas a departamentos.";
+    if (thFoto) thFoto.classList.remove("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Entrega";
+  }
+
+  renderTablaEntregas();
+};
 
 // Panel Super Admin (SIN DUPLICADOS)
 async function cargarPanelSuperAdmin() {
@@ -435,7 +496,7 @@ async function cargarPanelSuperAdmin() {
     tbodySols.appendChild(tr);
   });
 
-  // 3. Tabla Entregas
+  // 3. Tabla Entregas (Limpieza Super Admin)
   const tbodyEnts = document.getElementById("table-admin-entregas-body");
   tbodyEnts.innerHTML = "";
 
@@ -445,9 +506,9 @@ async function cargarPanelSuperAdmin() {
     tr.innerHTML = `
       <td class="p-3 font-semibold text-gray-500 font-mono">${ent.semana || '—'}</td>
       <td class="p-3 text-gray-600 whitespace-nowrap">${formatearFecha(ent.fechaEntrega)}</td>
+      <td class="p-3 font-semibold text-[#D61B28]">${ent.tipo}</td>
       <td class="p-3 font-bold text-gray-800">${ent.proyecto}</td>
-      <td class="p-3 font-mono text-gray-700">${ent.articulo}</td>
-      <td class="p-3 font-semibold text-gray-700">${ent.tipo}</td>
+      <td class="p-3 font-mono text-gray-700">${ent.articulo || '—'}</td>
       <td class="p-3 font-bold text-gray-700">${ent.destino}</td>
       <td class="p-3 text-center">
         <button onclick="window.eliminarEntregaDoc('${ent.id}', '${ent.tipo}', '${ent.proyecto}')" class="text-red-500 hover:text-red-700 p-1 rounded font-bold text-xs cursor-pointer">
@@ -478,7 +539,7 @@ window.eliminarSolicitudProyecto = async (id, proyecto) => {
 };
 
 window.eliminarEntregaDoc = async (id, tipo, proyecto) => {
-  if (confirm(`¿Eliminar la entrega "${tipo}" del proyecto "${proyecto}" permanentemente?`)) {
+  if (confirm(`¿Eliminar la entrega "${tipo}" del proyecto/material "${proyecto}" permanentemente?`)) {
     await deleteDoc(doc(db, "entregas_departamentos", id));
   }
 };
@@ -644,37 +705,65 @@ document.getElementById("btn-open-nueva-entrega").onclick = () => {
   const selectTipo = document.getElementById("ent-tipo");
   selectTipo.innerHTML = "";
 
-  if (esDesarrollo) {
-    selectTipo.innerHTML += `<option value="GUÍA DE PRODUCCIÓN">Guía de Producción</option>`;
-    selectTipo.innerHTML += `<option value="CORTE">Corte</option>`;
-    selectTipo.innerHTML += `<option value="MUESTRA DEFINITIVA">Muestra Definitiva</option>`;
-  } else if (esCostos) {
-    selectTipo.innerHTML += `<option value="CORTE">Corte (De Costos a Producción)</option>`;
+  if (categoriaEntregaActiva !== "todas") {
+    selectTipo.innerHTML += `<option value="${categoriaEntregaActiva}">${categoriaEntregaActiva}</option>`;
+  } else {
+    if (esDesarrollo) {
+      selectTipo.innerHTML += `<option value="GUÍA DE PRODUCCIÓN">GUÍA DE PRODUCCIÓN</option>`;
+      selectTipo.innerHTML += `<option value="CORTE">CORTE</option>`;
+      selectTipo.innerHTML += `<option value="MUESTRA DEFINITIVA">MUESTRA DEFINITIVA</option>`;
+      selectTipo.innerHTML += `<option value="MATERIALES">MATERIALES</option>`;
+      selectTipo.innerHTML += `<option value="HOJA DE DESBASTE">HOJA DE DESBASTE</option>`;
+    } else if (esCostos) {
+      selectTipo.innerHTML += `<option value="CORTE">CORTE (De Costos a Producción)</option>`;
+    }
   }
 
-  actualizarDestinosEntrega();
+  actualizarCamposSegunTipoEntrega();
   modalNuevaEntrega.classList.remove("hidden");
 };
 
-document.getElementById("ent-tipo").onchange = actualizarDestinosEntrega;
+document.getElementById("ent-tipo").onchange = actualizarCamposSegunTipoEntrega;
 
-function actualizarDestinosEntrega() {
+function actualizarCamposSegunTipoEntrega() {
   const tipo = document.getElementById("ent-tipo").value;
   const selectDestino = document.getElementById("ent-destino");
+  const boxArticulo = document.getElementById("box-field-articulo");
+  const labelProy = document.getElementById("label-field-proyecto");
+  const inputProy = document.getElementById("ent-proyecto");
+  const boxFoto = document.getElementById("box-field-foto");
+
   selectDestino.innerHTML = "";
 
-  const rol = (userData && userData.rol) || "";
-  const esCostos = rol === "Costos";
-
-  if (esCostos) {
+  // Caso especial: Entrega Materiales (solo semana, nombre, fecha auto)
+  if (tipo === "MATERIALES") {
+    labelProy.textContent = "Nombre del Material / Insumo";
+    inputProy.placeholder = "Ej: Badana Beige 1.2mm";
+    boxArticulo.classList.add("hidden");
+    boxFoto.classList.add("hidden");
     selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-  } else {
-    if (tipo === "GUÍA DE PRODUCCIÓN" || tipo === "CORTE") {
-      selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
-    } else if (tipo === "MUESTRA DEFINITIVA") {
+    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
+    selectDestino.innerHTML += `<option value="Compras">Compras</option>`;
+    return;
+  }
+
+  // Casos Regulares
+  boxArticulo.classList.remove("hidden");
+  labelProy.textContent = "Nombre del Proyecto";
+  inputProy.placeholder = "Ej: SKATER";
+
+  if (tipo === "MUESTRA DEFINITIVA") {
+    boxFoto.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+    selectDestino.innerHTML += `<option value="Planeamiento">Planeamiento</option>`;
+    selectDestino.innerHTML += `<option value="Retail">Retail</option>`;
+  } else if (tipo === "GUÍA DE PRODUCCIÓN" || tipo === "CORTE" || tipo === "HOJA DE DESBASTE") {
+    boxFoto.classList.remove("hidden");
+    if (userData.rol === "Costos") {
       selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-      selectDestino.innerHTML += `<option value="Planeamiento">Planeamiento</option>`;
-      selectDestino.innerHTML += `<option value="Retail">Retail</option>`;
+    } else {
+      selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
+      selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
     }
   }
 }
@@ -695,7 +784,7 @@ document.getElementById("form-nueva-entrega").onsubmit = async (e) => {
     await addDoc(collection(db, "entregas_departamentos"), {
       semana,
       proyecto,
-      articulo,
+      articulo: tipo === "MATERIALES" ? "" : articulo,
       tipo,
       destino,
       foto: fotoBase64,
@@ -714,7 +803,7 @@ document.getElementById("form-nueva-entrega").onsubmit = async (e) => {
     abrirModalWhatsApp({
       titulo: "Entrega Registrada",
       subtitulo: `Notificar recepción a los encargados de ${destino}:`,
-      mensajeTexto: `📦 ENTREGA REALIZADA - PD BOLIVIA\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n🏷️ *Elemento:* ${tipo}\n👤 *Entregado por:* ${userData.nombre} (${userData.rol})\n🏢 *Destino:* ${destino}\n📝 *Notas:* ${notas || 'Sin notas adicionales'}\n\n_Favor de confirmar la recepción física en el sistema._`,
+      mensajeTexto: `📦 ENTREGA REALIZADA - PD BOLIVIA\n\n📅 *Semana:* ${semana}\n📌 *Elemento:* ${tipo}\n🏷️ *Detalle/Proyecto:* ${proyecto}\n${articulo ? '🔢 *Artículo:* ' + articulo + '\n' : ''}👤 *Entregado por:* ${userData.nombre} (${userData.rol})\n🏢 *Destino:* ${destino}\n📝 *Notas:* ${notas || 'Sin notas adicionales'}\n\n_Favor de confirmar la recepción física en el sistema._`,
       rolFiltro: destino
     });
   } catch (err) {
@@ -760,11 +849,12 @@ function renderTablaEntregas() {
   const empty = document.getElementById("entregas-empty-state");
 
   let entregasFiltradas = entregas.filter(item => {
+    const coincideCategoria = (categoriaEntregaActiva === "todas") || (item.tipo === categoriaEntregaActiva);
     const semStr = (item.semana || "").toString().toLowerCase().trim();
     const proyStr = (item.proyecto || "").toString().toLowerCase().trim();
     const coincideSem = !colFiltroSemanaEntregas || semStr.includes(colFiltroSemanaEntregas);
     const coincideProy = !colFiltroProyectoEntregas || proyStr.includes(colFiltroProyectoEntregas);
-    return coincideSem && coincideProy;
+    return coincideCategoria && coincideSem && coincideProy;
   });
 
   entregasFiltradas.sort((a, b) => (a.semana || "").localeCompare(b.semana || "", undefined, { numeric: true }));
@@ -804,15 +894,18 @@ function renderTablaEntregas() {
     }
 
     const fotoHTML = ent.foto 
-      ? `<img src="${ent.foto}" onclick="window.verFotoGrande('${ent.foto}', '${ent.proyecto} - ${ent.articulo}')" class="w-10 h-7 object-cover rounded border border-gray-200 shadow-xs cursor-pointer hover:opacity-80 transition mx-auto" title="Click para ampliar">`
+      ? `<img src="${ent.foto}" onclick="window.verFotoGrande('${ent.foto}', '${ent.proyecto} - ${ent.articulo || ent.tipo}')" class="w-10 h-7 object-cover rounded border border-gray-200 shadow-xs cursor-pointer hover:opacity-80 transition mx-auto" title="Click para ampliar">`
       : `<div class="w-10 h-7 rounded border border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-[10px] mx-auto"><i class="fa-regular fa-image"></i></div>`;
 
+    const tdFotoHTML = categoriaEntregaActiva !== "MATERIALES" ? `<td class="p-2 border-r border-gray-100 text-center">${fotoHTML}</td>` : '';
+    const tdArticuloHTML = categoriaEntregaActiva !== "MATERIALES" ? `<td class="p-3 font-mono text-gray-700 border-r border-gray-100">${ent.articulo || '—'}</td>` : '';
+
     tr.innerHTML = `
-      <td class="p-2 border-r border-gray-100 text-center">${fotoHTML}</td>
+      ${tdFotoHTML}
       <td class="p-3 font-bold text-gray-700 border-r border-gray-100 font-mono">${ent.semana}</td>
       <td class="p-3 text-gray-600 border-r border-gray-100 whitespace-nowrap">${formatearFecha(ent.fechaEntrega)}</td>
       <td class="p-3 font-bold text-gray-800 border-r border-gray-100">${ent.proyecto}</td>
-      <td class="p-3 font-mono text-gray-700 border-r border-gray-100">${ent.articulo}</td>
+      ${tdArticuloHTML}
       <td class="p-3 border-r border-gray-100">
         <span class="bg-red-50 text-[#D61B28] px-2 py-0.5 rounded font-bold text-[10px] border border-red-100">${ent.tipo}</span>
         ${ent.notas ? `<p class="text-[10px] text-gray-400 mt-0.5">${ent.notas}</p>` : ''}
@@ -829,7 +922,7 @@ function renderTablaEntregas() {
 }
 
 window.confirmarRecepcionEntrega = async (id, tipo, proyecto) => {
-  if (confirm(`¿Confirmar que has recibido físicamente el elemento "${tipo}" del proyecto "${proyecto}"?`)) {
+  if (confirm(`¿Confirmar que has recibido físicamente "${tipo}" (${proyecto})?`)) {
     await updateDoc(doc(db, "entregas_departamentos", id), {
       recibido: true,
       fechaRecepcion: new Date().toISOString(),
@@ -840,7 +933,8 @@ window.confirmarRecepcionEntrega = async (id, tipo, proyecto) => {
 
 // 1. Reporte Impreso / PDF Entregas (CON FOTOS)
 function abrirReporteImpresoEntregas() {
-  if (entregas.length === 0) {
+  const items = entregas.filter(item => (categoriaEntregaActiva === "todas") || (item.tipo === categoriaEntregaActiva));
+  if (items.length === 0) {
     alert("No hay registros de entregas para generar el reporte.");
     return;
   }
@@ -854,7 +948,7 @@ function abrirReporteImpresoEntregas() {
             <th class="p-2 border text-center w-12">Foto</th>
             <th class="p-2 border">Sem.</th>
             <th class="p-2 border">Fecha/Hora</th>
-            <th class="p-2 border">Proyecto</th>
+            <th class="p-2 border">Proyecto / Nombre</th>
             <th class="p-2 border">Artículo</th>
             <th class="p-2 border">Elemento Entregado</th>
             <th class="p-2 border">Entregado Por</th>
@@ -865,9 +959,9 @@ function abrirReporteImpresoEntregas() {
         <tbody>
   `;
 
-  entregas.forEach(it => {
+  items.forEach(it => {
     const fotoPrint = it.foto 
-      ? `<img src="${it.foto}" style="width: 42px; height: 28px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; margin: auto;">`
+      ? `<img src="${it.foto}" style="width: 44px; height: 30px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; margin: auto;">`
       : `<span style="color: #bbb;">—</span>`;
 
     html += `
@@ -876,7 +970,7 @@ function abrirReporteImpresoEntregas() {
         <td class="p-2 border font-bold font-mono">${it.semana}</td>
         <td class="p-2 border whitespace-nowrap">${formatearFecha(it.fechaEntrega)}</td>
         <td class="p-2 border font-bold text-gray-800">${it.proyecto}</td>
-        <td class="p-2 border font-mono">${it.articulo}</td>
+        <td class="p-2 border font-mono">${it.articulo || '—'}</td>
         <td class="p-2 border">${it.tipo} ${it.notas ? `(${it.notas})` : ''}</td>
         <td class="p-2 border">${it.entregadoPorNombre} <span class="text-[10px] text-gray-400">(${it.entregadoPorRol})</span></td>
         <td class="p-2 border font-bold">${it.destino}</td>
@@ -898,17 +992,18 @@ function abrirReporteImpresoEntregas() {
 }
 
 function abrirResumenTextoEntregas() {
-  if (entregas.length === 0) {
-    alert("No hay entregas registradas.");
+  const items = entregas.filter(item => (categoriaEntregaActiva === "todas") || (item.tipo === categoriaEntregaActiva));
+  if (items.length === 0) {
+    alert("No hay entregas registradas en esta categoría.");
     return;
   }
 
   let texto = `CONTROL DE ENTREGAS A DEPARTAMENTOS - BATA BOLIVIA\n`;
-  texto += `Fecha de emisión: ${new Date().toLocaleDateString("es-BO")}\n\n`;
-  texto += `Saludos cordiales,\nA continuación se detalla el registro de entregas físicas efectuadas entre secciones:\n\n`;
+  texto += `Categoría: ${categoriaEntregaActiva.toUpperCase()}\n`;
+  texto += `Fecha: ${new Date().toLocaleDateString("es-BO")}\n\n`;
 
-  entregas.forEach((it, idx) => {
-    texto += `${idx + 1}. [Sem: ${it.semana}] ${it.proyecto.toUpperCase()} | Art: ${it.articulo}\n`;
+  items.forEach((it, idx) => {
+    texto += `${idx + 1}. [Sem: ${it.semana}] ${it.proyecto.toUpperCase()} ${it.articulo ? '| Art: ' + it.articulo : ''}\n`;
     texto += `   • Entrega: ${it.tipo}\n`;
     texto += `   • Entregado por: ${it.entregadoPorNombre} (${it.entregadoPorRol}) -> Destino: ${it.destino}\n`;
     texto += `   • Estado: ${it.recibido ? 'RECIBIDO' : 'EN TRÁNSITO'}\n\n`;
@@ -923,9 +1018,8 @@ function abrirResumenTextoEntregas() {
     alert("Texto de entregas copiado al portapapeles.");
   };
 
-  // Disparo a Outlook (PWA / Escritorio)
   document.getElementById("btn-enviar-correo-entregas").onclick = () => {
-    const asunto = encodeURIComponent("Bata Bolivia - Control de Entregas a Departamentos");
+    const asunto = encodeURIComponent(`Bata Bolivia - Control de Entregas (${categoriaEntregaActiva})`);
     const cuerpo = encodeURIComponent(texto);
     window.location.href = `mailto:?subject=${asunto}&body=${cuerpo}`;
   };
@@ -1166,7 +1260,6 @@ function renderInformeView() {
     const chks = document.querySelectorAll(".chk-articulo-informe");
     chks.forEach(c => c.checked = e.target.checked);
     actualizarConteoSeleccionados();
-    actualizarGraficoTorresSemana();
   };
 
   document.getElementById("btn-generar-texto-wsp").onclick = generarTextoNotificacionBata;
@@ -1220,7 +1313,6 @@ function actualizarInformePorSemana() {
   if (total === 0) {
     tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400 italic">No hay artículos que coincidan con la búsqueda.</td></tr>`;
     actualizarConteoSeleccionados();
-    actualizarGraficoTorresSemana();
     return;
   }
 
@@ -1256,14 +1348,10 @@ function actualizarInformePorSemana() {
   });
 
   document.querySelectorAll(".chk-articulo-informe").forEach(chk => {
-    chk.onchange = () => {
-      actualizarConteoSeleccionados();
-      actualizarGraficoTorresSemana();
-    };
+    chk.onchange = actualizarConteoSeleccionados;
   });
 
   actualizarConteoSeleccionados();
-  actualizarGraficoTorresSemana();
 }
 
 function actualizarConteoSeleccionados() {
@@ -1349,7 +1437,7 @@ function generarModalInformeResumen() {
 
   items.forEach(it => {
     const fotoPrint = it.foto 
-      ? `<img src="${it.foto}" style="width: 42px; height: 28px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; margin: auto;">`
+      ? `<img src="${it.foto}" style="width: 44px; height: 30px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; margin: auto;">`
       : `<span style="color: #bbb;">—</span>`;
 
     html += `
@@ -1376,88 +1464,4 @@ function generarModalInformeResumen() {
 
   contenedor.innerHTML = html;
   modalResumen.classList.remove("hidden");
-}
-
-function actualizarGraficoTorresSemana() {
-  const seleccionadosIds = Array.from(document.querySelectorAll(".chk-articulo-informe:checked")).map(c => c.value);
-  const items = solicitudes.filter(s => seleccionadosIds.includes(s.id));
-
-  const proyectosUnicos = [...new Set(items.map(s => s.proyecto))];
-  const labels = proyectosUnicos;
-  const dataProgreso = [];
-  const backgroundColors = [];
-  const borderColors = [];
-
-  labels.forEach(proy => {
-    const articulosProy = items.filter(s => s.proyecto === proy);
-    if (articulosProy.length === 0) {
-      dataProgreso.push(0);
-      backgroundColors.push("rgba(214, 27, 40, 0.7)");
-      borderColors.push("#D61B28");
-      return;
-    }
-
-    const realizados = articulosProy.filter(s => s.estado === "Realizado").length;
-    const porcentajeRealizados = Math.round((realizados / articulosProy.length) * 100);
-    dataProgreso.push(porcentajeRealizados);
-
-    const tieneRetraso = articulosProy.some(s => s.estado === "Retrasado");
-    const todosRealizados = articulosProy.every(s => s.estado === "Realizado");
-
-    if (todosRealizados) {
-      backgroundColors.push("rgba(34, 197, 94, 0.85)");
-      borderColors.push("#16a34a");
-    } else if (tieneRetraso) {
-      backgroundColors.push("rgba(239, 68, 68, 0.85)");
-      borderColors.push("#dc2626");
-    } else {
-      backgroundColors.push("rgba(249, 115, 22, 0.85)");
-      borderColors.push("#ea580c");
-    }
-  });
-
-  const ctx = document.getElementById("chartAvance").getContext("2d");
-  if (chartInstance) chartInstance.destroy();
-
-  chartInstance = new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels: labels,
-      datasets: [{
-        label: "% Realizado",
-        data: dataProgreso,
-        backgroundColor: backgroundColors,
-        borderColor: borderColors,
-        borderWidth: 1.5,
-        borderRadius: 8,
-        barPercentage: 0.4
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: (ctx) => ` Avance Proyecto: ${ctx.raw}%`
-          }
-        }
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          max: 100,
-          ticks: {
-            stepSize: 20,
-            callback: v => v + "%"
-          },
-          grid: { color: "rgba(0, 0, 0, 0.05)" }
-        },
-        x: {
-          grid: { display: false }
-        }
-      }
-    }
-  });
 }
