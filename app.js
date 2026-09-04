@@ -49,11 +49,11 @@ let llegadasMateriales = [];
 
 let categoriaEntregaActiva = "todas";
 
-// Filtros en cabecera de Informe
+// Filtros de Informe
 let colFiltroSemanaInforme = "";
 let colFiltroProyectoInforme = "";
 
-// Filtros en cabecera de Entregas
+// Filtros de Entregas
 let colFiltroSemanaEntregas = "";
 let colFiltroProyectoEntregas = "";
 
@@ -344,7 +344,6 @@ const menuBtnEntregasTodas = document.getElementById("menu-btn-entregas-todas");
 const menuBtnProcurement = document.getElementById("menu-btn-procurement");
 const menuBtnUsuarios = document.getElementById("menu-btn-usuarios");
 
-// Estilos de botones: Inactivo = Blanco puro; Activo = Pastilla Blanca con texto Rojo Bata
 const CLASE_INACTIVO_PRINCIPAL = "sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white hover:bg-white/15 transition cursor-pointer";
 const CLASE_INACTIVO_SUB = "sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white/90 hover:bg-white/15 hover:text-white transition cursor-pointer pl-5";
 
@@ -526,7 +525,6 @@ function actualizarInformePorSemana() {
 
   articulosFiltrados.sort((a, b) => (a.semana || "").localeCompare(b.semana || "", undefined, { numeric: true }));
 
-  // 5 KPIs solicitados
   const total = articulosFiltrados.length;
   const retrasados = articulosFiltrados.filter(s => s.estado === "Retrasado").length;
   const enProceso = articulosFiltrados.filter(s => s.estado === "En proceso").length;
@@ -715,28 +713,25 @@ function generarModalInformeResumen() {
   modalResumen.classList.remove("hidden");
 }
 
-// ==================== PROCUREMENT & STORAGE (COMPRAS & ALMACÉN) ====================
+// ==================== PROCUREMENT & STORAGE ====================
 function escucharProcurement() {
-  // 1. Escuchar Bloqueos / Restricciones
   const qBloqueos = query(collection(db, "procurement_bloqueos"), orderBy("timestamp", "desc"));
   onSnapshot(qBloqueos, (snapshot) => {
     bloqueosMateriales = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     renderTablaBloqueos();
-  });
+  }, (err) => console.log("Aviso Firestore Bloqueos:", err.message));
 
-  // 2. Escuchar Llegadas a Fábrica
   const qLlegadas = query(collection(db, "procurement_llegadas"), orderBy("timestamp", "desc"));
   onSnapshot(qLlegadas, (snapshot) => {
     llegadasMateriales = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     renderTablaLlegadas();
-  });
+  }, (err) => console.log("Aviso Firestore Llegadas:", err.message));
 }
 
 function renderProcurementView() {
   renderTablaBloqueos();
   renderTablaLlegadas();
 
-  // Botón abrir bloqueo
   document.getElementById("btn-open-nuevo-bloqueo").onclick = () => {
     const rol = (userData && userData.rol) || "";
     if (rol !== "Compras" && !esSuperAdmin()) {
@@ -746,12 +741,10 @@ function renderProcurementView() {
     modalNuevoBloqueo.classList.remove("hidden");
   };
 
-  // Botón abrir llegada
   document.getElementById("btn-open-nueva-llegada").onclick = () => {
     modalNuevaLlegada.classList.remove("hidden");
   };
 
-  // Filtros Llegadas
   const fItem = document.getElementById("col-filter-item-llegada");
   const fNom = document.getElementById("col-filter-nombre-llegada");
   const fSem = document.getElementById("col-filter-semana-llegada");
@@ -763,13 +756,14 @@ function renderProcurementView() {
   document.getElementById("btn-reporte-llegadas-pdf").onclick = abrirReporteImpresoLlegadas;
 }
 
-// Formulario Nuevo Bloqueo (Compras emite a Almacén)
+// Formulario Nuevo Bloqueo (Con Selector de Unidad Mts, Lt, Kg, Pares)
 document.getElementById("form-nuevo-bloqueo").onsubmit = async (e) => {
   e.preventDefault();
   const item = document.getElementById("bloq-item").value.trim();
   const semana = document.getElementById("bloq-semana").value.trim();
   const nombre = document.getElementById("bloq-nombre").value.trim();
   const cantidad = parseFloat(document.getElementById("bloq-cantidad").value) || 0;
+  const unidad = document.getElementById("bloq-unidad").value;
   const estado = document.getElementById("bloq-estado").value;
   const notas = document.getElementById("bloq-notas").value.trim();
 
@@ -779,11 +773,13 @@ document.getElementById("form-nuevo-bloqueo").onsubmit = async (e) => {
       semana,
       nombre,
       cantidad,
+      unidad,
       estado,
       notas,
       notificadoAlmacen: false,
-      registradoPorNombre: userData.nombre,
-      registradoPorRol: userData.rol,
+      registradoPorNombre: (userData && userData.nombre) || currentUser.email,
+      registradoPorRol: (userData && userData.rol) || "Compras",
+      registradoPorId: currentUser.uid,
       fechaCreacion: new Date().toISOString(),
       timestamp: serverTimestamp()
     });
@@ -794,7 +790,7 @@ document.getElementById("form-nuevo-bloqueo").onsubmit = async (e) => {
     abrirModalWhatsApp({
       titulo: "Alerta de Disponibilidad Emitida",
       subtitulo: "Enviar alerta inmediata al personal de Almacén:",
-      mensajeTexto: `📦 *ALERTA DE DISPONIBILIDAD DE MATERIAL - BATA BOLIVIA*\n*Compras a Almacén*\n\n📅 *Semana de Bloqueo:* ${semana}\n🔢 *Item:* ${item}\n🧵 *Material:* ${nombre}\n📏 *Cant. Permitida:* ${cantidad} Mts\n⚠️ *Disposición:* ${estado}\n📝 *Notas:* ${notas || 'Sin notas'}\n👤 *Emitido por:* ${userData.nombre} (Compras)\n\n_Favor actualizar la entrega física en almacén de acuerdo a esta disposición._`,
+      mensajeTexto: `📦 *ALERTA DE DISPONIBILIDAD DE MATERIAL - BATA BOLIVIA*\n*Compras a Almacén*\n\n📅 *Semana de Bloqueo:* ${semana}\n🔢 *Item:* ${item}\n🧵 *Material:* ${nombre}\n📏 *Cant. Permitida:* ${cantidad} ${unidad}\n⚠️ *Disposición:* ${estado}\n📝 *Notas:* ${notas || 'Sin notas'}\n👤 *Emitido por:* ${userData.nombre} (${userData.rol})\n\n_Favor ajustar las entregas físicas en almacén conforme a esta disposición._`,
       rolFiltro: "Almacén"
     });
   } catch (err) {
@@ -831,7 +827,7 @@ function renderTablaBloqueos() {
       <td class="p-2.5 font-mono font-bold text-gray-700">${b.item}</td>
       <td class="p-2.5 font-bold text-gray-800">${b.nombre} ${b.notas ? '<p class="text-[10px] text-gray-400 font-normal">' + b.notas + '</p>' : ''}</td>
       <td class="p-2.5 font-mono font-bold text-amber-700">${b.semana}</td>
-      <td class="p-2.5 font-black text-gray-800">${b.cantidad} Mts</td>
+      <td class="p-2.5 font-black text-gray-800">${b.cantidad} ${b.unidad || 'Mts'}</td>
       <td class="p-2.5 text-center"><span class="px-2 py-0.5 rounded font-bold text-[10px] ${estiloBadge}">${b.estado}</span></td>
       <td class="p-2.5 text-gray-600">${b.registradoPorNombre}</td>
       <td class="p-2.5 text-center">${accionAlmacen}</td>
@@ -848,7 +844,7 @@ window.confirmarEnteradoAlmacen = async (id) => {
   });
 };
 
-// Formulario Nueva Llegada a Fábrica
+// Formulario Nueva Llegada a Fábrica (Con Semana de Solicitud)
 document.getElementById("form-nueva-llegada").onsubmit = async (e) => {
   e.preventDefault();
   const item = document.getElementById("lleg-item").value.trim();
@@ -867,7 +863,8 @@ document.getElementById("form-nueva-llegada").onsubmit = async (e) => {
       fechaEstimada: fechaEst,
       fechaReal: fechaReal || null,
       validadoCompras: false,
-      registradoPor: userData.nombre,
+      registradoPor: (userData && userData.nombre) || currentUser.email,
+      registradoPorId: currentUser.uid,
       fechaCreacion: new Date().toISOString(),
       timestamp: serverTimestamp()
     });
@@ -921,7 +918,7 @@ function renderTablaLlegadas() {
 }
 
 window.validarLlegadaCompras = async (id) => {
-  if (confirm("¿Confirmar y validar la llegada física de este material?")) {
+  if (confirm("¿Confirmar y validar la llegada física de este material a fábrica?")) {
     await updateDoc(doc(db, "procurement_llegadas", id), {
       validadoCompras: true,
       fechaValidacion: new Date().toISOString(),
@@ -930,7 +927,6 @@ window.validarLlegadaCompras = async (id) => {
   }
 };
 
-// Generador de Informe PDF de Llegadas
 function abrirReporteImpresoLlegadas() {
   if (llegadasMateriales.length === 0) {
     alert("No hay registros de llegadas para generar el informe.");
@@ -945,7 +941,7 @@ function abrirReporteImpresoLlegadas() {
           <tr>
             <th class="p-2 border">Item</th>
             <th class="p-2 border">Nombre del Material</th>
-            <th class="p-2 border">Semana</th>
+            <th class="p-2 border">Sem. Solicitud</th>
             <th class="p-2 border">Cantidad</th>
             <th class="p-2 border">Llegada Estimada</th>
             <th class="p-2 border">Llegada Real</th>
@@ -1104,340 +1100,7 @@ window.eliminarEntregaDoc = async (id, tipo, proyecto) => {
   }
 };
 
-// Modal WhatsApp
-async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro = null }) {
-  const modalWA = document.getElementById("modal-whatsapp");
-  const listContainer = document.getElementById("whatsapp-contacts-list");
-  document.getElementById("wa-modal-title").textContent = titulo;
-  document.getElementById("wa-modal-desc").textContent = subtitulo;
-  listContainer.innerHTML = "";
-
-  const encodedMsg = encodeURIComponent(mensajeTexto);
-
-  try {
-    const usuariosSnap = await getDocs(collection(db, "usuarios"));
-    let count = 0;
-
-    usuariosSnap.forEach(d => {
-      const u = d.data();
-      const coincideRol = !rolFiltro || u.rol === rolFiltro || (rolFiltro === "Desarrollo de producto - Técnico" && (u.rol || "").includes("Técnico"));
-
-      if (u.celular && coincideRol) {
-        count++;
-        const item = document.createElement("a");
-        item.href = `https://wa.me/591${u.celular}?text=${encodedMsg}`;
-        item.target = "_blank";
-        item.className = "flex items-center justify-between p-2.5 bg-gray-50 hover:bg-green-50 rounded-xl border border-gray-200 transition text-gray-800";
-        item.innerHTML = `
-          <div>
-            <span class="font-bold">${u.nombre}</span>
-            <span class="text-[10px] text-gray-400 block">${u.rol} - +591 ${u.celular}</span>
-          </div>
-          <span class="bg-[#25D366] text-white px-2.5 py-1 rounded-lg font-bold text-[10px] flex items-center space-x-1">
-            <i class="fa-brands fa-whatsapp"></i>
-            <span>Enviar</span>
-          </span>
-        `;
-        listContainer.appendChild(item);
-      }
-    });
-
-    if (count === 0) {
-      listContainer.innerHTML = `<p class="p-3 text-center text-gray-400 text-xs">No hay usuarios con celular registrados para ${rolFiltro || 'el grupo'}.</p>`;
-    }
-
-    modalWA.classList.remove("hidden");
-  } catch (error) {
-    console.error(error);
-  }
-}
-
-document.getElementById("btn-close-whatsapp-modal").onclick = () => {
-  document.getElementById("modal-whatsapp").classList.add("hidden");
-};
-
-// Envío y Publicación de Minuta
-if (document.getElementById("form-minuta")) {
-  document.getElementById("form-minuta").onsubmit = async (e) => {
-    e.preventDefault();
-    const semana = document.getElementById("minuta-semana").value.trim();
-    const proyecto = document.getElementById("minuta-proyecto").value.trim();
-    const articulo = document.getElementById("minuta-articulo").value.trim();
-    const detalle = document.getElementById("minuta-box").value.trim();
-    const photoFile = document.getElementById("minuta-photo").files[0];
-
-    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
-
-    try {
-      await addDoc(collection(db, "solicitudes_cambios"), {
-        semana,
-        proyecto,
-        articulo,
-        foto: fotoBase64,
-        boxCambio: detalle,
-        esMinuta: true,
-        solicitanteNombre: userData.nombre,
-        solicitanteRol: userData.rol,
-        solicitanteId: currentUser.uid,
-        estado: "En proceso",
-        fechaRealizado: null,
-        validadoCostos: false,
-        fechaCreacion: new Date().toISOString(),
-        timestamp: serverTimestamp()
-      });
-
-      modalMinuta.classList.add("hidden");
-      document.getElementById("form-minuta").reset();
-
-      abrirModalWhatsApp({
-        titulo: "Minuta de Cambios Registrada",
-        subtitulo: "Enviar minuta a los Técnicos de Desarrollo:",
-        mensajeTexto: `📋 *MINUTA DE CAMBIOS - PLAN PILOTO*\n*Bata Bolivia / Desarrollo de Producto*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n👤 *Emitido por:* ${userData.nombre} (Jefe Desarrollo)\n\n📝 *DETALLE DE CAMBIOS TÉCNICOS:*\n${detalle}\n\n_Registrado en el sistema para control de avance y realización._`,
-        rolFiltro: "Desarrollo de producto - Técnico"
-      });
-    } catch (err) {
-      alert("Error al guardar minuta: " + err.message);
-    }
-  };
-}
-
-// Crear Solicitud de Cambio Regular
-const modalNewChange = document.getElementById("modal-new-change");
-document.getElementById("btn-open-new-change").onclick = () => modalNewChange.classList.remove("hidden");
-document.getElementById("modal-btn-close").onclick = () => modalNewChange.classList.add("hidden");
-document.getElementById("modal-btn-cancel").onclick = () => modalNewChange.classList.add("hidden");
-
-document.getElementById("form-new-change").onsubmit = async (e) => {
-  e.preventDefault();
-  const semana = document.getElementById("change-semana").value.trim();
-  const proyecto = document.getElementById("change-project").value.trim();
-  const articulo = document.getElementById("change-article").value.trim();
-  const boxCambio = document.getElementById("change-box").value.trim();
-  const photoFile = document.getElementById("change-photo").files[0];
-
-  const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
-
-  try {
-    await addDoc(collection(db, "solicitudes_cambios"), {
-      semana,
-      proyecto,
-      articulo,
-      foto: fotoBase64,
-      boxCambio,
-      esMinuta: false,
-      solicitanteNombre: userData.nombre,
-      solicitanteRol: userData.rol,
-      solicitanteId: currentUser.uid,
-      estado: "En proceso",
-      fechaRealizado: null,
-      validadoCostos: false,
-      fechaCreacion: new Date().toISOString(),
-      timestamp: serverTimestamp()
-    });
-
-    document.getElementById("form-new-change").reset();
-    modalNewChange.classList.add("hidden");
-
-    abrirModalWhatsApp({
-      titulo: "Solicitud Registrada",
-      subtitulo: "Notificar solicitud creada al equipo:",
-      mensajeTexto: `👞 *NUEVA SOLICITUD DE CAMBIO - BATA BOLIVIA*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n👤 *Solicitado por:* ${userData.nombre} (${userData.rol})\n📝 *Cambio:* ${boxCambio}\n\n_Revisar en el Sistema de Gestión de Cambios Bata_`
-    });
-  } catch (err) {
-    alert("Error: " + err.message);
-  }
-};
-
-// ==================== MÓDULO ENTREGAS ====================
-document.getElementById("btn-open-nueva-entrega").onclick = () => {
-  const esAdmin = esSuperAdmin();
-  const rol = (userData && userData.rol) || "";
-  const esDesarrollo = rol.includes("Desarrollo") || esAdmin;
-  const esCostos = rol === "Costos" || esAdmin;
-
-  if (!esDesarrollo && !esCostos) {
-    alert("Solo los usuarios de Desarrollo de Producto o Costos pueden registrar entregas.");
-    return;
-  }
-
-  const selectTipo = document.getElementById("ent-tipo");
-  selectTipo.innerHTML = "";
-
-  if (categoriaEntregaActiva !== "todas") {
-    selectTipo.innerHTML += `<option value="${categoriaEntregaActiva}">${categoriaEntregaActiva}</option>`;
-  } else {
-    if (esDesarrollo) {
-      selectTipo.innerHTML += `<option value="GUÍA DE PRODUCCIÓN">GUÍA DE PRODUCCIÓN</option>`;
-      selectTipo.innerHTML += `<option value="CORTE">CORTE</option>`;
-      selectTipo.innerHTML += `<option value="MUESTRA DEFINITIVA">MUESTRA DEFINITIVA</option>`;
-      selectTipo.innerHTML += `<option value="MATERIALES">MATERIALES</option>`;
-      selectTipo.innerHTML += `<option value="HOJA DE DESBASTE">HOJA DE DESBASTE</option>`;
-      selectTipo.innerHTML += `<option value="TIZADORES">TIZADORES</option>`;
-    } else if (esCostos) {
-      selectTipo.innerHTML += `<option value="CORTE">CORTE (De Costos a Producción)</option>`;
-    }
-  }
-
-  actualizarCamposSegunTipoEntrega();
-  modalNuevaEntrega.classList.remove("hidden");
-};
-
-document.getElementById("ent-tipo").onchange = actualizarCamposSegunTipoEntrega;
-
-function actualizarCamposSegunTipoEntrega() {
-  const tipo = document.getElementById("ent-tipo").value;
-  const selectDestino = document.getElementById("ent-destino");
-  const boxArticulo = document.getElementById("box-field-articulo");
-  const labelProy = document.getElementById("label-field-proyecto");
-  const inputProy = document.getElementById("ent-proyecto");
-  const boxFoto = document.getElementById("box-field-foto");
-  const boxCopias = document.getElementById("box-field-copias");
-  const containerSingle = document.getElementById("container-destino-single");
-  const containerMultiple = document.getElementById("container-destino-multiple");
-
-  selectDestino.innerHTML = "";
-  boxCopias.classList.add("hidden");
-  containerMultiple.classList.add("hidden");
-  containerSingle.classList.remove("hidden");
-  boxFoto.classList.add("hidden");
-
-  // a. Materiales: Desarrollo de producto, Producción (solo semana, nombre, fecha auto)
-  if (tipo === "MATERIALES") {
-    labelProy.textContent = "Nombre del Material / Insumo";
-    inputProy.placeholder = "Ej: Badana Beige 1.2mm";
-    boxArticulo.classList.add("hidden");
-    selectDestino.innerHTML += `<option value="Desarrollo de producto">Desarrollo de producto</option>`;
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-    return;
-  }
-
-  boxArticulo.classList.remove("hidden");
-  labelProy.textContent = "Nombre del Proyecto";
-  inputProy.placeholder = "Ej: SKATER";
-
-  // b. Guías: Costos
-  if (tipo === "GUÍA DE PRODUCCIÓN") {
-    boxFoto.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
-  }
-  // c. Cortes: Costos, Producción
-  else if (tipo === "CORTE") {
-    boxFoto.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-  }
-  // d. Muestras definitivas: Producción, Planeamiento, Retail (Checkboxes múltiples)
-  else if (tipo === "MUESTRA DEFINITIVA") {
-    boxFoto.classList.remove("hidden");
-    containerSingle.classList.add("hidden");
-    containerMultiple.classList.remove("hidden");
-  }
-  // e. Hoja de desbaste: Costos, Producción
-  else if (tipo === "HOJA DE DESBASTE") {
-    boxFoto.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-  }
-  // f. Tizadores: Producción (con número de copias)
-  else if (tipo === "TIZADORES") {
-    boxCopias.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-  }
-}
-
-document.getElementById("form-nueva-entrega").onsubmit = async (e) => {
-  e.preventDefault();
-  const semana = document.getElementById("ent-semana").value.trim();
-  const proyecto = document.getElementById("ent-proyecto").value.trim();
-  const articulo = document.getElementById("ent-articulo").value.trim();
-  const tipo = document.getElementById("ent-tipo").value;
-  const notas = document.getElementById("ent-notas").value.trim();
-  const copias = document.getElementById("ent-copias").value.trim();
-  const photoFile = document.getElementById("ent-photo").files[0];
-
-  const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
-
-  try {
-    let destinosAEntregar = [];
-
-    if (tipo === "MUESTRA DEFINITIVA") {
-      destinosAEntregar = Array.from(document.querySelectorAll(".chk-muestras-dest:checked")).map(c => c.value);
-      if (destinosAEntregar.length === 0) {
-        alert("Selecciona al menos un departamento para la muestra definitiva.");
-        return;
-      }
-    } else {
-      destinosAEntregar = [document.getElementById("ent-destino").value];
-    }
-
-    for (const destino of destinosAEntregar) {
-      await addDoc(collection(db, "entregas_departamentos"), {
-        semana,
-        proyecto,
-        articulo: tipo === "MATERIALES" ? "" : articulo,
-        tipo,
-        destino,
-        copias: tipo === "TIZADORES" ? (copias || "1") : null,
-        foto: fotoBase64,
-        notas,
-        entregadoPorNombre: userData.nombre,
-        entregadoPorRol: userData.rol,
-        entregadoPorId: currentUser.uid,
-        recibido: false,
-        fechaEntrega: new Date().toISOString(),
-        timestamp: serverTimestamp()
-      });
-    }
-
-    document.getElementById("form-nueva-entrega").reset();
-    modalNuevaEntrega.classList.add("hidden");
-
-    const destinosTexto = destinosAEntregar.join(", ");
-    let detalleCopias = (tipo === "TIZADORES" && copias) ? `📑 *Copias:* ${copias}\n` : '';
-
-    abrirModalWhatsApp({
-      titulo: "Entrega Registrada",
-      subtitulo: `Notificar recepción a los encargados de ${destinosTexto}:`,
-      mensajeTexto: `📦 ENTREGA REALIZADA - PD BOLIVIA\n\n📅 *Semana:* ${semana}\n📌 *Elemento:* ${tipo}\n🏷️ *Detalle/Proyecto:* ${proyecto}\n${articulo ? '🔢 *Artículo:* ' + articulo + '\n' : ''}${detalleCopias}👤 *Entregado por:* ${userData.nombre} (${userData.rol})\n🏢 *Destino:* ${destinosTexto}\n📝 *Notas:* ${notas || 'Sin notas adicionales'}\n\n_Favor de confirmar la recepción física en el sistema._`,
-      rolFiltro: destinosAEntregar.length === 1 ? destinosAEntregar[0] : null
-    });
-  } catch (err) {
-    alert("Error al registrar entrega: " + err.message);
-  }
-};
-
-function escucharEntregas() {
-  const q = query(collection(db, "entregas_departamentos"), orderBy("timestamp", "desc"));
-  onSnapshot(q, (snapshot) => {
-    entregas = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderTablaEntregas();
-  });
-}
-
-// Filtros en cabecera de tabla Entregas
-const colFilterSemEntregas = document.getElementById("col-filter-semana-entregas");
-const colFilterProyEntregas = document.getElementById("col-filter-proyecto-entregas");
-
-if (colFilterSemEntregas) {
-  colFilterSemEntregas.oninput = (e) => {
-    colFiltroSemanaEntregas = e.target.value.trim().toLowerCase();
-    renderTablaEntregas();
-  };
-}
-if (colFilterProyEntregas) {
-  colFilterProyEntregas.oninput = (e) => {
-    colFiltroProyectoEntregas = e.target.value.trim().toLowerCase();
-    renderTablaEntregas();
-  };
-}
-
-if (document.getElementById("btn-reporte-entregas-pdf")) {
-  document.getElementById("btn-reporte-entregas-pdf").onclick = abrirReporteImpresoEntregas;
-}
-if (document.getElementById("btn-reporte-entregas-texto")) {
-  document.getElementById("btn-reporte-entregas-texto").onclick = abrirResumenTextoEntregas;
-}
-
+// ==================== TABLA GENERAL DE ENTREGAS ====================
 function renderTablaEntregas() {
   const tbody = document.getElementById("table-entregas-body");
   tbody.innerHTML = "";
@@ -1668,7 +1331,7 @@ function formatearFecha(iso) {
   return d.toLocaleDateString("es-BO", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-// Render Tabla de Cambios
+// Render Tabla de Cambios Pública
 function renderTabla() {
   const tbody = document.getElementById("table-cambios-body");
   tbody.innerHTML = "";
