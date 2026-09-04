@@ -56,7 +56,7 @@ let colFiltroItemLlegada = "";
 let colFiltroNombreLlegada = "";
 let colFiltroSemanaLlegada = "";
 
-// Memoria para imágenes de Tarjeta
+// Memoria Tarjetas
 let croquisTarjetaBase64 = null;
 let plantillaCorteTarjetaBase64 = null;
 
@@ -125,6 +125,7 @@ function esDesarrollo() {
 async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro = null }) {
   const modalWA = document.getElementById("modal-whatsapp");
   const listContainer = document.getElementById("whatsapp-contacts-list");
+  if (!modalWA || !listContainer) return;
   document.getElementById("wa-modal-title").textContent = titulo;
   document.getElementById("wa-modal-desc").textContent = subtitulo;
   listContainer.innerHTML = "";
@@ -250,7 +251,6 @@ window.verFotoGrande = (src, titulo) => {
   modalVisorFoto.classList.remove("hidden");
 };
 
-// Reset de Contraseña
 document.getElementById("btn-forgot-pass").onclick = () => {
   const email = document.getElementById("login-email").value.trim();
   if (!email) {
@@ -1204,98 +1204,26 @@ function initModuloTarjetas() {
     if (elem) elem.oninput = renderTarjetasPreview;
   });
 
-  // Botón abrir modal de tarjetas
+  // Abrir modal de vista previa
   document.getElementById("btn-imprimir-tarjetas-action").onclick = () => {
     const previewHTML = document.getElementById("contenedor-tarjetas-preview").innerHTML;
     document.getElementById("hoja-impresion-tarjetas").innerHTML = previewHTML;
     modalImpresionTarjetas.classList.remove("hidden");
   };
 
-  // Botón ejecutar impresión calibrada mediante Iframe aislado
+  // Impresión limpia en la hoja
   document.getElementById("btn-ejecutar-print-tarjetas").onclick = () => {
-    imprimirTarjetasEnIframe();
+    const printArea = document.getElementById("contenedor-tarjetas-print-area");
+    printArea.innerHTML = document.getElementById("contenedor-tarjetas-preview").innerHTML;
+    printArea.classList.remove("hidden");
+    
+    setTimeout(() => {
+      window.print();
+      printArea.classList.add("hidden");
+    }, 150);
   };
 
   renderTarjetasPreview();
-}
-
-function imprimirTarjetasEnIframe() {
-  const contenido = document.getElementById("contenedor-tarjetas-preview").innerHTML;
-  
-  // Crear iframe invisible temporal
-  let iframe = document.getElementById("iframe-impresion-tarjetas");
-  if (!iframe) {
-    iframe = document.createElement("iframe");
-    iframe.id = "iframe-impresion-tarjetas";
-    iframe.style.position = "fixed";
-    iframe.style.right = "0";
-    iframe.style.bottom = "0";
-    iframe.style.width = "0";
-    iframe.style.height = "0";
-    iframe.style.border = "0";
-    document.body.appendChild(iframe);
-  }
-
-  const doc = iframe.contentWindow.document;
-  doc.open();
-  doc.write(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8">
-      <title>Tarjetas de Muestra - Bata Bolivia</title>
-      <style>
-        @page {
-          size: letter portrait;
-          margin: 6mm 8mm;
-        }
-        * {
-          box-sizing: border-box;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        body {
-          margin: 0;
-          padding: 0;
-          background: #fff;
-          font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
-        .shoe-card-container {
-          width: 200mm;
-          height: 34mm;
-          max-height: 34mm;
-          border-top: 1px solid #000;
-          border-bottom: 1px solid #000;
-          border-left: 1px solid #000;
-          border-right: 1px solid #000;
-          margin: 0 0 0 0 !important;
-          padding: 0 !important;
-          display: flex;
-          font-size: 7.5px;
-          line-height: 1.1;
-          color: #000;
-          page-break-inside: avoid;
-          break-inside: avoid;
-        }
-        .shoe-panel {
-          width: 66.66mm;
-          height: 100%;
-          box-sizing: border-box;
-        }
-      </style>
-    </head>
-    <body>
-      ${contenido}
-    </body>
-    </html>
-  `);
-  doc.close();
-
-  // Esperar a que rendericen las imágenes e invocar la impresión del iframe
-  setTimeout(() => {
-    iframe.contentWindow.focus();
-    iframe.contentWindow.print();
-  }, 300);
 }
 
 function renderTarjetasPreview() {
@@ -1344,13 +1272,13 @@ function renderTarjetasPreview() {
         bgColorLateral = "#FFFFFF";
         etiquetaAprobacion = "PRODUCCIÓN";
       } else if (i === 3) {
-        bgColorLateral = "#80C342"; // Verde Claro Retail (C:50% M:0% Y:100% K:0%)
+        bgColorLateral = "#80C342"; // Verde Claro Retail
         etiquetaAprobacion = "RETAIL";
       } else if (i === 4) {
         bgColorLateral = "#FFF200"; // Amarillo Planeamiento
         etiquetaAprobacion = "PLANEAMIENTO";
       } else if (i === 5) {
-        bgColorLateral = "#E06D8A"; // Rosado Exportaciones (C:10% M:65% Y:30% K:0%)
+        bgColorLateral = "#E06D8A"; // Rosado Exportación
         etiquetaAprobacion = "EXPORTACIÓN";
       }
     } else if (copias === 4) {
@@ -1378,7 +1306,7 @@ function renderTarjetasPreview() {
       <div class="shoe-card-container" style="background:#fff; display:flex; font-size:7.5px; line-height:1.1; color:#000;">
         <!-- SECCIÓN 1 (66.6 mm) -->
         <div class="shoe-panel" style="display:flex; border-right:1px dashed #555; overflow:hidden;">
-          <div class="lateral-tab" style="width:16px; border-right:1px solid #000; display:flex; align-items:center; justify-content:center; font-weight:900; letter-spacing:0.1em; font-size:9px; writing-mode:vertical-rl; transform:rotate(180deg); background-color:${bgColorLateral} !important;">
+          <div class="lateral-tab" style="width:16px; border-right:1px solid #000; display:flex; align-items:center; justify-content:center; font-weight:900; letter-spacing:0.1em; font-size:9px; writing-mode:vertical-rl; transform:rotate(180deg); background-color:${bgColorLateral} !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;">
             ${linea}
           </div>
           
@@ -1482,4 +1410,268 @@ function renderTarjetasPreview() {
   }
 
   container.innerHTML = tarjetasHTML;
+}
+
+// ==================== SOLICITUDES Y MINUTAS ====================
+if (document.getElementById("form-minuta")) {
+  document.getElementById("form-minuta").onsubmit = async (e) => {
+    e.preventDefault();
+    const semana = document.getElementById("minuta-semana").value.trim();
+    const proyecto = document.getElementById("minuta-proyecto").value.trim();
+    const articulo = document.getElementById("minuta-articulo").value.trim();
+    const detalle = document.getElementById("minuta-box").value.trim();
+    const photoFile = document.getElementById("minuta-photo").files[0];
+
+    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
+
+    try {
+      await addDoc(collection(db, "solicitudes_cambios"), {
+        semana,
+        proyecto,
+        articulo,
+        foto: fotoBase64,
+        boxCambio: detalle,
+        esMinuta: true,
+        solicitanteNombre: (userData && userData.nombre) || "Jefe Desarrollo",
+        solicitanteRol: (userData && userData.rol) || "Desarrollo de producto - Jefe",
+        solicitanteId: currentUser ? currentUser.uid : null,
+        estado: "En proceso",
+        fechaRealizado: null,
+        validadoCostos: false,
+        fechaCreacion: new Date().toISOString(),
+        timestamp: serverTimestamp()
+      });
+
+      modalMinuta.classList.add("hidden");
+      document.getElementById("form-minuta").reset();
+
+      abrirModalWhatsApp({
+        titulo: "Minuta de Cambios Registrada",
+        subtitulo: "Enviar minuta a los Técnicos de Desarrollo:",
+        mensajeTexto: `📋 *MINUTA DE CAMBIOS - PLAN PILOTO*\n*Bata Bolivia / Desarrollo de Producto*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n👤 *Emitido por:* ${(userData && userData.nombre) || 'Jefe Desarrollo'}\n\n📝 *DETALLE DE CAMBIOS TÉCNICOS:*\n${detalle}\n\n_Registrado en el sistema para control de avance y realización._`,
+        rolFiltro: "Desarrollo de producto - Técnico"
+      });
+    } catch (err) {
+      alert("Error al guardar minuta: " + err.message);
+    }
+  };
+}
+
+const modalNewChange = document.getElementById("modal-new-change");
+if (document.getElementById("btn-open-new-change")) {
+  document.getElementById("btn-open-new-change").onclick = () => modalNewChange.classList.remove("hidden");
+}
+if (document.getElementById("modal-btn-close")) {
+  document.getElementById("modal-btn-close").onclick = () => modalNewChange.classList.add("hidden");
+}
+if (document.getElementById("modal-btn-cancel")) {
+  document.getElementById("modal-btn-cancel").onclick = () => modalNewChange.classList.add("hidden");
+}
+
+if (document.getElementById("form-new-change")) {
+  document.getElementById("form-new-change").onsubmit = async (e) => {
+    e.preventDefault();
+    const semana = document.getElementById("change-semana").value.trim();
+    const proyecto = document.getElementById("change-project").value.trim();
+    const articulo = document.getElementById("change-article").value.trim();
+    const boxCambio = document.getElementById("change-box").value.trim();
+    const photoFile = document.getElementById("change-photo").files[0];
+
+    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
+
+    try {
+      await addDoc(collection(db, "solicitudes_cambios"), {
+        semana,
+        proyecto,
+        articulo,
+        foto: fotoBase64,
+        boxCambio,
+        esMinuta: false,
+        solicitanteNombre: (userData && userData.nombre) || (currentUser && currentUser.email) || "Usuario",
+        solicitanteRol: (userData && userData.rol) || "Usuario",
+        solicitanteId: currentUser ? currentUser.uid : null,
+        estado: "En proceso",
+        fechaRealizado: null,
+        validadoCostos: false,
+        fechaCreacion: new Date().toISOString(),
+        timestamp: serverTimestamp()
+      });
+
+      document.getElementById("form-new-change").reset();
+      modalNewChange.classList.add("hidden");
+
+      abrirModalWhatsApp({
+        titulo: "Solicitud Registrada",
+        subtitulo: "Notificar solicitud creada al equipo:",
+        mensajeTexto: `👞 *NUEVA SOLICITUD DE CAMBIO - BATA BOLIVIA*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n👤 *Solicitado por:* ${(userData && userData.nombre) || 'Usuario'} (${(userData && userData.rol) || ''})\n📝 *Cambio:* ${boxCambio}\n\n_Revisar en el Sistema de Gestión de Cambios Bata_`
+      });
+    } catch (err) {
+      alert("Error: " + err.message);
+    }
+  };
+}
+
+// ==================== NUEVA ENTREGA BLINDADA ====================
+if (document.getElementById("btn-open-nueva-entrega")) {
+  document.getElementById("btn-open-nueva-entrega").onclick = () => {
+    const esAdmin = esSuperAdmin();
+    const rol = (userData && userData.rol) || "";
+    const esDesarrolloRol = rol.includes("Desarrollo") || esAdmin;
+    const esCostos = rol === "Costos" || esAdmin;
+
+    if (!esDesarrolloRol && !esCostos && !esAdmin) {
+      alert("Solo usuarios autorizados pueden registrar entregas.");
+      return;
+    }
+
+    const selectTipo = document.getElementById("ent-tipo");
+    selectTipo.innerHTML = "";
+
+    if (categoriaEntregaActiva !== "todas") {
+      selectTipo.innerHTML += `<option value="${categoriaEntregaActiva}">${categoriaEntregaActiva}</option>`;
+    } else {
+      selectTipo.innerHTML += `<option value="GUÍA DE PRODUCCIÓN">GUÍA DE PRODUCCIÓN</option>`;
+      selectTipo.innerHTML += `<option value="CORTE">CORTE</option>`;
+      selectTipo.innerHTML += `<option value="MUESTRA DEFINITIVA">MUESTRA DEFINITIVA</option>`;
+      selectTipo.innerHTML += `<option value="MATERIALES">MATERIALES</option>`;
+      selectTipo.innerHTML += `<option value="HOJA DE DESBASTE">HOJA DE DESBASTE</option>`;
+      selectTipo.innerHTML += `<option value="TIZADORES">TIZADORES</option>`;
+    }
+
+    actualizarCamposSegunTipoEntrega();
+    modalNuevaEntrega.classList.remove("hidden");
+  };
+}
+
+if (document.getElementById("ent-tipo")) {
+  document.getElementById("ent-tipo").onchange = actualizarCamposSegunTipoEntrega;
+}
+
+function actualizarCamposSegunTipoEntrega() {
+  const tipo = document.getElementById("ent-tipo").value;
+  const selectDestino = document.getElementById("ent-destino");
+  const boxArticulo = document.getElementById("box-field-articulo");
+  const labelProy = document.getElementById("label-field-proyecto");
+  const inputProy = document.getElementById("ent-proyecto");
+  const boxFoto = document.getElementById("box-field-foto");
+  const boxCopias = document.getElementById("box-field-copias");
+  const containerSingle = document.getElementById("container-destino-single");
+  const containerMultiple = document.getElementById("container-destino-multiple");
+
+  selectDestino.innerHTML = "";
+  boxCopias.classList.add("hidden");
+  containerMultiple.classList.add("hidden");
+  containerSingle.classList.remove("hidden");
+  boxFoto.classList.add("hidden");
+
+  if (tipo === "MATERIALES") {
+    labelProy.textContent = "Nombre del Material / Insumo";
+    inputProy.placeholder = "Ej: Badana Beige 1.2mm";
+    boxArticulo.classList.add("hidden");
+    selectDestino.innerHTML += `<option value="Desarrollo de producto">Desarrollo de producto</option>`;
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+    return;
+  }
+
+  boxArticulo.classList.remove("hidden");
+  labelProy.textContent = "Nombre del Proyecto";
+  inputProy.placeholder = "Ej: SKATER";
+
+  if (tipo === "GUÍA DE PRODUCCIÓN") {
+    boxFoto.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
+  }
+  else if (tipo === "CORTE") {
+    boxFoto.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+  }
+  else if (tipo === "MUESTRA DEFINITIVA") {
+    boxFoto.classList.remove("hidden");
+    containerSingle.classList.add("hidden");
+    containerMultiple.classList.remove("hidden");
+  }
+  else if (tipo === "HOJA DE DESBASTE") {
+    boxFoto.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+  }
+  else if (tipo === "TIZADORES") {
+    boxCopias.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+  }
+}
+
+if (document.getElementById("form-nueva-entrega")) {
+  document.getElementById("form-nueva-entrega").onsubmit = async (e) => {
+    e.preventDefault();
+    const semana = document.getElementById("ent-semana").value.trim();
+    const proyecto = document.getElementById("ent-proyecto").value.trim();
+    const articulo = document.getElementById("ent-articulo").value.trim();
+    const tipo = document.getElementById("ent-tipo").value;
+    const notas = document.getElementById("ent-notas").value.trim();
+    const copias = document.getElementById("ent-copias").value.trim();
+    const photoFile = document.getElementById("ent-photo").files[0];
+
+    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
+
+    try {
+      let destinosAEntregar = [];
+
+      if (tipo === "MUESTRA DEFINITIVA") {
+        destinosAEntregar = Array.from(document.querySelectorAll(".chk-muestras-dest:checked")).map(c => c.value);
+        if (destinosAEntregar.length === 0) {
+          alert("Selecciona al menos un departamento para la muestra definitiva.");
+          return;
+        }
+      } else {
+        destinosAEntregar = [document.getElementById("ent-destino").value];
+      }
+
+      const nombreUsuario = (userData && userData.nombre) || (currentUser && currentUser.email) || "Usuario";
+      const rolUsuario = (userData && userData.rol) || (esSuperAdmin() ? "Super Admin" : "Desarrollo de producto");
+
+      for (const destino of destinosAEntregar) {
+        await addDoc(collection(db, "entregas_departamentos"), {
+          semana,
+          proyecto,
+          articulo: tipo === "MATERIALES" ? "" : articulo,
+          tipo,
+          destino,
+          copias: tipo === "TIZADORES" ? (copias || "1") : null,
+          foto: fotoBase64,
+          notas,
+          entregadoPorNombre: nombreUsuario,
+          entregadoPorRol: rolUsuario,
+          entregadoPorId: currentUser ? currentUser.uid : null,
+          recibido: false,
+          fechaEntrega: new Date().toISOString(),
+          timestamp: serverTimestamp()
+        });
+      }
+
+      document.getElementById("form-nueva-entrega").reset();
+      modalNuevaEntrega.classList.add("hidden");
+
+      const destinosTexto = destinosAEntregar.join(", ");
+      let detalleCopias = (tipo === "TIZADORES" && copias) ? `📑 *Copias:* ${copias}\n` : '';
+
+      abrirModalWhatsApp({
+        titulo: "Entrega Registrada",
+        subtitulo: `Notificar recepción a los encargados de ${destinosTexto}:`,
+        mensajeTexto: `📦 ENTREGA REALIZADA - PD BOLIVIA\n\n📅 *Semana:* ${semana}\n📌 *Elemento:* ${tipo}\n🏷️ *Detalle/Proyecto:* ${proyecto}\n${articulo ? '🔢 *Artículo:* ' + articulo + '\n' : ''}${detalleCopias}👤 *Entregado por:* ${nombreUsuario} (${rolUsuario})\n🏢 *Destino:* ${destinosTexto}\n📝 *Notas:* ${notas || 'Sin notas adicionales'}\n\n_Favor de confirmar la recepción física en el sistema._`,
+        rolFiltro: destinosAEntregar.length === 1 ? destinosAEntregar[0] : null
+      });
+    } catch (err) {
+      alert("Error al registrar entrega: " + err.message);
+    }
+  };
+}
+
+// Botones de reporte
+if (document.getElementById("btn-reporte-entregas-pdf")) {
+  document.getElementById("btn-reporte-entregas-pdf").onclick = abrirReporteImpresoEntregas;
+}
+if (document.getElementById("btn-reporte-entregas-texto")) {
+  document.getElementById("btn-reporte-entregas-texto").onclick = abrirResumenTextoEntregas;
 }
