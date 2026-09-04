@@ -62,6 +62,10 @@ let colFiltroItemLlegada = "";
 let colFiltroNombreLlegada = "";
 let colFiltroSemanaLlegada = "";
 
+// Memoria para Tarjetas de Muestra (Excel paste)
+let articulosCostosPegados = [];
+let croquisTarjetaBase64 = null;
+
 // Compresor de imágenes a tamaño liviano (~30 KB)
 const comprimirImagen = (file, maxWidth = 600, calidad = 0.75) => new Promise((resolve) => {
   if (!file) return resolve(null);
@@ -101,6 +105,11 @@ function esSuperAdmin() {
 function esComprasAdmin() {
   if (esSuperAdmin()) return true;
   return userData && (userData.rol === "Compras Admin" || userData.rol === "Compras");
+}
+
+function esDesarrollo() {
+  if (esSuperAdmin()) return true;
+  return userData && (userData.rol || "").includes("Desarrollo");
 }
 
 // ==================== MODAL DE WHATSAPP ====================
@@ -174,6 +183,7 @@ const modalVisorFoto = document.getElementById("modal-visor-foto");
 const modalNuevoBloqueo = document.getElementById("modal-nuevo-bloqueo");
 const modalNuevaLlegada = document.getElementById("modal-nueva-llegada");
 const modalReporteLlegadasPrint = document.getElementById("modal-reporte-llegadas-print");
+const modalImpresionTarjetas = document.getElementById("modal-impresion-tarjetas");
 
 document.getElementById("btn-show-login").onclick = () => modalLogin.classList.remove("hidden");
 document.getElementById("btn-show-register").onclick = () => modalRegister.classList.remove("hidden");
@@ -219,6 +229,9 @@ if (document.getElementById("cancel-nueva-llegada")) {
 }
 if (document.getElementById("close-modal-llegadas-print")) {
   document.getElementById("close-modal-llegadas-print").onclick = () => modalReporteLlegadasPrint.classList.add("hidden");
+}
+if (document.getElementById("close-modal-tarjetas")) {
+  document.getElementById("close-modal-tarjetas").onclick = () => modalImpresionTarjetas.classList.add("hidden");
 }
 
 window.verFotoGrande = (src, titulo) => {
@@ -357,6 +370,16 @@ function actualizarHeaderUsuario() {
       btnMinutaHeader.classList.add("hidden");
     }
   }
+
+  // Visibilidad del menú de tarjetas (exclusivo Desarrollo o Super Admin)
+  const secTarjetas = document.getElementById("section-menu-tarjetas");
+  if (secTarjetas) {
+    if (esDesarrollo() || esAdmin) {
+      secTarjetas.classList.remove("hidden");
+    } else {
+      secTarjetas.classList.add("hidden");
+    }
+  }
 }
 
 onAuthStateChanged(auth, async (user) => {
@@ -393,12 +416,14 @@ const viewCambios = document.getElementById("view-cambios");
 const viewInforme = document.getElementById("view-informe");
 const viewEntregas = document.getElementById("view-entregas");
 const viewProcurement = document.getElementById("view-procurement");
+const viewTarjetas = document.getElementById("view-tarjetas");
 const viewUsuarios = document.getElementById("view-usuarios");
 
 const menuBtnCambios = document.getElementById("menu-btn-cambios");
 const menuBtnInforme = document.getElementById("menu-btn-informe");
 const menuBtnEntregasTodas = document.getElementById("menu-btn-entregas-todas");
 const menuBtnProcurement = document.getElementById("menu-btn-procurement");
+const menuBtnTarjetas = document.getElementById("menu-btn-tarjetas");
 const menuBtnUsuarios = document.getElementById("menu-btn-usuarios");
 
 const CLASE_INACTIVO_PRINCIPAL = "sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white hover:bg-white/15 transition cursor-pointer";
@@ -408,7 +433,7 @@ const CLASE_ACTIVO_PASTILLA = "sidebar-btn w-full flex items-center space-x-3 px
 const CLASE_ACTIVO_SUB_PASTILLA = "sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-black bg-white text-[#D61B28] shadow-md transition cursor-pointer pl-5 scale-[1.02]";
 
 function resetMenuStyles() {
-  [menuBtnCambios, menuBtnInforme, menuBtnEntregasTodas, menuBtnProcurement, menuBtnUsuarios].forEach(b => {
+  [menuBtnCambios, menuBtnInforme, menuBtnEntregasTodas, menuBtnProcurement, menuBtnTarjetas, menuBtnUsuarios].forEach(b => {
     if (b) b.className = CLASE_INACTIVO_PRINCIPAL;
   });
 
@@ -420,6 +445,7 @@ function resetMenuStyles() {
   viewInforme.classList.add("hidden");
   viewEntregas.classList.add("hidden");
   viewProcurement.classList.add("hidden");
+  viewTarjetas.classList.add("hidden");
   viewUsuarios.classList.add("hidden");
 }
 
@@ -451,6 +477,13 @@ menuBtnProcurement.onclick = () => {
   viewProcurement.classList.remove("hidden");
   menuBtnProcurement.className = CLASE_ACTIVO_PASTILLA;
   renderProcurementView();
+};
+
+menuBtnTarjetas.onclick = () => {
+  resetMenuStyles();
+  viewTarjetas.classList.remove("hidden");
+  menuBtnTarjetas.className = CLASE_ACTIVO_PASTILLA;
+  initModuloTarjetas();
 };
 
 menuBtnUsuarios.onclick = () => {
@@ -590,7 +623,6 @@ function actualizarInformePorSemana() {
 
   articulosFiltrados.sort((a, b) => (a.semana || "").localeCompare(b.semana || "", undefined, { numeric: true }));
 
-  // 5 KPIs exactos
   const total = articulosFiltrados.length;
   const retrasados = articulosFiltrados.filter(s => s.estado === "Retrasado").length;
   const enProceso = articulosFiltrados.filter(s => s.estado === "En proceso").length;
@@ -1074,6 +1106,243 @@ function abrirReporteImpresoLlegadas() {
   modalReporteLlegadasPrint.classList.remove("hidden");
 }
 
+// ==================== MÓDULO TARJETAS DE MUESTRA (PD) ====================
+function initModuloTarjetas() {
+  const inputFecha = document.getElementById("card-fecha");
+  if (inputFecha && !inputFecha.value) {
+    const hoy = new Date();
+    inputFecha.value = hoy.toLocaleDateString("es-BO");
+  }
+
+  const fileInput = document.getElementById("card-croquis-file");
+  if (fileInput) {
+    fileInput.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        croquisTarjetaBase64 = await comprimirImagen(file, 400, 0.8);
+        renderTarjetasPreview();
+      }
+    };
+  }
+
+  // Parsear texto pegado de Excel
+  document.getElementById("btn-procesar-excel-paste").onclick = () => {
+    const raw = document.getElementById("paste-excel-costos").value.trim();
+    if (!raw) {
+      alert("Pega primero las celdas copiadas de la tabla de Costos en Excel.");
+      return;
+    }
+
+    const lineas = raw.split("\n");
+    articulosCostosPegados = [];
+
+    lineas.forEach(linea => {
+      const cols = linea.split("\t").map(c => c.trim());
+      if (cols.length >= 4 && !cols[0].toLowerCase().includes("artículo")) {
+        articulosCostosPegados.push({
+          articulo: cols[0] || "",
+          dpto: cols[1] || "400",
+          linea: cols[2] || "",
+          marca: cols[3] || "BATA",
+          tipoMaterial: cols[4] || "",
+          precioVenta: cols[8] || "0.00",
+          margenPorc: cols[9] || "0%",
+          margenBudget: cols[10] || "0%"
+        });
+      }
+    });
+
+    const select = document.getElementById("select-articulo-tarjeta");
+    select.innerHTML = `<option value="">— Selecciona un artículo pegado (${articulosCostosPegados.length}) —</option>`;
+    articulosCostosPegados.forEach((it, idx) => {
+      select.innerHTML += `<option value="${idx}">${it.articulo} | ${it.linea} | ${it.tipoMaterial}</option>`;
+    });
+
+    if (articulosCostosPegados.length > 0) {
+      select.selectedIndex = 1;
+      cargarDatosArticuloEnTarjeta(0);
+      alert(`Se procesaron ${articulosCostosPegados.length} artículos exitosamente.`);
+    } else {
+      alert("No se detectaron columnas con tabuladores válidos. Copia directamente las celdas desde Excel.");
+    }
+  };
+
+  document.getElementById("select-articulo-tarjeta").onchange = (e) => {
+    const idx = parseInt(e.target.value);
+    if (!isNaN(idx)) cargarDatosArticuloEnTarjeta(idx);
+  };
+
+  document.getElementById("select-copias-tarjeta").onchange = renderTarjetasPreview;
+
+  // Actualizar preview en tiempo real al escribir datos técnicos
+  ["card-nombre-lateral", "card-serie", "card-fecha", "card-forro", "card-plant-int", "card-tecnico", "card-horma-suela", "card-construccion", "card-observaciones"].forEach(id => {
+    const elem = document.getElementById(id);
+    if (elem) elem.oninput = renderTarjetasPreview;
+  });
+
+  document.getElementById("btn-imprimir-tarjetas-action").onclick = () => {
+    const previewHTML = document.getElementById("contenedor-tarjetas-preview").innerHTML;
+    document.getElementById("hoja-impresion-tarjetas").innerHTML = previewHTML;
+    modalImpresionTarjetas.classList.remove("hidden");
+  };
+}
+
+function cargarDatosArticuloEnTarjeta(idx) {
+  const item = articulosCostosPegados[idx];
+  if (!item) return;
+
+  const inputLateral = document.getElementById("card-nombre-lateral");
+  if (inputLateral) inputLateral.value = item.linea || "";
+
+  renderTarjetasPreview();
+}
+
+function renderTarjetasPreview() {
+  const container = document.getElementById("contenedor-tarjetas-preview");
+  const selectArt = document.getElementById("select-articulo-tarjeta");
+  const idx = parseInt(selectArt.value);
+
+  const copias = parseInt(document.getElementById("select-copias-tarjeta").value) || 4;
+  const item = articulosCostosPegados[idx] || {
+    articulo: "85549004",
+    marca: "BATA",
+    tipoMaterial: "DNE GAMUZON 4EGD",
+    precioVenta: "399,00",
+    margenBudget: "55,00%",
+    margenPorc: "42,55%"
+  };
+
+  const nombreLateral = (document.getElementById("card-nombre-lateral").value || "SANDRA").toUpperCase();
+  const serie = document.getElementById("card-serie").value || "37 - 44";
+  const fecha = document.getElementById("card-fecha").value || "04/08/2026";
+  const forro = document.getElementById("card-forro").value || "DNE FORRO CARAMELO";
+  const plantInt = document.getElementById("card-plant-int").value || "DNE PLANT CAMEL PIG SKIN";
+  const tecnico = (document.getElementById("card-tecnico").value || "JAVIER GOMEZ").toUpperCase();
+  const hormaSuela = (document.getElementById("card-horma-suela").value || "MARVIN").toUpperCase();
+  const construccion = (document.getElementById("card-construccion").value || "TRUE MOC").toUpperCase();
+  const observaciones = document.getElementById("card-observaciones").value || "";
+
+  const siluetaHTML = croquisTarjetaBase64 
+    ? `<img src="${croquisTarjetaBase64}" class="w-full h-14 object-contain mx-auto">`
+    : `<div class="h-14 flex items-center justify-center text-[9px] text-gray-400 border border-dashed border-gray-300 rounded">Croquis</div>`;
+
+  let tarjetasHTML = "";
+
+  for (let i = 1; i <= copias; i++) {
+    const destinoEtiqueta = i === 1 ? "CORTE" : `MUESTRA #${i - 1}`;
+
+    tarjetasHTML += `
+      <div class="shoe-card-container bg-white flex text-[7.5px] leading-tight text-black font-sans shadow-sm mb-3">
+        <!-- SECCIÓN 1 (66.6 mm): INFORMACIÓN TÉCNICA Y COSTOS -->
+        <div class="shoe-panel flex border-r border-dashed border-gray-500 overflow-hidden">
+          <!-- Nombre lateral vertical -->
+          <div class="w-4 bg-gray-100 border-r border-black flex items-center justify-center font-black tracking-widest text-[9px]" style="writing-mode: vertical-rl; transform: rotate(180deg);">
+            ${nombreLateral}
+          </div>
+          
+          <div class="flex-1 flex flex-col justify-between p-0.5">
+            <div class="text-[8px] font-black text-red-600 text-center border-b border-black pb-0.2">
+              MANUFACTURA BOLIVIANA S.A.
+            </div>
+
+            <div class="flex flex-1">
+              <div class="w-16 flex flex-col justify-between border-r border-black pr-0.5">
+                ${siluetaHTML}
+                <span class="text-[6.5px] font-bold">FECHA: ${fecha}</span>
+              </div>
+
+              <div class="flex-1 pl-1 flex flex-col justify-between">
+                <div class="flex justify-between border-b border-gray-300">
+                  <span class="font-bold">ART:</span>
+                  <span class="font-black text-[9px] text-black font-mono">${item.articulo}</span>
+                </div>
+                <div class="flex justify-between border-b border-gray-300">
+                  <span class="font-bold">MARCA:</span>
+                  <span>${item.marca}</span>
+                </div>
+                <div class="flex justify-between border-b border-gray-300">
+                  <span class="font-bold">SERIE:</span>
+                  <span>${serie}</span>
+                </div>
+                <div class="flex justify-between border-b border-gray-300 truncate">
+                  <span class="font-bold">CORTE:</span>
+                  <span class="truncate">${item.tipoMaterial}</span>
+                </div>
+                <div class="flex justify-between border-b border-gray-300 truncate">
+                  <span class="font-bold">FORRO:</span>
+                  <span class="truncate">${forro}</span>
+                </div>
+                <div class="flex justify-between truncate">
+                  <span class="font-bold">PLANT:</span>
+                  <span class="truncate">${plantInt}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Precios y Márgenes -->
+            <div class="grid grid-cols-4 gap-0.5 border-t border-black text-[6.5px] font-semibold pt-0.5">
+              <div>TEC: ${tecnico}</div>
+              <div>SUELA: ${hormaSuela}</div>
+              <div>PRECIO: <b>${item.precioVenta}</b></div>
+              <div>MRG: <b>${item.margenPorc}</b></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 2 (66.6 mm): FIRMAS DE APROBACIÓN -->
+        <div class="shoe-panel flex flex-col justify-between p-1.5 border-r border-dashed border-gray-500 text-[7px]">
+          <div class="text-[7.5px] font-black text-center text-gray-700 uppercase border-b border-gray-300 pb-0.5">
+            APROBACIONES DE DESARROLLO (${destinoEtiqueta})
+          </div>
+
+          <div class="grid grid-cols-2 gap-1 text-center">
+            <div class="border-b border-black pb-0.5">
+              <span class="font-bold block">P.D. CHIEF</span>
+              <span class="text-[6px] text-gray-400">Fecha: ___/___/___</span>
+            </div>
+            <div class="border-b border-black pb-0.5">
+              <span class="font-bold block">MERCHANDISING MAN.</span>
+              <span class="text-[6px] text-gray-400">Fecha: ___/___/___</span>
+            </div>
+          </div>
+
+          <div class="text-center border-b border-black pb-0.5 mx-auto w-3/4">
+            <span class="font-bold block">PURCHASING MANAGER</span>
+            <span class="text-[6px] text-gray-400">Fecha: ___/___/___</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-1 text-center">
+            <div class="border-b border-black pb-0.5">
+              <span class="font-bold block">PRODUCTION MANAGER</span>
+              <span class="text-[6px] text-gray-400">Fecha: ___/___/___</span>
+            </div>
+            <div class="border-b border-black pb-0.5">
+              <span class="font-bold block">COUNTRY MANAGER</span>
+              <span class="text-[6px] text-gray-400">Fecha: ___/___/___</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 3 (66.6 mm): OBSERVACIONES OCULTAS (PANEL POSTERIOR) -->
+        <div class="shoe-panel p-1.5 flex flex-col justify-between text-[7.5px]">
+          <div>
+            <span class="font-black text-gray-800 uppercase block mb-1">OBSERVACIONES:</span>
+            <p class="text-[7px] text-gray-700 italic leading-snug">${observaciones || 'Sin observaciones adicionales'}</p>
+          </div>
+          <div class="space-y-1.5">
+            <div class="border-b border-dotted border-gray-400 h-2"></div>
+            <div class="border-b border-dotted border-gray-400 h-2"></div>
+            <div class="border-b border-dotted border-gray-400 h-2"></div>
+            <div class="text-right text-[6px] text-gray-400 font-bold tracking-widest">BATA BOLIVIA PD</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  container.innerHTML = tarjetasHTML;
+}
+
 // ==================== PANEL SUPER ADMIN ROBUSTO ====================
 async function cargarPanelSuperAdmin() {
   if (!esSuperAdmin()) return;
@@ -1213,286 +1482,7 @@ window.eliminarEntregaDoc = async (id, tipo, proyecto) => {
   }
 };
 
-// ==================== SOLICITUDES Y MINUTAS ====================
-if (document.getElementById("form-minuta")) {
-  document.getElementById("form-minuta").onsubmit = async (e) => {
-    e.preventDefault();
-    const semana = document.getElementById("minuta-semana").value.trim();
-    const proyecto = document.getElementById("minuta-proyecto").value.trim();
-    const articulo = document.getElementById("minuta-articulo").value.trim();
-    const detalle = document.getElementById("minuta-box").value.trim();
-    const photoFile = document.getElementById("minuta-photo").files[0];
-
-    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
-
-    try {
-      await addDoc(collection(db, "solicitudes_cambios"), {
-        semana,
-        proyecto,
-        articulo,
-        foto: fotoBase64,
-        boxCambio: detalle,
-        esMinuta: true,
-        solicitanteNombre: (userData && userData.nombre) || "Jefe Desarrollo",
-        solicitanteRol: (userData && userData.rol) || "Desarrollo de producto - Jefe",
-        solicitanteId: currentUser.uid,
-        estado: "En proceso",
-        fechaRealizado: null,
-        validadoCostos: false,
-        fechaCreacion: new Date().toISOString(),
-        timestamp: serverTimestamp()
-      });
-
-      modalMinuta.classList.add("hidden");
-      document.getElementById("form-minuta").reset();
-
-      abrirModalWhatsApp({
-        titulo: "Minuta de Cambios Registrada",
-        subtitulo: "Enviar minuta a los Técnicos de Desarrollo:",
-        mensajeTexto: `📋 *MINUTA DE CAMBIOS - PLAN PILOTO*\n*Bata Bolivia / Desarrollo de Producto*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n👤 *Emitido por:* ${(userData && userData.nombre) || 'Jefe Desarrollo'}\n\n📝 *DETALLE DE CAMBIOS TÉCNICOS:*\n${detalle}\n\n_Registrado en el sistema para control de avance y realización._`,
-        rolFiltro: "Desarrollo de producto - Técnico"
-      });
-    } catch (err) {
-      alert("Error al guardar minuta: " + err.message);
-    }
-  };
-}
-
-const modalNewChange = document.getElementById("modal-new-change");
-document.getElementById("btn-open-new-change").onclick = () => modalNewChange.classList.remove("hidden");
-document.getElementById("modal-btn-close").onclick = () => modalNewChange.classList.add("hidden");
-document.getElementById("modal-btn-cancel").onclick = () => modalNewChange.classList.add("hidden");
-
-document.getElementById("form-new-change").onsubmit = async (e) => {
-  e.preventDefault();
-  const semana = document.getElementById("change-semana").value.trim();
-  const proyecto = document.getElementById("change-project").value.trim();
-  const articulo = document.getElementById("change-article").value.trim();
-  const boxCambio = document.getElementById("change-box").value.trim();
-  const photoFile = document.getElementById("change-photo").files[0];
-
-  const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
-
-  try {
-    await addDoc(collection(db, "solicitudes_cambios"), {
-      semana,
-      proyecto,
-      articulo,
-      foto: fotoBase64,
-      boxCambio,
-      esMinuta: false,
-      solicitanteNombre: (userData && userData.nombre) || currentUser.email,
-      solicitanteRol: (userData && userData.rol) || "Usuario",
-      solicitanteId: currentUser.uid,
-      estado: "En proceso",
-      fechaRealizado: null,
-      validadoCostos: false,
-      fechaCreacion: new Date().toISOString(),
-      timestamp: serverTimestamp()
-    });
-
-    document.getElementById("form-new-change").reset();
-    modalNewChange.classList.add("hidden");
-
-    abrirModalWhatsApp({
-      titulo: "Solicitud Registrada",
-      subtitulo: "Notificar solicitud creada al equipo:",
-      mensajeTexto: `👞 *NUEVA SOLICITUD DE CAMBIO - BATA BOLIVIA*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n👤 *Solicitado por:* ${(userData && userData.nombre) || 'Usuario'} (${(userData && userData.rol) || ''})\n📝 *Cambio:* ${boxCambio}\n\n_Revisar en el Sistema de Gestión de Cambios Bata_`
-    });
-  } catch (err) {
-    alert("Error: " + err.message);
-  }
-};
-
-// ==================== MÓDULO ENTREGAS ====================
-document.getElementById("btn-open-nueva-entrega").onclick = () => {
-  const esAdmin = esSuperAdmin();
-  const rol = (userData && userData.rol) || "";
-  const esDesarrollo = rol.includes("Desarrollo") || esAdmin;
-  const esCostos = rol === "Costos" || esAdmin;
-
-  if (!esDesarrollo && !esCostos) {
-    alert("Solo los usuarios de Desarrollo de Producto o Costos pueden registrar entregas.");
-    return;
-  }
-
-  const selectTipo = document.getElementById("ent-tipo");
-  selectTipo.innerHTML = "";
-
-  if (categoriaEntregaActiva !== "todas") {
-    selectTipo.innerHTML += `<option value="${categoriaEntregaActiva}">${categoriaEntregaActiva}</option>`;
-  } else {
-    if (esDesarrollo) {
-      selectTipo.innerHTML += `<option value="GUÍA DE PRODUCCIÓN">GUÍA DE PRODUCCIÓN</option>`;
-      selectTipo.innerHTML += `<option value="CORTE">CORTE</option>`;
-      selectTipo.innerHTML += `<option value="MUESTRA DEFINITIVA">MUESTRA DEFINITIVA</option>`;
-      selectTipo.innerHTML += `<option value="MATERIALES">MATERIALES</option>`;
-      selectTipo.innerHTML += `<option value="HOJA DE DESBASTE">HOJA DE DESBASTE</option>`;
-      selectTipo.innerHTML += `<option value="TIZADORES">TIZADORES</option>`;
-    } else if (esCostos) {
-      selectTipo.innerHTML += `<option value="CORTE">CORTE (De Costos a Producción)</option>`;
-    }
-  }
-
-  actualizarCamposSegunTipoEntrega();
-  modalNuevaEntrega.classList.remove("hidden");
-};
-
-document.getElementById("ent-tipo").onchange = actualizarCamposSegunTipoEntrega;
-
-function actualizarCamposSegunTipoEntrega() {
-  const tipo = document.getElementById("ent-tipo").value;
-  const selectDestino = document.getElementById("ent-destino");
-  const boxArticulo = document.getElementById("box-field-articulo");
-  const labelProy = document.getElementById("label-field-proyecto");
-  const inputProy = document.getElementById("ent-proyecto");
-  const boxFoto = document.getElementById("box-field-foto");
-  const boxCopias = document.getElementById("box-field-copias");
-  const containerSingle = document.getElementById("container-destino-single");
-  const containerMultiple = document.getElementById("container-destino-multiple");
-
-  selectDestino.innerHTML = "";
-  boxCopias.classList.add("hidden");
-  containerMultiple.classList.add("hidden");
-  containerSingle.classList.remove("hidden");
-  boxFoto.classList.add("hidden");
-
-  if (tipo === "MATERIALES") {
-    labelProy.textContent = "Nombre del Material / Insumo";
-    inputProy.placeholder = "Ej: Badana Beige 1.2mm";
-    boxArticulo.classList.add("hidden");
-    selectDestino.innerHTML += `<option value="Desarrollo de producto">Desarrollo de producto</option>`;
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-    return;
-  }
-
-  boxArticulo.classList.remove("hidden");
-  labelProy.textContent = "Nombre del Proyecto";
-  inputProy.placeholder = "Ej: SKATER";
-
-  if (tipo === "GUÍA DE PRODUCCIÓN") {
-    boxFoto.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
-  }
-  else if (tipo === "CORTE") {
-    boxFoto.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-  }
-  else if (tipo === "MUESTRA DEFINITIVA") {
-    boxFoto.classList.remove("hidden");
-    containerSingle.classList.add("hidden");
-    containerMultiple.classList.remove("hidden");
-  }
-  else if (tipo === "HOJA DE DESBASTE") {
-    boxFoto.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-  }
-  else if (tipo === "TIZADORES") {
-    boxCopias.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-  }
-}
-
-document.getElementById("form-nueva-entrega").onsubmit = async (e) => {
-  e.preventDefault();
-  const semana = document.getElementById("ent-semana").value.trim();
-  const proyecto = document.getElementById("ent-proyecto").value.trim();
-  const articulo = document.getElementById("ent-articulo").value.trim();
-  const tipo = document.getElementById("ent-tipo").value;
-  const notas = document.getElementById("ent-notas").value.trim();
-  const copias = document.getElementById("ent-copias").value.trim();
-  const photoFile = document.getElementById("ent-photo").files[0];
-
-  const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
-
-  try {
-    let destinosAEntregar = [];
-
-    if (tipo === "MUESTRA DEFINITIVA") {
-      destinosAEntregar = Array.from(document.querySelectorAll(".chk-muestras-dest:checked")).map(c => c.value);
-      if (destinosAEntregar.length === 0) {
-        alert("Selecciona al menos un departamento para la muestra definitiva.");
-        return;
-      }
-    } else {
-      destinosAEntregar = [document.getElementById("ent-destino").value];
-    }
-
-    const nombreUsuario = (userData && userData.nombre) || (currentUser && currentUser.email) || "Usuario";
-    const rolUsuario = (userData && userData.rol) || "Desarrollo de producto";
-
-    for (const destino of destinosAEntregar) {
-      await addDoc(collection(db, "entregas_departamentos"), {
-        semana,
-        proyecto,
-        articulo: tipo === "MATERIALES" ? "" : articulo,
-        tipo,
-        destino,
-        copias: tipo === "TIZADORES" ? (copias || "1") : null,
-        foto: fotoBase64,
-        notas,
-        entregadoPorNombre: nombreUsuario,
-        entregadoPorRol: rolUsuario,
-        entregadoPorId: currentUser ? currentUser.uid : null,
-        recibido: false,
-        fechaEntrega: new Date().toISOString(),
-        timestamp: serverTimestamp()
-      });
-    }
-
-    document.getElementById("form-nueva-entrega").reset();
-    modalNuevaEntrega.classList.add("hidden");
-
-    const destinosTexto = destinosAEntregar.join(", ");
-    let detalleCopias = (tipo === "TIZADORES" && copias) ? `📑 *Copias:* ${copias}\n` : '';
-
-    abrirModalWhatsApp({
-      titulo: "Entrega Registrada",
-      subtitulo: `Notificar recepción a los encargados de ${destinosTexto}:`,
-      mensajeTexto: `📦 ENTREGA REALIZADA - PD BOLIVIA\n\n📅 *Semana:* ${semana}\n📌 *Elemento:* ${tipo}\n🏷️ *Detalle/Proyecto:* ${proyecto}\n${articulo ? '🔢 *Artículo:* ' + articulo + '\n' : ''}${detalleCopias}👤 *Entregado por:* ${nombreUsuario} (${rolUsuario})\n🏢 *Destino:* ${destinosTexto}\n📝 *Notas:* ${notas || 'Sin notas adicionales'}\n\n_Favor de confirmar la recepción física en el sistema._`,
-      rolFiltro: destinosAEntregar.length === 1 ? destinosAEntregar[0] : null
-    });
-  } catch (err) {
-    alert("Error al registrar entrega: " + err.message);
-  }
-};
-
-function escucharEntregas() {
-  // Ordenar por fechaEntrega para garantizar visibilidad inmediata de todos los registros
-  const q = query(collection(db, "entregas_departamentos"), orderBy("fechaEntrega", "desc"));
-  onSnapshot(q, (snapshot) => {
-    entregas = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderTablaEntregas();
-  });
-}
-
-// Filtros en cabecera de tabla Entregas
-const colFilterSemEntregas = document.getElementById("col-filter-semana-entregas");
-const colFilterProyEntregas = document.getElementById("col-filter-proyecto-entregas");
-
-if (colFilterSemEntregas) {
-  colFilterSemEntregas.oninput = (e) => {
-    colFiltroSemanaEntregas = e.target.value.trim().toLowerCase();
-    renderTablaEntregas();
-  };
-}
-if (colFilterProyEntregas) {
-  colFilterProyEntregas.oninput = (e) => {
-    colFiltroProyectoEntregas = e.target.value.trim().toLowerCase();
-    renderTablaEntregas();
-  };
-}
-
-if (document.getElementById("btn-reporte-entregas-pdf")) {
-  document.getElementById("btn-reporte-entregas-pdf").onclick = abrirReporteImpresoEntregas;
-}
-if (document.getElementById("btn-reporte-entregas-texto")) {
-  document.getElementById("btn-reporte-entregas-texto").onclick = abrirResumenTextoEntregas;
-}
-
-// Render Tabla de Entregas
+// ==================== TABLA GENERAL DE ENTREGAS ====================
 function renderTablaEntregas() {
   const tbody = document.getElementById("table-entregas-body");
   tbody.innerHTML = "";
@@ -1739,7 +1729,7 @@ function renderTabla() {
   empty.classList.add("hidden");
 
   const esAdmin = esSuperAdmin();
-  const esDesarrollo = (userData && (userData.rol || "").includes("Desarrollo")) || esAdmin;
+  const esDesarrolloUsuario = esDesarrollo() || esAdmin;
   const esCostos = (userData && userData.rol === "Costos") || esAdmin;
 
   solicitudes.forEach((item) => {
@@ -1753,7 +1743,7 @@ function renderTabla() {
       : '';
 
     let estadoHTML = "";
-    if (esDesarrollo) {
+    if (esDesarrolloUsuario) {
       estadoHTML = `
         <div class="flex items-center space-x-1.5">
           <select id="sel-estado-${item.id}" class="border border-orange-200 text-orange-600 bg-orange-50 font-semibold rounded-lg px-2 py-1 text-xs focus:ring-1 focus:ring-[#D61B28]">
