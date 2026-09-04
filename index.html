@@ -8,23 +8,24 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="style.css">
   <style>
+    /* Estilos de Tarjeta Calibrada */
     .shoe-card-container {
-      width: 200mm;
-      height: 34mm;
-      max-height: 34mm;
-      box-sizing: border-box;
-      border: 1px solid #000;
+      width: 200mm !important;
+      height: 34mm !important;
+      max-height: 34mm !important;
+      box-sizing: border-box !important;
+      border: 1px solid #000 !important;
       margin: 0 !important;
       padding: 0 !important;
-      page-break-inside: avoid;
-      break-inside: avoid;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
     }
     .shoe-panel {
-      width: 66.66mm;
-      height: 100%;
-      box-sizing: border-box;
+      width: 66.66mm !important;
+      height: 100% !important;
+      box-sizing: border-box !important;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
     }
@@ -32,16 +33,21 @@
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
     }
+
     @page {
       size: letter portrait;
-      margin: 0;
+      margin: 8mm 8mm 8mm 8mm;
     }
+
     @media print {
-      body * { visibility: hidden; }
+      body * {
+        visibility: hidden !important;
+      }
       #modal-reporte-entregas-print:not(.hidden), #modal-reporte-entregas-print:not(.hidden) *,
       #modal-resumen-reporte:not(.hidden), #modal-resumen-reporte:not(.hidden) *,
-      #modal-reporte-llegadas-print:not(.hidden), #modal-reporte-llegadas-print:not(.hidden) * {
-        visibility: visible;
+      #modal-reporte-llegadas-print:not(.hidden), #modal-reporte-llegadas-print:not(.hidden) *,
+      #contenedor-tarjetas-print-area, #contenedor-tarjetas-print-area * {
+        visibility: visible !important;
       }
       #modal-reporte-entregas-print:not(.hidden), 
       #modal-resumen-reporte:not(.hidden), 
@@ -52,10 +58,20 @@
         width: 100% !important;
         margin: 0 !important;
         padding: 5mm !important;
-        box-shadow: none !important;
+        background: white !important;
+      }
+      #contenedor-tarjetas-print-area {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 200mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
         background: transparent !important;
       }
-      .no-print { display: none !important; }
+      .no-print {
+        display: none !important;
+      }
     }
   </style>
 </head>
@@ -229,6 +245,7 @@
     </header>
 
     <div class="flex flex-1 relative z-10">
+      <!-- SIDEBAR ROJO BATA -->
       <aside class="w-64 bg-[#D61B28] p-4 space-y-2 select-none shadow-xl border-r border-red-800">
         <button type="button" id="menu-btn-cambios" class="sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white transition cursor-pointer">
           <i class="fa-solid fa-arrow-right-arrow-left"></i>
@@ -813,6 +830,9 @@
     </div>
   </div>
 
+  <!-- CONTENEDOR OCULTO DE IMPRESIÓN DIRECTA -->
+  <div id="contenedor-tarjetas-print-area" class="hidden"></div>
+
   <!-- MODAL: IMPRESIÓN DE TARJETAS -->
   <div id="modal-impresion-tarjetas" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-5xl rounded-3xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
@@ -1036,238 +1056,6 @@
         </button>
       </div>
       <div id="contenido-impresion-llegadas" class="space-y-4"></div>
-    </div>
-  </div>
-
-  <!-- MODAL: MINUTA DE CAMBIOS -->
-  <div id="modal-minuta" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl relative text-xs">
-      <button type="button" id="close-minuta" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
-      <div class="flex items-center space-x-2 text-amber-700 font-bold text-sm mb-3">
-        <i class="fa-solid fa-clipboard-list text-lg"></i>
-        <span>Generar Minuta de Cambios (Desarrollo - Jefe)</span>
-      </div>
-      <form id="form-minuta" class="space-y-3">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block font-semibold text-gray-600 mb-1">Semana (Formato Ej: 636)</label>
-            <input type="text" id="minuta-semana" maxlength="3" pattern="[0-9]{3}" required placeholder="636" title="3 dígitos numéricos" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-600 font-mono">
-          </div>
-          <div>
-            <label class="block font-semibold text-gray-600 mb-1">Nombre del Proyecto</label>
-            <input type="text" id="minuta-proyecto" required placeholder="Ej: SKATER" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-600">
-          </div>
-        </div>
-        <div>
-          <label class="block font-semibold text-gray-600 mb-1">Artículo Afectado</label>
-          <input type="text" id="minuta-articulo" required placeholder="Ej: 58961/91236 o 1-2419519V" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-600 font-mono">
-        </div>
-        <div>
-          <label class="block font-semibold text-gray-600 mb-1">Fotografía del Prototipo / Guía (Opcional)</label>
-          <input type="file" id="minuta-photo" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-amber-50 file:text-amber-800">
-        </div>
-        <div>
-          <label class="block font-semibold text-gray-600 mb-1">Cambios Técnicos Solicitados (Plan Piloto)</label>
-          <textarea id="minuta-box" rows="4" required placeholder="Describe las modificaciones técnicas..." class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-600"></textarea>
-        </div>
-        <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl transition shadow flex items-center justify-center space-x-2 cursor-pointer">
-          <i class="fa-brands fa-whatsapp"></i>
-          <span>Publicar Minuta y Notificar</span>
-        </button>
-      </form>
-    </div>
-  </div>
-
-  <!-- MODAL: PERFIL -->
-  <div id="modal-profile" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl relative text-xs">
-      <button type="button" id="close-profile" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
-      <h3 class="font-bold text-base text-[#D61B28] mb-4 text-center">Mi Perfil</h3>
-      <form id="form-update-profile" class="space-y-3">
-        <div>
-          <label class="block font-semibold text-gray-600 mb-1">Nombre</label>
-          <input type="text" id="prof-name" required class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D61B28]">
-        </div>
-        <div>
-          <label class="block font-semibold text-gray-600 mb-1">Celular (WhatsApp)</label>
-          <div class="flex">
-            <span class="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-gray-300 bg-gray-50 text-gray-500 font-bold text-xs">+591</span>
-            <input type="tel" id="prof-phone" pattern="[0-9]{8}" required placeholder="70000000" class="w-full px-3 py-2 border border-gray-300 rounded-r-xl focus:ring-2 focus:ring-[#D61B28]">
-          </div>
-        </div>
-        <div>
-          <label class="block font-semibold text-gray-600 mb-1">Actualizar Fotografía</label>
-          <input type="file" id="prof-photo" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-red-50 file:text-[#D61B28]">
-        </div>
-        <button type="submit" class="w-full bg-[#D61B28] hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition shadow mt-3 cursor-pointer">Guardar Cambios</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- MODAL: NUEVA SOLICITUD -->
-  <div id="modal-new-change" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden">
-      <div class="bg-[#D61B28] px-6 py-4 flex justify-between items-center text-white">
-        <h3 class="font-bold text-sm">Nueva Solicitud de Cambio</h3>
-        <button type="button" id="modal-btn-close" class="text-white hover:text-gray-200 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <form id="form-new-change" class="p-6 space-y-4 text-xs">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block font-bold text-gray-700 mb-1">Semana (Formato Ej: 636)</label>
-            <input type="text" id="change-semana" maxlength="3" pattern="[0-9]{3}" placeholder="636" required title="3 dígitos numéricos" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28] font-mono">
-          </div>
-          <div>
-            <label class="block font-bold text-gray-700 mb-1">Nombre del Proyecto</label>
-            <input type="text" id="change-project" placeholder="Ej: SKATER" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]">
-          </div>
-        </div>
-        <div>
-          <label class="block font-bold text-gray-700 mb-1">Artículo (Formato: #/###-####, ###-#####, ###-####)</label>
-          <input type="text" id="change-article" placeholder="Ej: 58961/91236 o 1-2419519V" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28] font-mono">
-        </div>
-        <div>
-          <label class="block font-bold text-gray-700 mb-1">Fotografía del Prototipo / Guía (Opcional)</label>
-          <input type="file" id="change-photo" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-red-50 file:text-[#D61B28]">
-        </div>
-        <div>
-          <label class="block font-bold text-gray-700 mb-1">Box de Cambios</label>
-          <textarea id="change-box" rows="3" placeholder="Describir cambios a realizar..." required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]"></textarea>
-        </div>
-        <div class="pt-2 flex justify-end space-x-2">
-          <button type="button" id="modal-btn-cancel" class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg font-bold cursor-pointer">Cancelar</button>
-          <button type="submit" class="px-5 py-2 bg-[#25D366] hover:bg-green-600 text-white rounded-lg font-bold flex items-center space-x-2 shadow cursor-pointer">
-            <i class="fa-brands fa-whatsapp text-sm"></i>
-            <span>Aceptar y Notificar por WhatsApp</span>
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- MODAL: TEXTO NOTIFICACIÓN INFORME -->
-  <div id="modal-texto-wsp" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-white w-full max-w-xl rounded-3xl p-6 shadow-2xl relative text-xs">
-      <button type="button" id="close-texto-wsp" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
-      <div class="flex items-center space-x-2 text-green-700 font-bold text-sm mb-3">
-        <i class="fa-brands fa-whatsapp text-lg"></i>
-        <span>Texto Oficial para Notificación de Cambios Realizados</span>
-      </div>
-      <div class="bg-gray-50 border border-gray-200 rounded-2xl p-4 mb-4">
-        <textarea id="texto-wsp-output" rows="12" readonly class="w-full bg-transparent font-mono text-xs text-gray-800 focus:outline-none resize-none leading-relaxed"></textarea>
-      </div>
-      <div class="flex justify-end space-x-2">
-        <button type="button" id="btn-copiar-texto-wsp" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center space-x-1.5 cursor-pointer">
-          <i class="fa-regular fa-copy"></i>
-          <span>Copiar Texto</span>
-        </button>
-        <button type="button" id="btn-enviar-correo-informe" class="bg-[#0078D4] hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center space-x-1.5 cursor-pointer" title="Abrir en Outlook (PWA / Escritorio)">
-          <i class="fa-solid fa-envelope"></i>
-          <span>Outlook (PWA)</span>
-        </button>
-        <button type="button" id="btn-enviar-wsp-directo" class="bg-[#25D366] hover:bg-green-600 text-white font-bold px-5 py-2.5 rounded-xl transition shadow flex items-center space-x-1.5 cursor-pointer">
-          <i class="fa-brands fa-whatsapp"></i>
-          <span>Compartir en WhatsApp</span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: INFORME RESUMEN EJECUTIVO -->
-  <div id="modal-resumen-reporte" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-white w-full max-w-4xl rounded-3xl p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto text-xs">
-      <button type="button" id="close-modal-resumen" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
-      <div class="border-b border-gray-200 pb-4 mb-4 flex justify-between items-center">
-        <div class="flex items-center space-x-3">
-          <img src="./logo-bata-rojo.png" alt="Bata" class="w-16 h-auto">
-          <div>
-            <h3 class="font-extrabold text-sm text-[#D61B28]">Informe Ejecutivo de Cambios de Producción</h3>
-            <p class="text-[11px] text-gray-500">Bata Bolivia - Resumen de Proyectos Seleccionados</p>
-          </div>
-        </div>
-        <button type="button" onclick="window.print()" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold px-3.5 py-2 rounded-xl flex items-center space-x-1.5 shadow">
-          <i class="fa-solid fa-print"></i>
-          <span>Imprimir / Guardar PDF</span>
-        </button>
-      </div>
-      <div id="reporte-resumen-contenido" class="space-y-4"></div>
-    </div>
-  </div>
-
-  <!-- MODAL: REPORTE IMPRESO / PDF DE ENTREGAS -->
-  <div id="modal-reporte-entregas-print" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-white w-full max-w-4xl rounded-3xl p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto text-xs">
-      <button type="button" id="close-modal-entregas-print" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
-      <div class="border-b border-gray-200 pb-4 mb-4 flex justify-between items-center">
-        <div class="flex items-center space-x-3">
-          <img src="./logo-bata-rojo.png" alt="Bata" class="w-16 h-auto">
-          <div>
-            <h3 class="font-extrabold text-sm text-[#D61B28]">Control de Entregas a Departamentos</h3>
-            <p class="text-[11px] text-gray-500">Bata Bolivia - Registro de Cadena de Custodia de Materiales</p>
-          </div>
-        </div>
-        <button type="button" onclick="window.print()" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold px-3.5 py-2 rounded-xl flex items-center space-x-1.5 shadow cursor-pointer">
-          <i class="fa-solid fa-print"></i>
-          <span>Imprimir / Guardar PDF</span>
-        </button>
-      </div>
-      <div id="contenido-impresion-entregas" class="space-y-4"></div>
-    </div>
-  </div>
-
-  <!-- MODAL: RESUMEN TEXTO ENTREGAS -->
-  <div id="modal-entregas-texto" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-white w-full max-w-xl rounded-3xl p-6 shadow-2xl relative text-xs">
-      <button type="button" id="close-modal-entregas-texto" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
-      <div class="flex items-center space-x-2 text-slate-800 font-bold text-sm mb-3">
-        <i class="fa-solid fa-envelope-open-text text-[#D61B28] text-base"></i>
-        <span>Resumen de Entregas para Notificación</span>
-      </div>
-      <div class="bg-gray-50 border border-gray-200 rounded-2xl p-4 mb-4">
-        <textarea id="texto-entregas-output" rows="12" readonly class="w-full bg-transparent font-mono text-xs text-gray-800 focus:outline-none resize-none leading-relaxed"></textarea>
-      </div>
-      <div class="flex justify-end space-x-2">
-        <button type="button" id="btn-copiar-texto-entregas" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center space-x-1.5 cursor-pointer">
-          <i class="fa-regular fa-copy"></i>
-          <span>Copiar Texto</span>
-        </button>
-        <button type="button" id="btn-enviar-correo-entregas" class="bg-[#0078D4] hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center space-x-1.5 cursor-pointer" title="Abrir en Outlook (PWA / Escritorio)">
-          <i class="fa-solid fa-envelope"></i>
-          <span>Outlook (PWA)</span>
-        </button>
-        <button type="button" id="btn-enviar-wsp-entregas" class="bg-[#25D366] hover:bg-green-600 text-white font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center space-x-1.5 cursor-pointer">
-          <i class="fa-brands fa-whatsapp"></i>
-          <span>WhatsApp</span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: VISOR DE FOTO GRANDE -->
-  <div id="modal-visor-foto" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-white rounded-3xl p-4 shadow-2xl relative max-w-2xl max-h-[90vh] flex flex-col items-center">
-      <button type="button" id="close-visor-foto" class="absolute top-3 right-3 text-gray-500 hover:text-gray-800 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
-      <h4 id="visor-foto-titulo" class="font-bold text-xs text-gray-800 mb-3 text-center"></h4>
-      <div class="overflow-auto max-h-[75vh] flex items-center justify-center bg-gray-50 rounded-2xl p-2 border border-gray-200">
-        <img id="visor-foto-img" src="" alt="Prototipo" class="max-w-full h-auto object-contain rounded-xl">
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: WHATSAPP FLOTANTE -->
-  <div id="modal-whatsapp" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden p-6 text-xs">
-      <div class="text-center mb-4">
-        <div class="w-12 h-12 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-2xl mx-auto mb-2">
-          <i class="fa-brands fa-whatsapp"></i>
-        </div>
-        <h3 id="wa-modal-title" class="font-bold text-sm text-gray-900">Notificación por WhatsApp</h3>
-        <p id="wa-modal-desc" class="text-gray-500 mt-1">Selecciona al integrante para enviar la alerta:</p>
-      </div>
-      <div id="whatsapp-contacts-list" class="space-y-2 max-h-52 overflow-y-auto mb-4"></div>
-      <button type="button" id="btn-close-whatsapp-modal" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 rounded-xl cursor-pointer">
-        Listo / Cerrar
-      </button>
     </div>
   </div>
 
