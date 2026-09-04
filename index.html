@@ -14,7 +14,12 @@
       height: 34mm;
       max-height: 34mm;
       box-sizing: border-box;
-      border: 1px solid #000;
+      border-top: 1px solid #000;
+      border-bottom: 1px solid #000;
+      border-left: 1px solid #000;
+      border-right: 1px solid #000;
+      margin: 0 !important;
+      padding: 0 !important;
       page-break-inside: avoid;
     }
     .shoe-panel {
@@ -33,9 +38,15 @@
         top: 0;
         width: 100%;
         margin: 0;
-        padding: 5mm;
+        padding: 0 !important;
         box-shadow: none !important;
         background: white !important;
+      }
+      .shoe-card-container {
+        margin: 0 !important;
+        box-shadow: none !important;
+        border-top: 0.5px solid #000;
+        border-bottom: 0.5px solid #000;
       }
       .no-print { display: none !important; }
     }
@@ -43,7 +54,7 @@
 </head>
 <body class="bg-[#F4F5F7] font-sans text-gray-800 antialiased min-h-screen">
 
-  <!-- PORTADA -->
+  <!-- ==================== PORTADA ==================== -->
   <div id="welcome-container" class="relative min-h-screen w-full flex flex-col md:flex-row bg-[#F4F5F7] overflow-hidden">
     <div class="relative w-full md:w-[42%] min-h-[360px] md:min-h-screen flex flex-col justify-between p-8 md:p-12 z-0 overflow-hidden">
       <img src="./banner-lateral.png" alt="Bata Bolivia" class="absolute inset-0 w-full h-full object-cover object-left md:object-right pointer-events-none select-none z-0">
@@ -109,19 +120,24 @@
         <div>
           <div class="flex justify-between items-center mb-1">
             <label class="font-semibold text-gray-600">Contraseña</label>
-            <button type="button" id="btn-forgot-pass" class="text-[10px] text-[#D61B28] hover:underline font-semibold flex items-center space-x-1">
+            <button type="button" id="btn-forgot-pass" class="text-[10px] text-[#D61B28] hover:underline font-semibold flex items-center space-x-1" title="Solicitar reseteo al Super Admin por WhatsApp">
               <i class="fa-brands fa-whatsapp text-green-600 text-xs"></i>
               <span>¿Resetear por WhatsApp?</span>
             </button>
           </div>
-          <input type="password" id="login-pass" required placeholder="••••••••" class="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D61B28] focus:outline-none">
+          <div class="relative">
+            <input type="password" id="login-pass" required placeholder="••••••••" class="w-full px-3 py-2.5 pr-9 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D61B28] focus:outline-none">
+            <button type="button" onclick="window.togglePasswordVisibility('login-pass', 'eye-login')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer">
+              <i id="eye-login" class="fa-regular fa-eye text-xs"></i>
+            </button>
+          </div>
         </div>
         <button type="submit" class="w-full bg-[#D61B28] hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition shadow cursor-pointer">Ingresar</button>
       </form>
     </div>
   </div>
 
-  <!-- MODAL: REGISTRO -->
+  <!-- MODAL: REGISTRO CON OJITO -->
   <div id="modal-register" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
       <button type="button" id="close-register" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -165,7 +181,12 @@
         </div>
         <div>
           <label class="block font-semibold text-gray-600 mb-1">Contraseña</label>
-          <input type="password" id="reg-pass" required placeholder="••••••••" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D61B28] focus:outline-none">
+          <div class="relative">
+            <input type="password" id="reg-pass" required placeholder="••••••••" class="w-full px-3 py-2 pr-9 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D61B28] focus:outline-none">
+            <button type="button" onclick="window.togglePasswordVisibility('reg-pass', 'eye-reg')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer">
+              <i id="eye-reg" class="fa-regular fa-eye text-xs"></i>
+            </button>
+          </div>
         </div>
         <button type="submit" class="w-full bg-[#D61B28] hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition shadow mt-2 cursor-pointer">Crear cuenta</button>
       </form>
@@ -201,7 +222,7 @@
     </header>
 
     <div class="flex flex-1 relative z-10">
-      <!-- SIDEBAR ROJO BATA CON PASTILLA BLANCA -->
+      <!-- SIDEBAR ROJO BATA -->
       <aside class="w-64 bg-[#D61B28] p-4 space-y-2 select-none shadow-xl border-r border-red-800">
         <button type="button" id="menu-btn-cambios" class="sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white transition cursor-pointer">
           <i class="fa-solid fa-arrow-right-arrow-left"></i>
@@ -213,7 +234,6 @@
           <span>Informe</span>
         </button>
 
-        <!-- SUBMENÚS ENTREGAS -->
         <div class="pt-3 border-t border-white/20 space-y-1">
           <div class="px-3 text-[10px] font-black text-white/70 uppercase tracking-widest mb-1.5">Módulos de Entregas</div>
           
@@ -253,7 +273,6 @@
           </button>
         </div>
 
-        <!-- MÓDULO PROCUREMENT & STORAGE -->
         <div class="pt-3 border-t border-white/20 space-y-1">
           <div class="px-3 text-[10px] font-black text-white/70 uppercase tracking-widest mb-1.5">Cadena de Suministro</div>
           <button type="button" id="menu-btn-procurement" class="sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white transition cursor-pointer">
@@ -262,7 +281,6 @@
           </button>
         </div>
 
-        <!-- MÓDULO NUEVO: TARJETAS DE MUESTRA (DESARROLLO EXCLUSIVO) -->
         <div id="section-menu-tarjetas" class="pt-3 border-t border-white/20 space-y-1">
           <div class="px-3 text-[10px] font-black text-white/70 uppercase tracking-widest mb-1.5">Modelaje y Muestras</div>
           <button type="button" id="menu-btn-tarjetas" class="sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white transition cursor-pointer">
@@ -562,7 +580,7 @@
           </div>
         </section>
 
-        <!-- VISTA 5: GENERADOR DE TARJETAS DE MUESTRAS (NUEVO - EXCLUSIVO PD) -->
+        <!-- VISTA 5: GENERADOR DE TARJETAS DE MUESTRAS (PD) -->
         <section id="view-tarjetas" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -570,7 +588,7 @@
                 <i class="fa-solid fa-id-card"></i>
                 <span>Generador de Tarjetas de Muestra y Corte (34 mm × 200 mm)</span>
               </h2>
-              <p class="text-xs text-gray-400">Pega directamente las celdas del Excel de Costos para autollenar e imprimir en tríptico.</p>
+              <p class="text-xs text-gray-400">Pega directamente las celdas del Excel de Costos para autollenar e imprimir en tríptico sin espacio entre cortes.</p>
             </div>
             <div class="flex items-center space-x-2">
               <button type="button" id="btn-imprimir-tarjetas-action" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-1.5 transition cursor-pointer">
@@ -581,7 +599,7 @@
           </div>
 
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- PANEL IZQUIERDO: PEGAR DATOS DE COSTOS -->
+            <!-- PANEL 1: PEGAR EXCEL -->
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4 text-xs">
               <div class="border-b border-gray-100 pb-2 flex justify-between items-center">
                 <span class="font-bold text-gray-700 flex items-center space-x-1.5">
@@ -590,8 +608,8 @@
                 </span>
                 <span class="text-[10px] text-gray-400">Ctrl + C en Excel y Ctrl + V aquí</span>
               </div>
-              <textarea id="paste-excel-costos" rows="5" placeholder="Pega aquí las filas copiadas de la tabla de Costos (Artículo, Línea, Marca, Material, Precio, Margen...)" class="w-full p-2.5 border border-gray-300 rounded-xl font-mono text-[11px] focus:ring-2 focus:ring-[#D61B28] focus:outline-none"></textarea>
-              <button type="button" id="btn-procesar-excel-paste" class="w-full bg-slate-800 hover:bg-black text-white font-bold py-2 rounded-xl transition">
+              <textarea id="paste-excel-costos" rows="5" placeholder="Pega aquí las filas de la tabla de Costos copiadas directamente de Excel..." class="w-full p-2.5 border border-gray-300 rounded-xl font-mono text-[11px] focus:ring-2 focus:ring-[#D61B28] focus:outline-none"></textarea>
+              <button type="button" id="btn-procesar-excel-paste" class="w-full bg-slate-800 hover:bg-black text-white font-bold py-2 rounded-xl transition cursor-pointer">
                 Cargar Artículos Pegados
               </button>
 
@@ -605,15 +623,15 @@
               <div class="pt-2 border-t border-gray-100">
                 <label class="block font-bold text-gray-700 mb-1">Cantidad de Tarjetas a Imprimir:</label>
                 <select id="select-copias-tarjeta" class="w-full px-3 py-2 border border-gray-300 rounded-xl bg-white font-black text-[#D61B28]">
-                  <option value="4">4 Copias (1 Corte + 3 Muestras Definitivas)</option>
-                  <option value="5">5 Copias (1 Corte + 4 Muestras Definitivas)</option>
-                  <option value="1">1 Copia (Solo Corte)</option>
-                  <option value="3">3 Copias (Muestras)</option>
+                  <option value="5">5 Copias (2 Producción [Blanco], 1 Retail [Verde], 1 Planeamiento [Amarillo], 1 Exportación [Rosado])</option>
+                  <option value="4">4 Copias (1 Producción [Blanco], 1 Retail [Verde], 1 Planeamiento [Amarillo], 1 Exportación [Rosado])</option>
+                  <option value="1">1 Copia (Producción - Blanco)</option>
+                  <option value="3">3 Copias</option>
                 </select>
               </div>
             </div>
 
-            <!-- PANEL CENTRAL: ESPECIFICACIONES TÉCNICAS COMPLEMENTARIAS -->
+            <!-- PANEL 2: ESPECIFICACIONES TÉCNICAS Y MATERIAL DE CORTE -->
             <div class="lg:col-span-2 bg-white p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4 text-xs">
               <div class="border-b border-gray-100 pb-2">
                 <span class="font-bold text-gray-700 flex items-center space-x-1.5">
@@ -637,7 +655,11 @@
                 </div>
               </div>
 
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label class="block font-bold text-gray-600 mb-1">Material de Corte (Manual / Sobrescribir)</label>
+                  <input type="text" id="card-material-corte" placeholder="DNE GAMUZON 4EGD" class="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg font-semibold">
+                </div>
                 <div>
                   <label class="block font-bold text-gray-600 mb-1">Forro</label>
                   <input type="text" id="card-forro" placeholder="DNE FORRO CARAMELO" class="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg">
@@ -676,13 +698,13 @@
             </div>
           </div>
 
-          <!-- VISTA PREVIA DE LAS TARJETAS (200 mm x 34 mm) -->
+          <!-- VISTA PREVIA DE LAS TARJETAS (SIN ESPACIO ENTRE ELLAS) -->
           <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-4">
             <h3 class="font-bold text-xs text-gray-700 flex items-center space-x-1.5">
               <i class="fa-solid fa-eye text-blue-600"></i>
-              <span>Vista Previa de Impresión Calibrada (200 mm largo × 34 mm alto - Doblado a 3)</span>
+              <span>Vista Previa de Impresión Calibrada (200 mm × 34 mm - Sin espacio entre cortes para guillotina)</span>
             </h3>
-            <div id="contenedor-tarjetas-preview" class="space-y-4 overflow-x-auto p-4 bg-gray-100 rounded-xl flex flex-col items-center">
+            <div id="contenedor-tarjetas-preview" class="overflow-x-auto p-4 bg-gray-100 rounded-xl flex flex-col items-center">
               <p class="text-xs text-gray-400 italic">Carga los datos para visualizar las tarjetas generadas.</p>
             </div>
           </div>
@@ -766,7 +788,7 @@
     </div>
   </div>
 
-  <!-- MODAL: IMPRESIÓN DIRECTA DE TARJETAS -->
+  <!-- MODAL: IMPRESIÓN DIRECTA DE TARJETAS (SIN MARGEN VERTICAL ENTRE ELLAS) -->
   <div id="modal-impresion-tarjetas" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-5xl rounded-3xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
       <div class="border-b border-gray-200 pb-3 mb-4 flex justify-between items-center no-print">
@@ -778,11 +800,11 @@
           <button type="button" id="close-modal-tarjetas" class="p-2 text-gray-400 hover:text-gray-700 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
         </div>
       </div>
-      <div id="hoja-impresion-tarjetas" class="flex flex-col items-center space-y-2 p-2"></div>
+      <div id="hoja-impresion-tarjetas" class="flex flex-col items-center p-0 m-0"></div>
     </div>
   </div>
 
-  <!-- MODAL: REGISTRAR ENTREGA -->
+  <!-- MODAL: REGISTRAR ENTREGA (ÚNICO Y CON ESTABILIDAD) -->
   <div id="modal-nueva-entrega" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden text-xs">
       <div class="bg-[#D61B28] px-6 py-4 flex justify-between items-center text-white">
