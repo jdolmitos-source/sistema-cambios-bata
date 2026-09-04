@@ -98,6 +98,58 @@ function esSuperAdmin() {
   return currentUser.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
 }
 
+// ==================== MODAL DE WHATSAPP ====================
+async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro = null }) {
+  const modalWA = document.getElementById("modal-whatsapp");
+  const listContainer = document.getElementById("whatsapp-contacts-list");
+  document.getElementById("wa-modal-title").textContent = titulo;
+  document.getElementById("wa-modal-desc").textContent = subtitulo;
+  listContainer.innerHTML = "";
+
+  const encodedMsg = encodeURIComponent(mensajeTexto);
+
+  try {
+    const usuariosSnap = await getDocs(collection(db, "usuarios"));
+    let count = 0;
+
+    usuariosSnap.forEach(d => {
+      const u = d.data();
+      const coincideRol = !rolFiltro || u.rol === rolFiltro || (rolFiltro === "Desarrollo de producto - Técnico" && (u.rol || "").includes("Técnico"));
+
+      if (u.celular && coincideRol) {
+        count++;
+        const item = document.createElement("a");
+        item.href = `https://wa.me/591${u.celular}?text=${encodedMsg}`;
+        item.target = "_blank";
+        item.className = "flex items-center justify-between p-2.5 bg-gray-50 hover:bg-green-50 rounded-xl border border-gray-200 transition text-gray-800";
+        item.innerHTML = `
+          <div>
+            <span class="font-bold">${u.nombre}</span>
+            <span class="text-[10px] text-gray-400 block">${u.rol} - +591 ${u.celular}</span>
+          </div>
+          <span class="bg-[#25D366] text-white px-2.5 py-1 rounded-lg font-bold text-[10px] flex items-center space-x-1">
+            <i class="fa-brands fa-whatsapp"></i>
+            <span>Enviar</span>
+          </span>
+        `;
+        listContainer.appendChild(item);
+      }
+    });
+
+    if (count === 0) {
+      listContainer.innerHTML = `<p class="p-3 text-center text-gray-400 text-xs">No hay contactos registrados con el rol de ${rolFiltro || 'ese departamento'}.</p>`;
+    }
+
+    modalWA.classList.remove("hidden");
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+document.getElementById("btn-close-whatsapp-modal").onclick = () => {
+  document.getElementById("modal-whatsapp").classList.add("hidden");
+};
+
 // Modales y Controles
 const welcomeContainer = document.getElementById("welcome-container");
 const appContainer = document.getElementById("app-container");
@@ -147,7 +199,6 @@ if (document.getElementById("close-visor-foto")) {
   document.getElementById("close-visor-foto").onclick = () => modalVisorFoto.classList.add("hidden");
 }
 
-// Controles Procurement & Storage
 if (document.getElementById("close-nuevo-bloqueo")) {
   document.getElementById("close-nuevo-bloqueo").onclick = () => modalNuevoBloqueo.classList.add("hidden");
 }
@@ -331,7 +382,7 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// Navegación Principal y Resaltado Lateral (PASTILLA BLANCA CON TEXTO ROJO BATA)
+// Navegación Principal y Resaltado Lateral
 const viewCambios = document.getElementById("view-cambios");
 const viewInforme = document.getElementById("view-informe");
 const viewEntregas = document.getElementById("view-entregas");
@@ -403,7 +454,7 @@ if (document.getElementById("btn-open-minuta-header")) {
   document.getElementById("btn-open-minuta-header").onclick = () => modalMinuta.classList.remove("hidden");
 }
 
-// Submenús de Entregas con Pastilla Blanca al Seleccionar
+// Submenús de Entregas
 window.cambiarSubmenuEntrega = (categoria) => {
   resetMenuStyles();
   viewEntregas.classList.remove("hidden");
@@ -483,7 +534,7 @@ window.cambiarSubmenuEntrega = (categoria) => {
   renderTablaEntregas();
 };
 
-// ==================== INFORMES CON LOS 5 MINI-KPIS ====================
+// ==================== INFORMES CON 5 MINI-KPIS ====================
 function renderInformeView() {
   actualizarInformePorSemana();
 
@@ -756,7 +807,7 @@ function renderProcurementView() {
   document.getElementById("btn-reporte-llegadas-pdf").onclick = abrirReporteImpresoLlegadas;
 }
 
-// Formulario Nuevo Bloqueo (Con Selector de Unidad Mts, Lt, Kg, Pares)
+// Formulario Nuevo Bloqueo
 document.getElementById("form-nuevo-bloqueo").onsubmit = async (e) => {
   e.preventDefault();
   const item = document.getElementById("bloq-item").value.trim();
@@ -844,7 +895,7 @@ window.confirmarEnteradoAlmacen = async (id) => {
   });
 };
 
-// Formulario Nueva Llegada a Fábrica (Con Semana de Solicitud)
+// Formulario Nueva Llegada
 document.getElementById("form-nueva-llegada").onsubmit = async (e) => {
   e.preventDefault();
   const item = document.getElementById("lleg-item").value.trim();
@@ -1107,7 +1158,8 @@ function renderTablaEntregas() {
   const empty = document.getElementById("entregas-empty-state");
 
   let entregasFiltradas = entregas.filter(item => {
-    const coincideCategoria = (categoriaEntregaActiva === "todas") || (item.tipo === categoriaEntregaActiva);
+    const coincideCategoria = (categoriaEntregaActiva === "todas") || 
+      ((item.tipo || "").toUpperCase().trim() === categoriaEntregaActiva.toUpperCase().trim());
     const semStr = (item.semana || "").toString().toLowerCase().trim();
     const proyStr = (item.proyecto || "").toString().toLowerCase().trim();
     const coincideSem = !colFiltroSemanaEntregas || semStr.includes(colFiltroSemanaEntregas);
@@ -1194,7 +1246,8 @@ window.confirmarRecepcionEntrega = async (id, tipo, proyecto) => {
 };
 
 function abrirReporteImpresoEntregas() {
-  const items = entregas.filter(item => (categoriaEntregaActiva === "todas") || (item.tipo === categoriaEntregaActiva));
+  const items = entregas.filter(item => (categoriaEntregaActiva === "todas") || 
+    ((item.tipo || "").toUpperCase().trim() === categoriaEntregaActiva.toUpperCase().trim()));
   if (items.length === 0) {
     alert("No hay registros de entregas para generar el reporte.");
     return;
@@ -1257,7 +1310,8 @@ function abrirReporteImpresoEntregas() {
 }
 
 function abrirResumenTextoEntregas() {
-  const items = entregas.filter(item => (categoriaEntregaActiva === "todas") || (item.tipo === categoriaEntregaActiva));
+  const items = entregas.filter(item => (categoriaEntregaActiva === "todas") || 
+    ((item.tipo || "").toUpperCase().trim() === categoriaEntregaActiva.toUpperCase().trim()));
   if (items.length === 0) {
     alert("No hay entregas registradas en esta categoría.");
     return;
@@ -1331,7 +1385,7 @@ function formatearFecha(iso) {
   return d.toLocaleDateString("es-BO", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-// Render Tabla de Cambios Pública
+// Render Tabla de Cambios
 function renderTabla() {
   const tbody = document.getElementById("table-cambios-body");
   tbody.innerHTML = "";
