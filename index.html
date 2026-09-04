@@ -8,16 +8,12 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="style.css">
   <style>
-    /* Calibración milimétrica para la tarjeta de calzado */
     .shoe-card-container {
       width: 200mm;
       height: 34mm;
       max-height: 34mm;
       box-sizing: border-box;
-      border-top: 1px solid #000;
-      border-bottom: 1px solid #000;
-      border-left: 1px solid #000;
-      border-right: 1px solid #000;
+      border: 1px solid #000;
       margin: 0 !important;
       padding: 0 !important;
       page-break-inside: avoid;
@@ -29,10 +25,13 @@
     }
     @media print {
       body * { visibility: hidden; }
+      #modal-reporte-entregas-print, #modal-reporte-entregas-print *,
+      #modal-resumen-reporte, #modal-resumen-reporte *,
+      #modal-reporte-llegadas-print, #modal-reporte-llegadas-print *,
       #modal-impresion-tarjetas, #modal-impresion-tarjetas * {
         visibility: visible;
       }
-      #modal-impresion-tarjetas {
+      #modal-reporte-entregas-print, #modal-resumen-reporte, #modal-reporte-llegadas-print, #modal-impresion-tarjetas {
         position: absolute;
         left: 0;
         top: 0;
@@ -42,19 +41,13 @@
         box-shadow: none !important;
         background: white !important;
       }
-      .shoe-card-container {
-        margin: 0 !important;
-        box-shadow: none !important;
-        border-top: 0.5px solid #000;
-        border-bottom: 0.5px solid #000;
-      }
       .no-print { display: none !important; }
     }
   </style>
 </head>
 <body class="bg-[#F4F5F7] font-sans text-gray-800 antialiased min-h-screen">
 
-  <!-- ==================== PORTADA ==================== -->
+  <!-- PORTADA -->
   <div id="welcome-container" class="relative min-h-screen w-full flex flex-col md:flex-row bg-[#F4F5F7] overflow-hidden">
     <div class="relative w-full md:w-[42%] min-h-[360px] md:min-h-screen flex flex-col justify-between p-8 md:p-12 z-0 overflow-hidden">
       <img src="./banner-lateral.png" alt="Bata Bolivia" class="absolute inset-0 w-full h-full object-cover object-left md:object-right pointer-events-none select-none z-0">
@@ -137,7 +130,7 @@
     </div>
   </div>
 
-  <!-- MODAL: REGISTRO CON OJITO -->
+  <!-- MODAL: REGISTRO -->
   <div id="modal-register" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
       <button type="button" id="close-register" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -234,6 +227,7 @@
           <span>Informe</span>
         </button>
 
+        <!-- SUBMENÚS ENTREGAS -->
         <div class="pt-3 border-t border-white/20 space-y-1">
           <div class="px-3 text-[10px] font-black text-white/70 uppercase tracking-widest mb-1.5">Módulos de Entregas</div>
           
@@ -273,6 +267,7 @@
           </button>
         </div>
 
+        <!-- MÓDULO PROCUREMENT & STORAGE -->
         <div class="pt-3 border-t border-white/20 space-y-1">
           <div class="px-3 text-[10px] font-black text-white/70 uppercase tracking-widest mb-1.5">Cadena de Suministro</div>
           <button type="button" id="menu-btn-procurement" class="sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white transition cursor-pointer">
@@ -281,6 +276,7 @@
           </button>
         </div>
 
+        <!-- MÓDULO TARJETAS (PD) -->
         <div id="section-menu-tarjetas" class="pt-3 border-t border-white/20 space-y-1">
           <div class="px-3 text-[10px] font-black text-white/70 uppercase tracking-widest mb-1.5">Modelaje y Muestras</div>
           <button type="button" id="menu-btn-tarjetas" class="sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white transition cursor-pointer">
@@ -347,7 +343,7 @@
           </div>
         </section>
 
-        <!-- VISTA 2: INFORME EJECUTIVO CON 5 MINI-KPIS -->
+        <!-- VISTA 2: INFORME EJECUTIVO -->
         <section id="view-informe" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -432,7 +428,7 @@
         </section>
 
         <!-- VISTA 3: ENTREGAS -->
-        <section id="view-entregas" class="hidden space-y-6">
+        <section id="view-entregas" class="space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <h2 id="entregas-vista-titulo" class="text-lg font-bold text-[#D61B28] flex items-center space-x-2">
@@ -580,7 +576,7 @@
           </div>
         </section>
 
-        <!-- VISTA 5: GENERADOR DE TARJETAS DE MUESTRAS (PD) -->
+        <!-- VISTA 5: TARJETAS DE MUESTRA (PD) CON LLENADO INTELIGENTE -->
         <section id="view-tarjetas" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -588,125 +584,137 @@
                 <i class="fa-solid fa-id-card"></i>
                 <span>Generador de Tarjetas de Muestra y Corte (34 mm × 200 mm)</span>
               </h2>
-              <p class="text-xs text-gray-400">Pega directamente las celdas del Excel de Costos para autollenar e imprimir en tríptico sin espacio entre cortes.</p>
+              <p class="text-xs text-gray-400">Pega directamente una fila de Excel o completa los campos con ayuda asistida.</p>
             </div>
             <div class="flex items-center space-x-2">
               <button type="button" id="btn-imprimir-tarjetas-action" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-1.5 transition cursor-pointer">
                 <i class="fa-solid fa-print"></i>
-                <span>Imprimir Tarjetas Calibradas</span>
+                <span>Imprimir Tarjetas Sin Separación</span>
               </button>
             </div>
           </div>
 
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- PANEL 1: PEGAR EXCEL -->
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4 text-xs">
-              <div class="border-b border-gray-100 pb-2 flex justify-between items-center">
-                <span class="font-bold text-gray-700 flex items-center space-x-1.5">
-                  <i class="fa-solid fa-table text-emerald-600"></i>
-                  <span>1. Pegar Celdas de Excel (Costos)</span>
-                </span>
-                <span class="text-[10px] text-gray-400">Ctrl + C en Excel y Ctrl + V aquí</span>
+          <!-- PANEL DE LLENADO DE DATOS DE COSTOS -->
+          <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4 text-xs">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-gray-100 pb-3">
+              <span class="font-bold text-gray-800 text-sm flex items-center space-x-1.5">
+                <i class="fa-solid fa-file-invoice-dollar text-emerald-600"></i>
+                <span>1. Datos de Costos (Copia 1 fila en Excel y pégala aquí)</span>
+              </span>
+              <div class="flex items-center space-x-2 w-full sm:w-auto">
+                <input type="text" id="input-quick-paste-row" placeholder="Haz clic aquí y presiona Ctrl + V para pegar la fila..." class="px-3 py-1.5 border border-emerald-300 rounded-lg w-full sm:w-80 font-mono text-[11px] focus:ring-2 focus:ring-emerald-500">
+                <button type="button" id="btn-quick-distribute" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg whitespace-nowrap cursor-pointer">
+                  Distribuir
+                </button>
               </div>
-              <textarea id="paste-excel-costos" rows="5" placeholder="Pega aquí las filas de la tabla de Costos copiadas directamente de Excel..." class="w-full p-2.5 border border-gray-300 rounded-xl font-mono text-[11px] focus:ring-2 focus:ring-[#D61B28] focus:outline-none"></textarea>
-              <button type="button" id="btn-procesar-excel-paste" class="w-full bg-slate-800 hover:bg-black text-white font-bold py-2 rounded-xl transition cursor-pointer">
-                Cargar Artículos Pegados
-              </button>
+            </div>
 
+            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
               <div>
-                <label class="block font-bold text-gray-700 mb-1">Seleccionar Artículo Procesado:</label>
-                <select id="select-articulo-tarjeta" class="w-full px-3 py-2 border border-gray-300 rounded-xl bg-white font-bold text-gray-800 focus:ring-2 focus:ring-[#D61B28]">
-                  <option value="">— Pega los datos de Excel primero —</option>
-                </select>
+                <label class="block font-bold text-gray-700 mb-1">Artículo</label>
+                <input type="text" id="card-costo-articulo" placeholder="85549004" class="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg font-mono font-bold text-red-600">
               </div>
+              <div>
+                <label class="block font-bold text-gray-700 mb-1">Línea / Proyecto</label>
+                <input type="text" id="card-costo-linea" placeholder="SANDRA" class="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg font-bold">
+              </div>
+              <div>
+                <label class="block font-bold text-gray-700 mb-1">Marca</label>
+                <input type="text" id="card-costo-marca" placeholder="BATA" class="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg">
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block font-bold text-gray-700 mb-1">Tipo Material (Costos)</label>
+                <input type="text" id="card-costo-material" placeholder="DNE GAMUZON 4EGD" class="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg">
+              </div>
+              <div>
+                <label class="block font-bold text-gray-700 mb-1">Precio Venta BOB</label>
+                <input type="text" id="card-costo-precio" placeholder="399,00" class="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg font-bold">
+              </div>
+              <div>
+                <label class="block font-bold text-gray-700 mb-1">Margen %</label>
+                <input type="text" id="card-costo-margen" placeholder="42,55%" class="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg font-bold text-green-700">
+              </div>
+            </div>
+          </div>
 
-              <div class="pt-2 border-t border-gray-100">
-                <label class="block font-bold text-gray-700 mb-1">Cantidad de Tarjetas a Imprimir:</label>
-                <select id="select-copias-tarjeta" class="w-full px-3 py-2 border border-gray-300 rounded-xl bg-white font-black text-[#D61B28]">
-                  <option value="5">5 Copias (2 Producción [Blanco], 1 Retail [Verde], 1 Planeamiento [Amarillo], 1 Exportación [Rosado])</option>
-                  <option value="4">4 Copias (1 Producción [Blanco], 1 Retail [Verde], 1 Planeamiento [Amarillo], 1 Exportación [Rosado])</option>
-                  <option value="1">1 Copia (Producción - Blanco)</option>
+          <!-- PANEL DE ESPECIFICACIONES TÉCNICAS -->
+          <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4 text-xs">
+            <div class="border-b border-gray-100 pb-2 flex justify-between items-center">
+              <span class="font-bold text-gray-800 text-sm flex items-center space-x-1.5">
+                <i class="fa-solid fa-shoe-prints text-[#D61B28]"></i>
+                <span>2. Especificaciones Técnicas y Copias (Desarrollo)</span>
+              </span>
+              <div>
+                <label class="font-bold text-gray-700 mr-1">Cantidad:</label>
+                <select id="select-copias-tarjeta" class="px-2 py-1 border border-gray-300 rounded-lg font-black text-[#D61B28]">
+                  <option value="5">5 Copias (2 Blancas, 1 Verde, 1 Amarilla, 1 Rosada)</option>
+                  <option value="4">4 Copias (1 Blanca, 1 Verde, 1 Amarilla, 1 Rosada)</option>
+                  <option value="1">1 Copia (Blanca - Producción)</option>
                   <option value="3">3 Copias</option>
                 </select>
               </div>
             </div>
 
-            <!-- PANEL 2: ESPECIFICACIONES TÉCNICAS Y MATERIAL DE CORTE -->
-            <div class="lg:col-span-2 bg-white p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4 text-xs">
-              <div class="border-b border-gray-100 pb-2">
-                <span class="font-bold text-gray-700 flex items-center space-x-1.5">
-                  <i class="fa-solid fa-shoe-prints text-[#D61B28]"></i>
-                  <span>2. Datos Técnicos del Modelo (Bata Bolivia)</span>
-                </span>
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+              <div>
+                <label class="block font-bold text-gray-600 mb-1">Serie</label>
+                <input type="text" id="card-serie" placeholder="37 - 44" class="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg font-mono">
               </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label class="block font-bold text-gray-600 mb-1">Nombre Lateral (Ej: SANDRA)</label>
-                  <input type="text" id="card-nombre-lateral" placeholder="SANDRA" class="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg uppercase font-bold">
-                </div>
-                <div>
-                  <label class="block font-bold text-gray-600 mb-1">Serie</label>
-                  <input type="text" id="card-serie" placeholder="37 - 44" class="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg font-mono">
-                </div>
-                <div>
-                  <label class="block font-bold text-gray-600 mb-1">Fecha de Ficha</label>
-                  <input type="text" id="card-fecha" class="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg font-mono">
-                </div>
+              <div>
+                <label class="block font-bold text-gray-600 mb-1">Material de Corte (Manual)</label>
+                <input type="text" id="card-material-corte" placeholder="DNE GAMUZON 4EGD" class="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg font-bold">
               </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label class="block font-bold text-gray-600 mb-1">Material de Corte (Manual / Sobrescribir)</label>
-                  <input type="text" id="card-material-corte" placeholder="DNE GAMUZON 4EGD" class="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg font-semibold">
-                </div>
-                <div>
-                  <label class="block font-bold text-gray-600 mb-1">Forro</label>
-                  <input type="text" id="card-forro" placeholder="DNE FORRO CARAMELO" class="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg">
-                </div>
-                <div>
-                  <label class="block font-bold text-gray-600 mb-1">Plantilla Interna</label>
-                  <input type="text" id="card-plant-int" placeholder="DNE PLANT CAMEL PIG SKIN" class="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg">
-                </div>
+              <div>
+                <label class="block font-bold text-gray-600 mb-1">Forro</label>
+                <input type="text" id="card-forro" placeholder="DNE FORRO CARAMELO" class="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg">
               </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label class="block font-bold text-gray-600 mb-1">Técnico / Modelista</label>
-                  <input type="text" id="card-tecnico" placeholder="JAVIER GOMEZ" class="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg">
-                </div>
-                <div>
-                  <label class="block font-bold text-gray-600 mb-1">Horma / Suela</label>
-                  <input type="text" id="card-horma-suela" placeholder="MARVIN" class="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg">
-                </div>
-                <div>
-                  <label class="block font-bold text-gray-600 mb-1">Construcción</label>
-                  <input type="text" id="card-construccion" placeholder="TRUE MOC" class="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg">
-                </div>
+              <div>
+                <label class="block font-bold text-gray-600 mb-1">Plantilla Interna</label>
+                <input type="text" id="card-plant-int" placeholder="DNE PLANT CAMEL PIG SKIN" class="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg">
               </div>
+            </div>
 
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label class="block font-bold text-gray-600 mb-1">Croquis / Silueta del Zapato (Imagen)</label>
-                  <input type="file" id="card-croquis-file" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-red-50 file:text-[#D61B28]">
-                </div>
-                <div>
-                  <label class="block font-bold text-gray-600 mb-1">Observaciones Ocultas (Dobladas)</label>
-                  <input type="text" id="card-observaciones" placeholder="Sin observaciones especiales" class="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg">
-                </div>
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+              <div>
+                <label class="block font-bold text-gray-600 mb-1">Técnico / Modelista</label>
+                <input type="text" id="card-tecnico" placeholder="JAVIER GOMEZ" class="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg">
+              </div>
+              <div>
+                <label class="block font-bold text-gray-600 mb-1">Horma / Suela</label>
+                <input type="text" id="card-horma-suela" placeholder="MARVIN" class="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg">
+              </div>
+              <div>
+                <label class="block font-bold text-gray-600 mb-1">Construcción</label>
+                <input type="text" id="card-construccion" placeholder="TRUE MOC" class="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg">
+              </div>
+              <div>
+                <label class="block font-bold text-gray-600 mb-1">Fecha</label>
+                <input type="text" id="card-fecha" class="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg font-mono">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-gray-600 mb-1">Silueta / Croquis del Zapato (Imagen)</label>
+                <input type="file" id="card-croquis-file" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-red-50 file:text-[#D61B28]">
+              </div>
+              <div>
+                <label class="block font-bold text-gray-600 mb-1">Observaciones (Panel posterior doblado)</label>
+                <input type="text" id="card-observaciones" placeholder="Sin observaciones especiales" class="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg">
               </div>
             </div>
           </div>
 
-          <!-- VISTA PREVIA DE LAS TARJETAS (SIN ESPACIO ENTRE ELLAS) -->
-          <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-4">
-            <h3 class="font-bold text-xs text-gray-700 flex items-center space-x-1.5">
-              <i class="fa-solid fa-eye text-blue-600"></i>
-              <span>Vista Previa de Impresión Calibrada (200 mm × 34 mm - Sin espacio entre cortes para guillotina)</span>
-            </h3>
-            <div id="contenedor-tarjetas-preview" class="overflow-x-auto p-4 bg-gray-100 rounded-xl flex flex-col items-center">
-              <p class="text-xs text-gray-400 italic">Carga los datos para visualizar las tarjetas generadas.</p>
+          <!-- VISTA PREVIA (SIN ESPACIO VERTICAL ENTRE TARJETAS) -->
+          <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-3">
+            <div class="flex justify-between items-center">
+              <h3 class="font-bold text-xs text-gray-700 flex items-center space-x-1.5">
+                <i class="fa-solid fa-scissors text-red-600"></i>
+                <span>Vista Previa: Tarjetas Continuas (Sin espacio entre tarjetas para guillotina)</span>
+              </h3>
+              <span class="text-[10px] text-gray-400">Total dimensiones: 200 mm × 34 mm c/u</span>
             </div>
+            <div id="contenedor-tarjetas-preview" class="overflow-x-auto p-4 bg-gray-200 rounded-xl flex flex-col items-center"></div>
           </div>
         </section>
 
@@ -788,11 +796,11 @@
     </div>
   </div>
 
-  <!-- MODAL: IMPRESIÓN DIRECTA DE TARJETAS (SIN MARGEN VERTICAL ENTRE ELLAS) -->
+  <!-- MODAL: IMPRESIÓN DE TARJETAS (SIN MARGEN VERTICAL) -->
   <div id="modal-impresion-tarjetas" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-5xl rounded-3xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
       <div class="border-b border-gray-200 pb-3 mb-4 flex justify-between items-center no-print">
-        <h3 class="font-bold text-sm text-[#D61B28]">Impresión de Tarjetas para Muestras (200 mm × 34 mm)</h3>
+        <h3 class="font-bold text-sm text-[#D61B28]">Impresión de Tarjetas Calibradas (200 mm × 34 mm)</h3>
         <div class="flex items-center space-x-2">
           <button type="button" onclick="window.print()" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow cursor-pointer">
             <i class="fa-solid fa-print mr-1"></i> Imprimir en Hoja A4 / Carta
@@ -804,7 +812,7 @@
     </div>
   </div>
 
-  <!-- MODAL: REGISTRAR ENTREGA (ÚNICO Y CON ESTABILIDAD) -->
+  <!-- MODAL: NUEVA ENTREGA -->
   <div id="modal-nueva-entrega" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden text-xs">
       <div class="bg-[#D61B28] px-6 py-4 flex justify-between items-center text-white">
@@ -879,7 +887,7 @@
     </div>
   </div>
 
-  <!-- MODAL: GESTIONAR DISPONIBILIDAD DE MATERIAL -->
+  <!-- MODAL: GESTIONAR DISPONIBILIDAD -->
   <div id="modal-nuevo-bloqueo" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden text-xs">
       <div class="bg-amber-600 px-6 py-4 flex justify-between items-center text-white">
