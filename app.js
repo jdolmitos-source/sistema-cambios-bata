@@ -488,6 +488,10 @@ menuBtnInforme.onclick = () => {
   renderInformeView();
 };
 
+menuBtnEntregasTodas.onclick = () => {
+  window.cambiarSubmenuEntrega("todas");
+};
+
 menuBtnProcurement.onclick = () => {
   resetMenuStyles();
   viewProcurement.classList.remove("hidden");
@@ -1200,13 +1204,98 @@ function initModuloTarjetas() {
     if (elem) elem.oninput = renderTarjetasPreview;
   });
 
+  // Botón abrir modal de tarjetas
   document.getElementById("btn-imprimir-tarjetas-action").onclick = () => {
     const previewHTML = document.getElementById("contenedor-tarjetas-preview").innerHTML;
     document.getElementById("hoja-impresion-tarjetas").innerHTML = previewHTML;
     modalImpresionTarjetas.classList.remove("hidden");
   };
 
+  // Botón ejecutar impresión calibrada mediante Iframe aislado
+  document.getElementById("btn-ejecutar-print-tarjetas").onclick = () => {
+    imprimirTarjetasEnIframe();
+  };
+
   renderTarjetasPreview();
+}
+
+function imprimirTarjetasEnIframe() {
+  const contenido = document.getElementById("contenedor-tarjetas-preview").innerHTML;
+  
+  // Crear iframe invisible temporal
+  let iframe = document.getElementById("iframe-impresion-tarjetas");
+  if (!iframe) {
+    iframe = document.createElement("iframe");
+    iframe.id = "iframe-impresion-tarjetas";
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    document.body.appendChild(iframe);
+  }
+
+  const doc = iframe.contentWindow.document;
+  doc.open();
+  doc.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Tarjetas de Muestra - Bata Bolivia</title>
+      <style>
+        @page {
+          size: letter portrait;
+          margin: 6mm 8mm;
+        }
+        * {
+          box-sizing: border-box;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        body {
+          margin: 0;
+          padding: 0;
+          background: #fff;
+          font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        .shoe-card-container {
+          width: 200mm;
+          height: 34mm;
+          max-height: 34mm;
+          border-top: 1px solid #000;
+          border-bottom: 1px solid #000;
+          border-left: 1px solid #000;
+          border-right: 1px solid #000;
+          margin: 0 0 0 0 !important;
+          padding: 0 !important;
+          display: flex;
+          font-size: 7.5px;
+          line-height: 1.1;
+          color: #000;
+          page-break-inside: avoid;
+          break-inside: avoid;
+        }
+        .shoe-panel {
+          width: 66.66mm;
+          height: 100%;
+          box-sizing: border-box;
+        }
+      </style>
+    </head>
+    <body>
+      ${contenido}
+    </body>
+    </html>
+  `);
+  doc.close();
+
+  // Esperar a que rendericen las imágenes e invocar la impresión del iframe
+  setTimeout(() => {
+    iframe.contentWindow.focus();
+    iframe.contentWindow.print();
+  }, 300);
 }
 
 function renderTarjetasPreview() {
@@ -1232,11 +1321,11 @@ function renderTarjetasPreview() {
   const observaciones = document.getElementById("card-observaciones").value || "";
 
   const siluetaCalzadoHTML = croquisTarjetaBase64 
-    ? `<img src="${croquisTarjetaBase64}" class="w-full h-14 object-contain mx-auto">`
-    : `<div class="h-14 flex items-center justify-center text-[9px] text-gray-400 border border-dashed border-gray-300 rounded">Croquis</div>`;
+    ? `<img src="${croquisTarjetaBase64}" style="width:100%; height:38px; object-fit:contain; margin:auto;">`
+    : `<div style="height:38px; display:flex; align-items:center; justify-content:center; font-size:9px; color:#999; border:1px dashed #ccc; border-radius:4px;">Croquis</div>`;
 
   const siluetaPlantillaHTML = plantillaCorteTarjetaBase64 
-    ? `<img src="${plantillaCorteTarjetaBase64}" class="w-full h-14 object-contain mx-auto">`
+    ? `<img src="${plantillaCorteTarjetaBase64}" style="width:100%; height:38px; object-fit:contain; margin:auto;">`
     : siluetaCalzadoHTML;
 
   let tarjetasHTML = "";
@@ -1286,53 +1375,53 @@ function renderTarjetasPreview() {
     const imagenIzquierdaHTML = esTarjetaCorte ? siluetaPlantillaHTML : siluetaCalzadoHTML;
 
     tarjetasHTML += `
-      <div class="shoe-card-container bg-white flex text-[7.5px] leading-tight text-black font-sans">
+      <div class="shoe-card-container" style="background:#fff; display:flex; font-size:7.5px; line-height:1.1; color:#000;">
         <!-- SECCIÓN 1 (66.6 mm) -->
-        <div class="shoe-panel flex border-r border-dashed border-gray-500 overflow-hidden">
-          <div class="lateral-tab w-4 border-r border-black flex items-center justify-center font-black tracking-widest text-[9px]" style="writing-mode: vertical-rl; transform: rotate(180deg); background-color: ${bgColorLateral} !important;">
+        <div class="shoe-panel" style="display:flex; border-right:1px dashed #555; overflow:hidden;">
+          <div class="lateral-tab" style="width:16px; border-right:1px solid #000; display:flex; align-items:center; justify-content:center; font-weight:900; letter-spacing:0.1em; font-size:9px; writing-mode:vertical-rl; transform:rotate(180deg); background-color:${bgColorLateral} !important;">
             ${linea}
           </div>
           
-          <div class="flex-1 flex flex-col justify-between p-0.5">
-            <div class="text-[8px] font-black text-red-600 text-center border-b border-black pb-0.2">
+          <div style="flex:1; display:flex; flex-direction:column; justify-content:space-between; padding:2px;">
+            <div style="font-size:8px; font-weight:900; color:#dc2626; text-align:center; border-bottom:1px solid #000; padding-bottom:1px;">
               MANUFACTURA BOLIVIANA S.A.
             </div>
 
-            <div class="flex flex-1">
-              <div class="w-16 flex flex-col justify-between border-r border-black pr-0.5">
+            <div style="display:flex; flex:1;">
+              <div style="width:65px; display:flex; flex-direction:column; justify-content:space-between; border-right:1px solid #000; padding-right:2px;">
                 ${imagenIzquierdaHTML}
-                <span class="text-[6.5px] font-bold">FECHA: ${fecha}</span>
+                <span style="font-size:6.5px; font-weight:bold;">FECHA: ${fecha}</span>
               </div>
 
-              <div class="flex-1 pl-1 flex flex-col justify-between">
-                <div class="flex justify-between border-b border-gray-300">
-                  <span class="font-bold">ART:</span>
-                  <span class="font-black text-[9px] text-black font-mono">${articulo}</span>
+              <div style="flex:1; padding-left:4px; display:flex; flex-direction:column; justify-content:space-between;">
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #e5e7eb;">
+                  <span style="font-weight:bold;">ART:</span>
+                  <span style="font-weight:900; font-size:9px; font-family:monospace;">${articulo}</span>
                 </div>
-                <div class="flex justify-between border-b border-gray-300">
-                  <span class="font-bold">MARCA:</span>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #e5e7eb;">
+                  <span style="font-weight:bold;">MARCA:</span>
                   <span>${marca}</span>
                 </div>
-                <div class="flex justify-between border-b border-gray-300">
-                  <span class="font-bold">SERIE:</span>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #e5e7eb;">
+                  <span style="font-weight:bold;">SERIE:</span>
                   <span>${serie}</span>
                 </div>
-                <div class="flex justify-between border-b border-gray-300 truncate">
-                  <span class="font-bold">CORTE:</span>
-                  <span class="truncate">${materialCorte}</span>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #e5e7eb; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                  <span style="font-weight:bold;">CORTE:</span>
+                  <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${materialCorte}</span>
                 </div>
-                <div class="flex justify-between border-b border-gray-300 truncate">
-                  <span class="font-bold">FORRO:</span>
-                  <span class="truncate">${forro}</span>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #e5e7eb; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                  <span style="font-weight:bold;">FORRO:</span>
+                  <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${forro}</span>
                 </div>
-                <div class="flex justify-between truncate">
-                  <span class="font-bold">PLANT:</span>
-                  <span class="truncate">${plantInt}</span>
+                <div style="display:flex; justify-content:space-between; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                  <span style="font-weight:bold;">PLANT:</span>
+                  <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${plantInt}</span>
                 </div>
               </div>
             </div>
 
-            <div class="grid grid-cols-4 gap-0.5 border-t border-black text-[6.5px] font-semibold pt-0.5">
+            <div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:2px; border-top:1px solid #000; font-size:6.5px; font-weight:600; padding-top:1px;">
               <div>TEC: ${tecnico}</div>
               <div>SUELA: ${hormaSuela}</div>
               <div>PRECIO: <b>${precio}</b></div>
@@ -1342,50 +1431,50 @@ function renderTarjetasPreview() {
         </div>
 
         <!-- SECCIÓN 2 (66.6 mm) -->
-        <div class="shoe-panel flex flex-col justify-between p-1.5 border-r border-dashed border-gray-500 text-[7px]">
-          <div class="text-[7.5px] font-black text-center text-gray-700 uppercase border-b border-gray-300 pb-0.5">
+        <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:5px; border-right:1px dashed #555; font-size:7px;">
+          <div style="font-size:7.5px; font-weight:900; text-align:center; color:#374151; text-transform:uppercase; border-bottom:1px solid #d1d5db; padding-bottom:2px;">
             APROBACIONES (${etiquetaAprobacion})
           </div>
 
-          <div class="grid grid-cols-2 gap-1 text-center">
-            <div class="border-b border-black pb-0.5">
-              <span class="font-bold block">P.D. CHIEF</span>
-              <span class="text-[6px] text-gray-400">Fecha: ___/___/___</span>
+          <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:4px; text-align:center;">
+            <div style="border-bottom:1px solid #000; padding-bottom:2px;">
+              <span style="font-weight:bold; display:block;">P.D. CHIEF</span>
+              <span style="font-size:6px; color:#9ca3af;">Fecha: ___/___/___</span>
             </div>
-            <div class="border-b border-black pb-0.5">
-              <span class="font-bold block">MERCHANDISING MAN.</span>
-              <span class="text-[6px] text-gray-400">Fecha: ___/___/___</span>
+            <div style="border-bottom:1px solid #000; padding-bottom:2px;">
+              <span style="font-weight:bold; display:block;">MERCHANDISING MAN.</span>
+              <span style="font-size:6px; color:#9ca3af;">Fecha: ___/___/___</span>
             </div>
           </div>
 
-          <div class="text-center border-b border-black pb-0.5 mx-auto w-3/4">
-            <span class="font-bold block">PURCHASING MANAGER</span>
-            <span class="text-[6px] text-gray-400">Fecha: ___/___/___</span>
+          <div style="text-align:center; border-bottom:1px solid #000; padding-bottom:2px; margin:auto; width:75%;">
+            <span style="font-weight:bold; display:block;">PURCHASING MANAGER</span>
+            <span style="font-size:6px; color:#9ca3af;">Fecha: ___/___/___</span>
           </div>
 
-          <div class="grid grid-cols-2 gap-1 text-center">
-            <div class="border-b border-black pb-0.5">
-              <span class="font-bold block">PRODUCTION MANAGER</span>
-              <span class="text-[6px] text-gray-400">Fecha: ___/___/___</span>
+          <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:4px; text-align:center;">
+            <div style="border-bottom:1px solid #000; padding-bottom:2px;">
+              <span style="font-weight:bold; display:block;">PRODUCTION MANAGER</span>
+              <span style="font-size:6px; color:#9ca3af;">Fecha: ___/___/___</span>
             </div>
-            <div class="border-b border-black pb-0.5">
-              <span class="font-bold block">COUNTRY MANAGER</span>
-              <span class="text-[6px] text-gray-400">Fecha: ___/___/___</span>
+            <div style="border-bottom:1px solid #000; padding-bottom:2px;">
+              <span style="font-weight:bold; display:block;">COUNTRY MANAGER</span>
+              <span style="font-size:6px; color:#9ca3af;">Fecha: ___/___/___</span>
             </div>
           </div>
         </div>
 
         <!-- SECCIÓN 3 (66.6 mm) -->
-        <div class="shoe-panel p-1.5 flex flex-col justify-between text-[7.5px]">
+        <div class="shoe-panel" style="padding:5px; display:flex; flex-direction:column; justify-content:space-between; font-size:7.5px;">
           <div>
-            <span class="font-black text-gray-800 uppercase block mb-1">OBSERVACIONES:</span>
-            <p class="text-[7px] text-gray-700 italic leading-snug">${observaciones || 'Sin observaciones adicionales'}</p>
+            <span style="font-weight:900; color:#1f2937; text-transform:uppercase; display:block; margin-bottom:2px;">OBSERVACIONES:</span>
+            <p style="font-size:7px; color:#374151; font-style:italic; line-height:1.2;">${observaciones || 'Sin observaciones adicionales'}</p>
           </div>
-          <div class="space-y-1.5">
-            <div class="border-b border-dotted border-gray-400 h-2"></div>
-            <div class="border-b border-dotted border-gray-400 h-2"></div>
-            <div class="border-b border-dotted border-gray-400 h-2"></div>
-            <div class="text-right text-[6px] text-gray-400 font-bold tracking-widest">BATA BOLIVIA PD</div>
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <div style="border-bottom:1px dotted #9ca3af; height:6px;"></div>
+            <div style="border-bottom:1px dotted #9ca3af; height:6px;"></div>
+            <div style="border-bottom:1px dotted #9ca3af; height:6px;"></div>
+            <div style="text-align:right; font-size:6px; color:#9ca3af; font-weight:bold; letter-spacing:0.1em;">BATA BOLIVIA PD</div>
           </div>
         </div>
       </div>
@@ -1394,778 +1483,3 @@ function renderTarjetasPreview() {
 
   container.innerHTML = tarjetasHTML;
 }
-
-// ==================== PANEL SUPER ADMIN ====================
-async function cargarPanelSuperAdmin() {
-  if (!esSuperAdmin()) return;
-
-  const tbodyUsers = document.getElementById("table-users-body");
-  const tbodySols = document.getElementById("table-admin-solicitudes-body");
-  const tbodyEnts = document.getElementById("table-admin-entregas-body");
-
-  tbodyUsers.innerHTML = `<tr><td colspan="6" class="p-3 text-center text-gray-400">Cargando usuarios...</td></tr>`;
-
-  try {
-    const snap = await getDocs(collection(db, "usuarios"));
-    tbodyUsers.innerHTML = "";
-
-    snap.forEach(docU => {
-      const u = docU.data();
-      const tr = document.createElement("tr");
-      tr.className = "hover:bg-gray-50 border-b border-gray-100";
-      
-      const avatar = u.foto 
-        ? `<img src="${u.foto}" class="w-7 h-7 rounded-full object-cover">` 
-        : `<div class="w-7 h-7 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center"><i class="fa-solid fa-user text-[10px]"></i></div>`;
-
-      tr.innerHTML = `
-        <td class="p-3">${avatar}</td>
-        <td class="p-3 font-bold text-gray-800">${u.nombre || '—'}</td>
-        <td class="p-3 text-gray-600">${u.email || '—'}</td>
-        <td class="p-3 font-mono text-gray-600">${u.celular ? '+591 ' + u.celular : '<span class="text-red-400">Sin celular</span>'}</td>
-        <td class="p-3">
-          <select onchange="window.cambiarRolUsuario('${docU.id}', this.value)" class="border border-gray-300 rounded px-2 py-1 text-xs bg-white font-semibold text-gray-700 focus:ring-1 focus:ring-[#D61B28]">
-            <option value="Calidad" ${u.rol === 'Calidad' ? 'selected' : ''}>Calidad</option>
-            <option value="Costos" ${u.rol === 'Costos' ? 'selected' : ''}>Costos</option>
-            <option value="Compras" ${u.rol === 'Compras' ? 'selected' : ''}>Compras</option>
-            <option value="Compras Admin" ${u.rol === 'Compras Admin' ? 'selected' : ''}>Compras Admin</option>
-            <option value="Almacén" ${u.rol === 'Almacén' ? 'selected' : ''}>Almacén</option>
-            <option value="Producción" ${u.rol === 'Producción' ? 'selected' : ''}>Producción</option>
-            <option value="Planeamiento" ${u.rol === 'Planeamiento' ? 'selected' : ''}>Planeamiento</option>
-            <option value="Retail" ${u.rol === 'Retail' ? 'selected' : ''}>Retail</option>
-            <option value="Desarrollo de producto" ${u.rol === 'Desarrollo de producto' ? 'selected' : ''}>Desarrollo (General)</option>
-            <option value="Desarrollo de producto - Técnico" ${u.rol === 'Desarrollo de producto - Técnico' ? 'selected' : ''}>Desarrollo - Técnico (Modelista)</option>
-            <option value="Desarrollo de producto - Jefe" ${u.rol === 'Desarrollo de producto - Jefe' ? 'selected' : ''}>Desarrollo - Jefe</option>
-          </select>
-        </td>
-        <td class="p-3 text-center">
-          ${docU.id !== currentUser.uid ? `
-            <button onclick="window.eliminarUsuarioDoc('${docU.id}', '${u.nombre}')" class="text-red-600 hover:text-red-800 font-bold text-xs cursor-pointer">
-              <i class="fa-solid fa-trash"></i> Eliminar
-            </button>
-          ` : '<span class="text-gray-400 text-[10px] font-bold">Super Admin</span>'}
-        </td>
-      `;
-      tbodyUsers.appendChild(tr);
-    });
-
-    tbodySols.innerHTML = "";
-    if (solicitudes.length === 0) {
-      tbodySols.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400">No hay solicitudes registradas.</td></tr>`;
-    } else {
-      solicitudes.forEach(sol => {
-        const tr = document.createElement("tr");
-        tr.className = "hover:bg-gray-50 border-b border-gray-100";
-        tr.innerHTML = `
-          <td class="p-3 font-semibold text-gray-500 font-mono">${sol.semana || '—'}</td>
-          <td class="p-3 text-gray-600 whitespace-nowrap">${formatearFecha(sol.fechaCreacion)}</td>
-          <td class="p-3">
-            ${sol.esMinuta ? '<span class="bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded text-[10px]">MINUTA PILOTO</span>' : '<span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-[10px]">CAMBIO</span>'}
-          </td>
-          <td class="p-3 font-bold text-gray-800">${sol.proyecto}</td>
-          <td class="p-3 font-mono text-gray-700">${sol.articulo}</td>
-          <td class="p-3 text-gray-600">${sol.solicitanteNombre || '—'}</td>
-          <td class="p-3"><span class="px-2 py-0.5 rounded font-bold text-[10px] ${sol.estado === 'Realizado' ? 'bg-green-50 text-green-700' : (sol.estado === 'Retrasado' ? 'bg-red-50 text-red-700' : 'bg-orange-50 text-orange-700')}">${sol.estado}</span></td>
-          <td class="p-3 text-center">
-            <button onclick="window.eliminarSolicitudProyecto('${sol.id}', '${sol.proyecto}')" class="text-red-500 hover:text-red-700 p-1 rounded font-bold text-xs cursor-pointer">
-              <i class="fa-solid fa-trash-can"></i> Eliminar
-            </button>
-          </td>
-        `;
-        tbodySols.appendChild(tr);
-      });
-    }
-
-    tbodyEnts.innerHTML = "";
-    if (entregas.length === 0) {
-      tbodyEnts.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-400">No hay entregas registradas.</td></tr>`;
-    } else {
-      entregas.forEach(ent => {
-        const tr = document.createElement("tr");
-        tr.className = "hover:bg-gray-50 border-b border-gray-100";
-        tr.innerHTML = `
-          <td class="p-3 font-semibold text-gray-500 font-mono">${ent.semana || '—'}</td>
-          <td class="p-3 text-gray-600 whitespace-nowrap">${formatearFecha(ent.fechaEntrega)}</td>
-          <td class="p-3 font-semibold text-[#D61B28]">${ent.tipo}</td>
-          <td class="p-3 font-bold text-gray-800">${ent.proyecto} ${ent.copias ? '(' + ent.copias + ' copias)' : ''}</td>
-          <td class="p-3 font-mono text-gray-700">${ent.articulo || '—'}</td>
-          <td class="p-3 font-bold text-gray-700">${ent.destino}</td>
-          <td class="p-3 text-center">
-            <button onclick="window.eliminarEntregaDoc('${ent.id}', '${ent.tipo}', '${ent.proyecto}')" class="text-red-500 hover:text-red-700 p-1 rounded font-bold text-xs cursor-pointer">
-              <i class="fa-solid fa-trash-can"></i> Eliminar
-            </button>
-          </td>
-        `;
-        tbodyEnts.appendChild(tr);
-      });
-    }
-
-  } catch (error) {
-    console.error("Error al cargar panel Super Admin:", error);
-    tbodyUsers.innerHTML = `<tr><td colspan="6" class="p-3 text-center text-red-500">Error al cargar datos. Comprueba la conexión y reglas de Firestore.</td></tr>`;
-  }
-}
-
-window.cambiarRolUsuario = async (userId, nuevoRol) => {
-  await updateDoc(doc(db, "usuarios", userId), { rol: nuevoRol });
-  alert("Rol asignado correctamente.");
-};
-
-window.eliminarUsuarioDoc = async (id, nombre) => {
-  if (confirm(`¿Eliminar al usuario ${nombre}?`)) {
-    await deleteDoc(doc(db, "usuarios", id));
-    cargarPanelSuperAdmin();
-  }
-};
-
-window.eliminarSolicitudProyecto = async (id, proyecto) => {
-  if (confirm(`¿Eliminar el registro "${proyecto}" permanentemente de la base de datos?`)) {
-    await deleteDoc(doc(db, "solicitudes_cambios", id));
-    cargarPanelSuperAdmin();
-  }
-};
-
-window.eliminarEntregaDoc = async (id, tipo, proyecto) => {
-  if (confirm(`¿Eliminar la entrega "${tipo}" del proyecto/material "${proyecto}" permanentemente?`)) {
-    await deleteDoc(doc(db, "entregas_departamentos", id));
-    cargarPanelSuperAdmin();
-  }
-};
-
-// ==================== TABLA GENERAL DE ENTREGAS ====================
-function escucharEntregas() {
-  const q = query(collection(db, "entregas_departamentos"));
-  onSnapshot(q, (snapshot) => {
-    entregas = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    entregas.sort((a, b) => (b.fechaEntrega || "").localeCompare(a.fechaEntrega || ""));
-    renderTablaEntregas();
-  }, (err) => console.error("Error al escuchar entregas:", err));
-}
-
-function renderTablaEntregas() {
-  const tbody = document.getElementById("table-entregas-body");
-  tbody.innerHTML = "";
-  const empty = document.getElementById("entregas-empty-state");
-
-  let entregasFiltradas = entregas.filter(item => {
-    const coincideCategoria = (categoriaEntregaActiva === "todas") || 
-      ((item.tipo || "").toUpperCase().trim() === categoriaEntregaActiva.toUpperCase().trim());
-    const semStr = (item.semana || "").toString().toLowerCase().trim();
-    const proyStr = (item.proyecto || "").toString().toLowerCase().trim();
-    const coincideSem = !colFiltroSemanaEntregas || semStr.includes(colFiltroSemanaEntregas);
-    const coincideProy = !colFiltroProyectoEntregas || proyStr.includes(colFiltroProyectoEntregas);
-    return coincideCategoria && coincideSem && coincideProy;
-  });
-
-  if (entregasFiltradas.length === 0) {
-    empty.classList.remove("hidden");
-    return;
-  }
-  empty.classList.add("hidden");
-
-  const esAdmin = esSuperAdmin();
-
-  entregasFiltradas.forEach(ent => {
-    const tr = document.createElement("tr");
-    tr.className = "hover:bg-gray-50/80 transition border-b border-gray-100";
-
-    const puedeConfirmar = (userData && userData.rol === ent.destino) || esAdmin;
-
-    let recepcionHTML = "";
-    if (ent.recibido) {
-      recepcionHTML = `
-        <span class="text-green-700 font-bold flex items-center justify-center space-x-1">
-          <i class="fa-solid fa-circle-check text-green-600"></i>
-          <span>Recibido</span>
-        </span>
-      `;
-    } else {
-      if (puedeConfirmar) {
-        recepcionHTML = `
-          <button onclick="window.confirmarRecepcionEntrega('${ent.id}', '${ent.tipo}', '${ent.proyecto}')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-2.5 py-1 rounded-lg border border-blue-200 transition cursor-pointer">
-            Confirmar Recepción
-          </button>
-        `;
-      } else {
-        recepcionHTML = `<span class="text-amber-600 font-semibold italic text-[11px]">En tránsito a ${ent.destino}</span>`;
-      }
-    }
-
-    const fotoHTML = ent.foto 
-      ? `<img src="${ent.foto}" onclick="window.verFotoGrande('${ent.foto}', '${ent.proyecto} - ${ent.articulo || ent.tipo}')" class="w-10 h-7 object-cover rounded border border-gray-200 shadow-xs cursor-pointer hover:opacity-80 transition mx-auto" title="Click para ampliar">`
-      : `<div class="w-10 h-7 rounded border border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-[10px] mx-auto"><i class="fa-regular fa-image"></i></div>`;
-
-    const tdFotoHTML = (categoriaEntregaActiva !== "MATERIALES" && categoriaEntregaActiva !== "TIZADORES") ? `<td class="p-2 border-r border-gray-100 text-center">${fotoHTML}</td>` : '';
-    const tdArticuloHTML = categoriaEntregaActiva !== "MATERIALES" ? `<td class="p-3 font-mono text-gray-700 border-r border-gray-100">${ent.articulo || '—'}</td>` : '';
-
-    let detalleExtra = "";
-    if (ent.copias) detalleExtra += `<span class="bg-rose-100 text-rose-800 font-bold text-[9px] px-1.5 py-0.2 rounded ml-1">${ent.copias} copias</span>`;
-    if (ent.notas) detalleExtra += `<p class="text-[10px] text-gray-400 mt-0.5">${ent.notas}</p>`;
-
-    tr.innerHTML = `
-      ${tdFotoHTML}
-      <td class="p-3 font-bold text-gray-700 border-r border-gray-100 font-mono">${ent.semana || '—'}</td>
-      <td class="p-3 text-gray-600 border-r border-gray-100 whitespace-nowrap">${formatearFecha(ent.fechaEntrega)}</td>
-      <td class="p-3 font-bold text-gray-800 border-r border-gray-100">${ent.proyecto || '—'}</td>
-      ${tdArticuloHTML}
-      <td class="p-3 border-r border-gray-100">
-        <span class="bg-red-50 text-[#D61B28] px-2 py-0.5 rounded font-bold text-[10px] border border-red-100">${ent.tipo}</span>
-        ${detalleExtra}
-      </td>
-      <td class="p-3 border-r border-gray-100 whitespace-nowrap">
-        <span class="font-bold text-gray-800 block">${ent.entregadoPorNombre}</span>
-        <span class="text-[10px] text-gray-400">${ent.entregadoPorRol}</span>
-      </td>
-      <td class="p-3 border-r border-gray-100 font-bold text-gray-700">${ent.destino}</td>
-      <td class="p-3 text-center whitespace-nowrap">${recepcionHTML}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-window.confirmarRecepcionEntrega = async (id, tipo, proyecto) => {
-  if (confirm(`¿Confirmar que has recibido físicamente "${tipo}" (${proyecto})?`)) {
-    await updateDoc(doc(db, "entregas_departamentos", id), {
-      recibido: true,
-      fechaRecepcion: new Date().toISOString(),
-      recibidoPorNombre: (userData && userData.nombre) || "Usuario"
-    });
-  }
-};
-
-function abrirReporteImpresoEntregas() {
-  const items = entregas.filter(item => (categoriaEntregaActiva === "todas") || 
-    ((item.tipo || "").toUpperCase().trim() === categoriaEntregaActiva.toUpperCase().trim()));
-  if (items.length === 0) {
-    alert("No hay registros de entregas para generar el reporte.");
-    return;
-  }
-
-  const contenedor = document.getElementById("contenido-impresion-entregas");
-  let html = `
-    <div class="overflow-x-auto">
-      <table class="w-full text-left border-collapse border border-gray-200 text-xs">
-        <thead class="bg-gray-100 font-bold">
-          <tr>
-            <th class="p-2 border text-center w-12">Foto</th>
-            <th class="p-2 border">Sem.</th>
-            <th class="p-2 border">Fecha/Hora</th>
-            <th class="p-2 border">Proyecto / Detalle</th>
-            <th class="p-2 border">Artículo</th>
-            <th class="p-2 border">Elemento Entregado</th>
-            <th class="p-2 border">Entregado Por</th>
-            <th class="p-2 border">Destino</th>
-            <th class="p-2 border text-center">Estado Recepción</th>
-          </tr>
-        </thead>
-        <tbody>
-  `;
-
-  items.forEach(it => {
-    const fotoPrint = it.foto 
-      ? `<img src="${it.foto}" style="width: 44px; height: 30px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; margin: auto;">`
-      : `<span style="color: #bbb;">—</span>`;
-
-    let elementoTexto = it.tipo;
-    if (it.copias) elementoTexto += ` (${it.copias} copias)`;
-    if (it.notas) elementoTexto += ` - ${it.notas}`;
-
-    html += `
-      <tr class="border-b">
-        <td class="p-1 border text-center">${fotoPrint}</td>
-        <td class="p-2 border font-bold font-mono">${it.semana}</td>
-        <td class="p-2 border whitespace-nowrap">${formatearFecha(it.fechaEntrega)}</td>
-        <td class="p-2 border font-bold text-gray-800">${it.proyecto}</td>
-        <td class="p-2 border font-mono">${it.articulo || '—'}</td>
-        <td class="p-2 border">${elementoTexto}</td>
-        <td class="p-2 border">${it.entregadoPorNombre} <span class="text-[10px] text-gray-400">(${it.entregadoPorRol})</span></td>
-        <td class="p-2 border font-bold">${it.destino}</td>
-        <td class="p-2 border text-center font-bold ${it.recibido ? 'text-green-600' : 'text-amber-600'}">
-          ${it.recibido ? 'Recibido' : 'En Tránsito'}
-        </td>
-      </tr>
-    `;
-  });
-
-  html += `
-        </tbody>
-      </table>
-    </div>
-  `;
-
-  contenedor.innerHTML = html;
-  modalReporteEntregasPrint.classList.remove("hidden");
-}
-
-function abrirResumenTextoEntregas() {
-  const items = entregas.filter(item => (categoriaEntregaActiva === "todas") || 
-    ((item.tipo || "").toUpperCase().trim() === categoriaEntregaActiva.toUpperCase().trim()));
-  if (items.length === 0) {
-    alert("No hay entregas registradas en esta categoría.");
-    return;
-  }
-
-  let texto = `CONTROL DE ENTREGAS A DEPARTAMENTOS - BATA BOLIVIA\n`;
-  texto += `Categoría: ${categoriaEntregaActiva.toUpperCase()}\n`;
-  texto += `Fecha: ${new Date().toLocaleDateString("es-BO")}\n\n`;
-
-  items.forEach((it, idx) => {
-    let extra = it.copias ? ` (${it.copias} copias)` : '';
-    texto += `${idx + 1}. [Sem: ${it.semana}] ${it.proyecto.toUpperCase()} ${it.articulo ? '| Art: ' + it.articulo : ''}\n`;
-    texto += `   • Elemento: ${it.tipo}${extra}\n`;
-    texto += `   • Entregado por: ${it.entregadoPorNombre} (${it.entregadoPorRol}) -> Destino: ${it.destino}\n`;
-    texto += `   • Estado: ${it.recibido ? 'RECIBIDO' : 'EN TRÁNSITO'}\n\n`;
-  });
-
-  const textarea = document.getElementById("texto-entregas-output");
-  textarea.value = texto;
-
-  document.getElementById("btn-copiar-texto-entregas").onclick = () => {
-    textarea.select();
-    navigator.clipboard.writeText(texto);
-    alert("Texto de entregas copiado al portapapeles.");
-  };
-
-  document.getElementById("btn-enviar-correo-entregas").onclick = () => {
-    const asunto = encodeURIComponent(`Bata Bolivia - Control de Entregas (${categoriaEntregaActiva})`);
-    const cuerpo = encodeURIComponent(texto);
-    window.location.href = `mailto:?subject=${asunto}&body=${cuerpo}`;
-  };
-
-  document.getElementById("btn-enviar-wsp-entregas").onclick = () => {
-    const encoded = encodeURIComponent(texto);
-    window.open(`https://wa.me/?text=${encoded}`, "_blank");
-  };
-
-  modalEntregasTexto.classList.remove("hidden");
-}
-
-// Escucha en tiempo real de Solicitudes
-function escucharCambios() {
-  const q = query(collection(db, "solicitudes_cambios"));
-  onSnapshot(q, (snapshot) => {
-    const ahora = new Date();
-    solicitudes = snapshot.docs.map(docSnap => {
-      const data = docSnap.data();
-      const id = docSnap.id;
-
-      if (data.estado === "En proceso" && data.fechaCreacion) {
-        const fechaCrea = new Date(data.fechaCreacion);
-        const diferenciaDias = (ahora - fechaCrea) / (1000 * 60 * 60 * 24);
-        if (diferenciaDias >= 7) {
-          data.estado = "Retrasado";
-          updateDoc(doc(db, "solicitudes_cambios", id), { estado: "Retrasado" });
-        }
-      }
-
-      return { id, ...data };
-    });
-    solicitudes.sort((a, b) => (b.fechaCreacion || "").localeCompare(a.fechaCreacion || ""));
-    renderTabla();
-    if (!viewInforme.classList.contains("hidden")) {
-      actualizarInformePorSemana();
-    }
-  });
-}
-
-function formatearFecha(iso) {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  return d.toLocaleDateString("es-BO", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
-}
-
-// Render Tabla de Cambios Pública
-function renderTabla() {
-  const tbody = document.getElementById("table-cambios-body");
-  tbody.innerHTML = "";
-  const empty = document.getElementById("table-empty-state");
-
-  if (solicitudes.length === 0) {
-    empty.classList.remove("hidden");
-    return;
-  }
-  empty.classList.add("hidden");
-
-  const esAdmin = esSuperAdmin();
-  const esDesarrolloUsuario = esDesarrollo() || esAdmin;
-  const esCostos = (userData && userData.rol === "Costos") || esAdmin;
-
-  solicitudes.forEach((item) => {
-    const tr = document.createElement("tr");
-    tr.className = item.esMinuta 
-      ? "bg-amber-50/70 hover:bg-amber-100/70 transition border-b border-amber-200" 
-      : "hover:bg-gray-50/80 transition border-b border-gray-100";
-
-    let badgeMinuta = item.esMinuta 
-      ? `<span class="bg-amber-500 text-white font-black text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider block mb-1 w-fit shadow-xs">PLAN PILOTO</span>` 
-      : '';
-
-    let estadoHTML = "";
-    if (esDesarrolloUsuario) {
-      estadoHTML = `
-        <div class="flex items-center space-x-1.5">
-          <select id="sel-estado-${item.id}" class="border border-orange-200 text-orange-600 bg-orange-50 font-semibold rounded-lg px-2 py-1 text-xs focus:ring-1 focus:ring-[#D61B28]">
-            <option value="En proceso" ${item.estado === "En proceso" ? "selected" : ""}>En proceso</option>
-            <option value="Realizado" ${item.estado === "Realizado" ? "selected" : ""}>Realizado</option>
-            <option value="Retrasado" ${item.estado === "Retrasado" ? "selected" : ""}>Retrasado</option>
-          </select>
-          <button onclick="window.guardarCambioEstado('${item.id}', '${item.proyecto}', '${item.articulo}', '${item.semana || ''}')" title="Guardar y Notificar a Costos" class="bg-gray-100 hover:bg-[#D61B28] hover:text-white text-gray-600 p-1.5 rounded-lg text-xs transition cursor-pointer">
-            <i class="fa-solid fa-floppy-disk"></i>
-          </button>
-        </div>
-      `;
-    } else {
-      const estilo = item.estado === "Realizado" ? "border-green-200 text-green-700 bg-green-50" : (item.estado === "Retrasado" ? "border-red-200 text-red-700 bg-red-50" : "border-orange-200 text-orange-600 bg-orange-50");
-      estadoHTML = `<span class="border ${estilo} px-3 py-1 rounded-lg font-bold text-xs">${item.estado}</span>`;
-    }
-
-    const fechaRealizadoHTML = item.fechaRealizado 
-      ? `<span class="font-bold text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200">${formatearFecha(item.fechaRealizado)}</span>`
-      : `<span class="text-gray-300 text-[11px]">—</span>`;
-
-    let costosHTML = "";
-    if (item.estado === "Realizado") {
-      if (item.validadoCostos) {
-        costosHTML = `
-          <div class="flex items-center justify-center space-x-1 text-green-700 font-bold text-xs">
-            <i class="fa-solid fa-circle-check text-green-600"></i>
-            <span>Validado</span>
-            ${esAdmin ? `<button onclick="window.desbloquearValidacionCostos('${item.id}')" class="text-red-500 hover:text-red-700 text-[10px] ml-1 cursor-pointer" title="Desbloquear como Super Admin"><i class="fa-solid fa-unlock"></i></button>` : ''}
-          </div>
-        `;
-      } else {
-        costosHTML = `
-          <div class="flex items-center justify-center space-x-1">
-            <input type="checkbox" ${!esCostos ? "disabled title='Solo el usuario de Costos puede validar'" : ""} 
-                   onchange="window.confirmarValidacionCostos('${item.id}', '${item.proyecto}', '${item.articulo}', this)"
-                   class="h-4 w-4 accent-[#D61B28] rounded border-gray-300 cursor-${esCostos ? 'pointer' : 'not-allowed'}">
-            <span class="text-[11px] ${esCostos ? 'text-gray-600 font-semibold' : 'text-gray-300'}">Confirmar</span>
-          </div>
-        `;
-      }
-    } else {
-      costosHTML = `<input type="checkbox" disabled class="h-4 w-4 text-gray-300 rounded border-gray-200 opacity-40">`;
-    }
-
-    const fotoHTML = item.foto 
-      ? `<img src="${item.foto}" onclick="window.verFotoGrande('${item.foto}', '${item.proyecto} - ${item.articulo}')" class="w-10 h-7 object-cover rounded border border-gray-200 shadow-xs cursor-pointer hover:opacity-80 transition mx-auto" title="Click para ampliar">`
-      : `<div class="w-10 h-7 rounded border border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-[10px] mx-auto"><i class="fa-regular fa-image"></i></div>`;
-
-    tr.innerHTML = `
-      <td class="p-2 border-r border-gray-100 text-center">${fotoHTML}</td>
-      <td class="p-3 font-bold text-gray-700 border-r border-gray-100 font-mono">${item.semana || '—'}</td>
-      <td class="p-3 text-gray-600 border-r border-gray-100 whitespace-nowrap">${formatearFecha(item.fechaCreacion)}</td>
-      <td class="p-3 border-r border-gray-100 whitespace-nowrap">
-        <span class="font-bold text-gray-800 block">${item.solicitanteNombre || '—'}</span>
-        <span class="text-[10px] text-gray-400">${item.solicitanteRol || ''}</span>
-      </td>
-      <td class="p-3.5 font-bold text-gray-800 border-r border-gray-100">${badgeMinuta}${item.proyecto}</td>
-      <td class="p-3.5 font-mono text-gray-700 border-r border-gray-100">${item.articulo}</td>
-      <td class="p-3.5 text-gray-700 border-r border-gray-100 leading-relaxed">${item.boxCambio}</td>
-      <td class="p-3.5 text-center border-r border-gray-100 whitespace-nowrap">${estadoHTML}</td>
-      <td class="p-3.5 text-center border-r border-gray-100 whitespace-nowrap">${fechaRealizadoHTML}</td>
-      <td class="p-3.5 text-center whitespace-nowrap">${costosHTML}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-// Guardar Estado
-window.guardarCambioEstado = async (id, proyecto, articulo, semana) => {
-  const select = document.getElementById(`sel-estado-${id}`);
-  const nuevoEstado = select.value;
-
-  const updatePayload = { estado: nuevoEstado };
-  if (nuevoEstado === "Realizado") {
-    updatePayload.fechaRealizado = new Date().toISOString();
-  } else {
-    updatePayload.fechaRealizado = null;
-  }
-
-  await updateDoc(doc(db, "solicitudes_cambios", id), updatePayload);
-
-  if (nuevoEstado === "Realizado") {
-    abrirModalWhatsApp({
-      titulo: "Proyecto Realizado",
-      subtitulo: "Enviar alerta a los usuarios de Costos para su validación:",
-      mensajeTexto: `👟 *PROYECTO REALIZADO - REQUERIMIENTO DE COSTOS*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n✅ *Estado:* Realizado por Desarrollo de Producto (${(userData && userData.nombre) || 'Usuario'})\n\n_Por favor ingresar al sistema para validar los costos asociados._`,
-      rolFiltro: "Costos"
-    });
-  } else {
-    alert("Estado guardado correctamente.");
-  }
-};
-
-// Validación Costos
-window.confirmarValidacionCostos = async (id, proyecto, articulo, checkboxElem) => {
-  const confirma = confirm(`¿Estás seguro de validar los costos del proyecto "${proyecto}"? Una vez confirmado quedará bloqueado.`);
-  if (!confirma) {
-    checkboxElem.checked = false;
-    return;
-  }
-
-  await updateDoc(doc(db, "solicitudes_cambios", id), {
-    validadoCostos: true,
-    fechaValidacionCostos: new Date().toISOString(),
-    validadorCostosNombre: (userData && userData.nombre) || "Costos"
-  });
-
-  abrirModalWhatsApp({
-    titulo: "Costos Validados",
-    subtitulo: "Enviar notificación al equipo de Calidad:",
-    mensajeTexto: `📋 *VALIDACIÓN DE COSTOS COMPLETADA - ALERTA CALIDAD*\n\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n💰 *Costos:* Validados por ${(userData && userData.nombre) || 'Costos'} (Costos)\n\n_El proyecto cuenta con validación técnica y económica lista para producción._`,
-    rolFiltro: "Calidad"
-  });
-};
-
-window.desbloquearValidacionCostos = async (id) => {
-  if (confirm("¿Desbloquear validación de costos? (Acción de Super Admin)")) {
-    await updateDoc(doc(db, "solicitudes_cambios", id), { validadoCostos: false });
-  }
-};
-
-// Solicitudes y Minutas
-if (document.getElementById("form-minuta")) {
-  document.getElementById("form-minuta").onsubmit = async (e) => {
-    e.preventDefault();
-    const semana = document.getElementById("minuta-semana").value.trim();
-    const proyecto = document.getElementById("minuta-proyecto").value.trim();
-    const articulo = document.getElementById("minuta-articulo").value.trim();
-    const detalle = document.getElementById("minuta-box").value.trim();
-    const photoFile = document.getElementById("minuta-photo").files[0];
-
-    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
-
-    try {
-      await addDoc(collection(db, "solicitudes_cambios"), {
-        semana,
-        proyecto,
-        articulo,
-        foto: fotoBase64,
-        boxCambio: detalle,
-        esMinuta: true,
-        solicitanteNombre: (userData && userData.nombre) || "Jefe Desarrollo",
-        solicitanteRol: (userData && userData.rol) || "Desarrollo de producto - Jefe",
-        solicitanteId: currentUser.uid,
-        estado: "En proceso",
-        fechaRealizado: null,
-        validadoCostos: false,
-        fechaCreacion: new Date().toISOString(),
-        timestamp: serverTimestamp()
-      });
-
-      modalMinuta.classList.add("hidden");
-      document.getElementById("form-minuta").reset();
-
-      abrirModalWhatsApp({
-        titulo: "Minuta de Cambios Registrada",
-        subtitulo: "Enviar minuta a los Técnicos de Desarrollo:",
-        mensajeTexto: `📋 *MINUTA DE CAMBIOS - PLAN PILOTO*\n*Bata Bolivia / Desarrollo de Producto*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n👤 *Emitido por:* ${(userData && userData.nombre) || 'Jefe Desarrollo'}\n\n📝 *DETALLE DE CAMBIOS TÉCNICOS:*\n${detalle}\n\n_Registrado en el sistema para control de avance y realización._`,
-        rolFiltro: "Desarrollo de producto - Técnico"
-      });
-    } catch (err) {
-      alert("Error al guardar minuta: " + err.message);
-    }
-  };
-}
-
-const modalNewChange = document.getElementById("modal-new-change");
-document.getElementById("btn-open-new-change").onclick = () => modalNewChange.classList.remove("hidden");
-document.getElementById("modal-btn-close").onclick = () => modalNewChange.classList.add("hidden");
-document.getElementById("modal-btn-cancel").onclick = () => modalNewChange.classList.add("hidden");
-
-document.getElementById("form-new-change").onsubmit = async (e) => {
-  e.preventDefault();
-  const semana = document.getElementById("change-semana").value.trim();
-  const proyecto = document.getElementById("change-project").value.trim();
-  const articulo = document.getElementById("change-article").value.trim();
-  const boxCambio = document.getElementById("change-box").value.trim();
-  const photoFile = document.getElementById("change-photo").files[0];
-
-  const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
-
-  try {
-    await addDoc(collection(db, "solicitudes_cambios"), {
-      semana,
-      proyecto,
-      articulo,
-      foto: fotoBase64,
-      boxCambio,
-      esMinuta: false,
-      solicitanteNombre: (userData && userData.nombre) || currentUser.email,
-      solicitanteRol: (userData && userData.rol) || "Usuario",
-      solicitanteId: currentUser.uid,
-      estado: "En proceso",
-      fechaRealizado: null,
-      validadoCostos: false,
-      fechaCreacion: new Date().toISOString(),
-      timestamp: serverTimestamp()
-    });
-
-    document.getElementById("form-new-change").reset();
-    modalNewChange.classList.add("hidden");
-
-    abrirModalWhatsApp({
-      titulo: "Solicitud Registrada",
-      subtitulo: "Notificar solicitud creada al equipo:",
-      mensajeTexto: `👞 *NUEVA SOLICITUD DE CAMBIO - BATA BOLIVIA*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n👤 *Solicitado por:* ${(userData && userData.nombre) || 'Usuario'} (${(userData && userData.rol) || ''})\n📝 *Cambio:* ${boxCambio}\n\n_Revisar en el Sistema de Gestión de Cambios Bata_`
-    });
-  } catch (err) {
-    alert("Error: " + err.message);
-  }
-};
-
-// ==================== NUEVA ENTREGA BLINDADA ====================
-document.getElementById("btn-open-nueva-entrega").onclick = () => {
-  const esAdmin = esSuperAdmin();
-  const rol = (userData && userData.rol) || "";
-  const esDesarrolloRol = rol.includes("Desarrollo") || esAdmin;
-  const esCostos = rol === "Costos" || esAdmin;
-
-  if (!esDesarrolloRol && !esCostos && !esAdmin) {
-    alert("Solo usuarios autorizados pueden registrar entregas.");
-    return;
-  }
-
-  const selectTipo = document.getElementById("ent-tipo");
-  selectTipo.innerHTML = "";
-
-  if (categoriaEntregaActiva !== "todas") {
-    selectTipo.innerHTML += `<option value="${categoriaEntregaActiva}">${categoriaEntregaActiva}</option>`;
-  } else {
-    selectTipo.innerHTML += `<option value="GUÍA DE PRODUCCIÓN">GUÍA DE PRODUCCIÓN</option>`;
-    selectTipo.innerHTML += `<option value="CORTE">CORTE</option>`;
-    selectTipo.innerHTML += `<option value="MUESTRA DEFINITIVA">MUESTRA DEFINITIVA</option>`;
-    selectTipo.innerHTML += `<option value="MATERIALES">MATERIALES</option>`;
-    selectTipo.innerHTML += `<option value="HOJA DE DESBASTE">HOJA DE DESBASTE</option>`;
-    selectTipo.innerHTML += `<option value="TIZADORES">TIZADORES</option>`;
-  }
-
-  actualizarCamposSegunTipoEntrega();
-  modalNuevaEntrega.classList.remove("hidden");
-};
-
-document.getElementById("ent-tipo").onchange = actualizarCamposSegunTipoEntrega;
-
-function actualizarCamposSegunTipoEntrega() {
-  const tipo = document.getElementById("ent-tipo").value;
-  const selectDestino = document.getElementById("ent-destino");
-  const boxArticulo = document.getElementById("box-field-articulo");
-  const labelProy = document.getElementById("label-field-proyecto");
-  const inputProy = document.getElementById("ent-proyecto");
-  const boxFoto = document.getElementById("box-field-foto");
-  const boxCopias = document.getElementById("box-field-copias");
-  const containerSingle = document.getElementById("container-destino-single");
-  const containerMultiple = document.getElementById("container-destino-multiple");
-
-  selectDestino.innerHTML = "";
-  boxCopias.classList.add("hidden");
-  containerMultiple.classList.add("hidden");
-  containerSingle.classList.remove("hidden");
-  boxFoto.classList.add("hidden");
-
-  if (tipo === "MATERIALES") {
-    labelProy.textContent = "Nombre del Material / Insumo";
-    inputProy.placeholder = "Ej: Badana Beige 1.2mm";
-    boxArticulo.classList.add("hidden");
-    selectDestino.innerHTML += `<option value="Desarrollo de producto">Desarrollo de producto</option>`;
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-    return;
-  }
-
-  boxArticulo.classList.remove("hidden");
-  labelProy.textContent = "Nombre del Proyecto";
-  inputProy.placeholder = "Ej: SKATER";
-
-  if (tipo === "GUÍA DE PRODUCCIÓN") {
-    boxFoto.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
-  }
-  else if (tipo === "CORTE") {
-    boxFoto.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-  }
-  else if (tipo === "MUESTRA DEFINITIVA") {
-    boxFoto.classList.remove("hidden");
-    containerSingle.classList.add("hidden");
-    containerMultiple.classList.remove("hidden");
-  }
-  else if (tipo === "HOJA DE DESBASTE") {
-    boxFoto.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-  }
-  else if (tipo === "TIZADORES") {
-    boxCopias.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-  }
-}
-
-document.getElementById("form-nueva-entrega").onsubmit = async (e) => {
-  e.preventDefault();
-  const semana = document.getElementById("ent-semana").value.trim();
-  const proyecto = document.getElementById("ent-proyecto").value.trim();
-  const articulo = document.getElementById("ent-articulo").value.trim();
-  const tipo = document.getElementById("ent-tipo").value;
-  const notas = document.getElementById("ent-notas").value.trim();
-  const copias = document.getElementById("ent-copias").value.trim();
-  const photoFile = document.getElementById("ent-photo").files[0];
-
-  const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
-
-  try {
-    let destinosAEntregar = [];
-
-    if (tipo === "MUESTRA DEFINITIVA") {
-      destinosAEntregar = Array.from(document.querySelectorAll(".chk-muestras-dest:checked")).map(c => c.value);
-      if (destinosAEntregar.length === 0) {
-        alert("Selecciona al menos un departamento para la muestra definitiva.");
-        return;
-      }
-    } else {
-      destinosAEntregar = [document.getElementById("ent-destino").value];
-    }
-
-    const nombreUsuario = (userData && userData.nombre) || (currentUser && currentUser.email) || "Usuario";
-    const rolUsuario = (userData && userData.rol) || (esSuperAdmin() ? "Super Admin" : "Desarrollo de producto");
-
-    for (const destino of destinosAEntregar) {
-      await addDoc(collection(db, "entregas_departamentos"), {
-        semana,
-        proyecto,
-        articulo: tipo === "MATERIALES" ? "" : articulo,
-        tipo,
-        destino,
-        copias: tipo === "TIZADORES" ? (copias || "1") : null,
-        foto: fotoBase64,
-        notas,
-        entregadoPorNombre: nombreUsuario,
-        entregadoPorRol: rolUsuario,
-        entregadoPorId: currentUser ? currentUser.uid : null,
-        recibido: false,
-        fechaEntrega: new Date().toISOString(),
-        timestamp: serverTimestamp()
-      });
-    }
-
-    document.getElementById("form-nueva-entrega").reset();
-    modalNuevaEntrega.classList.add("hidden");
-
-    const destinosTexto = destinosAEntregar.join(", ");
-    let detalleCopias = (tipo === "TIZADORES" && copias) ? `📑 *Copias:* ${copias}\n` : '';
-
-    abrirModalWhatsApp({
-      titulo: "Entrega Registrada",
-      subtitulo: `Notificar recepción a los encargados de ${destinosTexto}:`,
-      mensajeTexto: `📦 ENTREGA REALIZADA - PD BOLIVIA\n\n📅 *Semana:* ${semana}\n📌 *Elemento:* ${tipo}\n🏷️ *Detalle/Proyecto:* ${proyecto}\n${articulo ? '🔢 *Artículo:* ' + articulo + '\n' : ''}${detalleCopias}👤 *Entregado por:* ${nombreUsuario} (${rolUsuario})\n🏢 *Destino:* ${destinosTexto}\n📝 *Notas:* ${notas || 'Sin notas adicionales'}\n\n_Favor de confirmar la recepción física en el sistema._`,
-      rolFiltro: destinosAEntregar.length === 1 ? destinosAEntregar[0] : null
-    });
-  } catch (err) {
-    alert("Error al registrar entrega: " + err.message);
-  }
-};
-
-// Listeners de botones de reporte
-document.getElementById("btn-reporte-entregas-pdf").onclick = abrirReporteImpresoEntregas;
-document.getElementById("btn-reporte-entregas-texto").onclick = abrirResumenTextoEntregas;
