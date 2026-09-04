@@ -47,21 +47,18 @@ let llegadasMateriales = [];
 
 let categoriaEntregaActiva = "todas";
 
-// Filtros de Informe
+// Filtros
 let colFiltroSemanaInforme = "";
 let colFiltroProyectoInforme = "";
-
-// Filtros de Entregas
 let colFiltroSemanaEntregas = "";
 let colFiltroProyectoEntregas = "";
-
-// Filtros de Llegadas
 let colFiltroItemLlegada = "";
 let colFiltroNombreLlegada = "";
 let colFiltroSemanaLlegada = "";
 
-// Memoria Tarjetas
+// Memoria para imágenes de Tarjeta
 let croquisTarjetaBase64 = null;
+let plantillaCorteTarjetaBase64 = null;
 
 // Ojito contraseña
 window.togglePasswordVisibility = (inputId, eyeIconId) => {
@@ -124,7 +121,7 @@ function esDesarrollo() {
   return userData && (userData.rol || "").includes("Desarrollo");
 }
 
-// WhatsApp Modal
+// Modal WhatsApp
 async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro = null }) {
   const modalWA = document.getElementById("modal-whatsapp");
   const listContainer = document.getElementById("whatsapp-contacts-list");
@@ -253,20 +250,19 @@ window.verFotoGrande = (src, titulo) => {
   modalVisorFoto.classList.remove("hidden");
 };
 
+// Reset de Contraseña
 document.getElementById("btn-forgot-pass").onclick = () => {
   const email = document.getElementById("login-email").value.trim();
   if (!email) {
     alert("Por favor ingresa tu correo en la casilla antes de solicitar el reseteo.");
     return;
   }
-
   const msg = encodeURIComponent(
     `🔐 *SOLICITUD DE RESTABLECIMIENTO DE CONTRASEÑA*\n` +
     `*Sistema de Cambios - Bata Bolivia*\n\n` +
     `👤 *Correo del Solicitante:* ${email}\n\n` +
     `_Hola Daniel, solicito generar el correo de restablecimiento de contraseña en Firebase Console para este usuario._`
   );
-
   window.open(`https://wa.me/${SUPER_ADMIN_WHATSAPP}?text=${msg}`, "_blank");
 };
 
@@ -869,7 +865,7 @@ function renderProcurementView() {
   document.getElementById("btn-reporte-llegadas-pdf").onclick = abrirReporteImpresoLlegadas;
 }
 
-// Formulario Nuevo Bloqueo
+// Formulario Bloqueo
 document.getElementById("form-nuevo-bloqueo").onsubmit = async (e) => {
   e.preventDefault();
   const item = document.getElementById("bloq-item").value.trim();
@@ -1126,7 +1122,7 @@ function abrirReporteImpresoLlegadas() {
   modalReporteLlegadasPrint.classList.remove("hidden");
 }
 
-// ==================== MÓDULO TARJETAS (PD) CON PARSER INTELIGENTE ====================
+// ==================== MÓDULO TARJETAS (PD) ====================
 function initModuloTarjetas() {
   const inputFecha = document.getElementById("card-fecha");
   if (inputFecha && !inputFecha.value) {
@@ -1145,7 +1141,18 @@ function initModuloTarjetas() {
     };
   }
 
-  // Pegado Inteligente (reconoce automáticamente formatos de 7 u 11 columnas)
+  const fileInputPlantilla = document.getElementById("card-plantilla-img-file");
+  if (fileInputPlantilla) {
+    fileInputPlantilla.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        plantillaCorteTarjetaBase64 = await comprimirImagen(file, 400, 0.8);
+        renderTarjetasPreview();
+      }
+    };
+  }
+
+  // Pegado Inteligente
   document.getElementById("btn-quick-distribute").onclick = () => {
     const raw = document.getElementById("input-quick-paste-row").value.trim();
     if (!raw) {
@@ -1153,7 +1160,6 @@ function initModuloTarjetas() {
       return;
     }
 
-    // Dividir por tabulador o espacios dobles
     let cols = raw.split("\t").map(c => c.trim()).filter(c => c !== "");
     if (cols.length < 4) {
       cols = raw.split(/\s{2,}/).map(c => c.trim()).filter(c => c !== "");
@@ -1166,7 +1172,6 @@ function initModuloTarjetas() {
       document.getElementById("card-costo-material").value = cols[3] || "";
       document.getElementById("card-material-corte").value = cols[3] || "";
 
-      // Si la fila tiene los precios en las posiciones 4 y 5
       if (cols.length === 7) {
         document.getElementById("card-costo-precio").value = cols[4] || "0.00";
         document.getElementById("card-costo-margen").value = cols[5] || "0%";
@@ -1226,54 +1231,65 @@ function renderTarjetasPreview() {
   const construccion = (document.getElementById("card-construccion").value || "TRUE MOC").toUpperCase();
   const observaciones = document.getElementById("card-observaciones").value || "";
 
-  const siluetaHTML = croquisTarjetaBase64 
+  const siluetaCalzadoHTML = croquisTarjetaBase64 
     ? `<img src="${croquisTarjetaBase64}" class="w-full h-14 object-contain mx-auto">`
     : `<div class="h-14 flex items-center justify-center text-[9px] text-gray-400 border border-dashed border-gray-300 rounded">Croquis</div>`;
+
+  const siluetaPlantillaHTML = plantillaCorteTarjetaBase64 
+    ? `<img src="${plantillaCorteTarjetaBase64}" class="w-full h-14 object-contain mx-auto">`
+    : siluetaCalzadoHTML;
 
   let tarjetasHTML = "";
 
   for (let i = 1; i <= copias; i++) {
-    let bgColorLateral = "background-color: #FFFFFF;";
+    let bgColorLateral = "#FFFFFF";
     let etiquetaAprobacion = "PRODUCCIÓN";
+    let esTarjetaCorte = false;
 
     if (copias === 5) {
       if (i === 1) {
-        bgColorLateral = "background-color: #FFFFFF;";
+        bgColorLateral = "#FFFFFF";
         etiquetaAprobacion = "CORTE (PRODUCCIÓN)";
+        esTarjetaCorte = true;
       } else if (i === 2) {
-        bgColorLateral = "background-color: #FFFFFF;";
+        bgColorLateral = "#FFFFFF";
         etiquetaAprobacion = "PRODUCCIÓN";
       } else if (i === 3) {
-        bgColorLateral = "background-color: #80C342;"; // Verde Claro (C:50% M:0% Y:100% K:0%)
+        bgColorLateral = "#80C342"; // Verde Claro Retail (C:50% M:0% Y:100% K:0%)
         etiquetaAprobacion = "RETAIL";
       } else if (i === 4) {
-        bgColorLateral = "background-color: #FFF200;"; // Amarillo
+        bgColorLateral = "#FFF200"; // Amarillo Planeamiento
         etiquetaAprobacion = "PLANEAMIENTO";
       } else if (i === 5) {
-        bgColorLateral = "background-color: #E06D8A;"; // Rosado (C:10% M:65% Y:30% K:0%)
+        bgColorLateral = "#E06D8A"; // Rosado Exportaciones (C:10% M:65% Y:30% K:0%)
         etiquetaAprobacion = "EXPORTACIÓN";
       }
     } else if (copias === 4) {
       if (i === 1) {
-        bgColorLateral = "background-color: #FFFFFF;";
-        etiquetaAprobacion = "PRODUCCIÓN";
+        bgColorLateral = "#FFFFFF";
+        etiquetaAprobacion = "CORTE (PRODUCCIÓN)";
+        esTarjetaCorte = true;
       } else if (i === 2) {
-        bgColorLateral = "background-color: #80C342;";
+        bgColorLateral = "#80C342";
         etiquetaAprobacion = "RETAIL";
       } else if (i === 3) {
-        bgColorLateral = "background-color: #FFF200;";
+        bgColorLateral = "#FFF200";
         etiquetaAprobacion = "PLANEAMIENTO";
       } else if (i === 4) {
-        bgColorLateral = "background-color: #E06D8A;";
+        bgColorLateral = "#E06D8A";
         etiquetaAprobacion = "EXPORTACIÓN";
       }
+    } else {
+      if (i === 1) esTarjetaCorte = true;
     }
 
+    const imagenIzquierdaHTML = esTarjetaCorte ? siluetaPlantillaHTML : siluetaCalzadoHTML;
+
     tarjetasHTML += `
-      <div class="shoe-card-container bg-white flex text-[7.5px] leading-tight text-black font-sans shadow-sm">
+      <div class="shoe-card-container bg-white flex text-[7.5px] leading-tight text-black font-sans">
         <!-- SECCIÓN 1 (66.6 mm) -->
         <div class="shoe-panel flex border-r border-dashed border-gray-500 overflow-hidden">
-          <div class="w-4 border-r border-black flex items-center justify-center font-black tracking-widest text-[9px]" style="writing-mode: vertical-rl; transform: rotate(180deg); ${bgColorLateral}">
+          <div class="lateral-tab w-4 border-r border-black flex items-center justify-center font-black tracking-widest text-[9px]" style="writing-mode: vertical-rl; transform: rotate(180deg); background-color: ${bgColorLateral} !important;">
             ${linea}
           </div>
           
@@ -1284,7 +1300,7 @@ function renderTarjetasPreview() {
 
             <div class="flex flex-1">
               <div class="w-16 flex flex-col justify-between border-r border-black pr-0.5">
-                ${siluetaHTML}
+                ${imagenIzquierdaHTML}
                 <span class="text-[6.5px] font-bold">FECHA: ${fecha}</span>
               </div>
 
@@ -1433,7 +1449,6 @@ async function cargarPanelSuperAdmin() {
       tbodyUsers.appendChild(tr);
     });
 
-    // 2. Tabla Solicitudes y Minutas
     tbodySols.innerHTML = "";
     if (solicitudes.length === 0) {
       tbodySols.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400">No hay solicitudes registradas.</td></tr>`;
@@ -1461,7 +1476,6 @@ async function cargarPanelSuperAdmin() {
       });
     }
 
-    // 3. Tabla Entregas
     tbodyEnts.innerHTML = "";
     if (entregas.length === 0) {
       tbodyEnts.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-400">No hay entregas registradas.</td></tr>`;
@@ -1659,7 +1673,7 @@ function abrirReporteImpresoEntregas() {
     html += `
       <tr class="border-b">
         <td class="p-1 border text-center">${fotoPrint}</td>
-        <td class="p-2 border font-bold font-mono">${it.semana || '—'}</td>
+        <td class="p-2 border font-bold font-mono">${it.semana}</td>
         <td class="p-2 border whitespace-nowrap">${formatearFecha(it.fechaEntrega)}</td>
         <td class="p-2 border font-bold text-gray-800">${it.proyecto}</td>
         <td class="p-2 border font-mono">${it.articulo || '—'}</td>
@@ -1726,7 +1740,7 @@ function abrirResumenTextoEntregas() {
   modalEntregasTexto.classList.remove("hidden");
 }
 
-// Escucha en tiempo real de Solicitudes y Retraso a los 7 Días
+// Escucha en tiempo real de Solicitudes
 function escucharCambios() {
   const q = query(collection(db, "solicitudes_cambios"));
   onSnapshot(q, (snapshot) => {
@@ -1910,7 +1924,98 @@ window.desbloquearValidacionCostos = async (id) => {
   }
 };
 
-// ==================== NUEVA ENTREGA BLINDADA (SUPER ADMIN Y USUARIOS) ====================
+// Solicitudes y Minutas
+if (document.getElementById("form-minuta")) {
+  document.getElementById("form-minuta").onsubmit = async (e) => {
+    e.preventDefault();
+    const semana = document.getElementById("minuta-semana").value.trim();
+    const proyecto = document.getElementById("minuta-proyecto").value.trim();
+    const articulo = document.getElementById("minuta-articulo").value.trim();
+    const detalle = document.getElementById("minuta-box").value.trim();
+    const photoFile = document.getElementById("minuta-photo").files[0];
+
+    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
+
+    try {
+      await addDoc(collection(db, "solicitudes_cambios"), {
+        semana,
+        proyecto,
+        articulo,
+        foto: fotoBase64,
+        boxCambio: detalle,
+        esMinuta: true,
+        solicitanteNombre: (userData && userData.nombre) || "Jefe Desarrollo",
+        solicitanteRol: (userData && userData.rol) || "Desarrollo de producto - Jefe",
+        solicitanteId: currentUser.uid,
+        estado: "En proceso",
+        fechaRealizado: null,
+        validadoCostos: false,
+        fechaCreacion: new Date().toISOString(),
+        timestamp: serverTimestamp()
+      });
+
+      modalMinuta.classList.add("hidden");
+      document.getElementById("form-minuta").reset();
+
+      abrirModalWhatsApp({
+        titulo: "Minuta de Cambios Registrada",
+        subtitulo: "Enviar minuta a los Técnicos de Desarrollo:",
+        mensajeTexto: `📋 *MINUTA DE CAMBIOS - PLAN PILOTO*\n*Bata Bolivia / Desarrollo de Producto*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n👤 *Emitido por:* ${(userData && userData.nombre) || 'Jefe Desarrollo'}\n\n📝 *DETALLE DE CAMBIOS TÉCNICOS:*\n${detalle}\n\n_Registrado en el sistema para control de avance y realización._`,
+        rolFiltro: "Desarrollo de producto - Técnico"
+      });
+    } catch (err) {
+      alert("Error al guardar minuta: " + err.message);
+    }
+  };
+}
+
+const modalNewChange = document.getElementById("modal-new-change");
+document.getElementById("btn-open-new-change").onclick = () => modalNewChange.classList.remove("hidden");
+document.getElementById("modal-btn-close").onclick = () => modalNewChange.classList.add("hidden");
+document.getElementById("modal-btn-cancel").onclick = () => modalNewChange.classList.add("hidden");
+
+document.getElementById("form-new-change").onsubmit = async (e) => {
+  e.preventDefault();
+  const semana = document.getElementById("change-semana").value.trim();
+  const proyecto = document.getElementById("change-project").value.trim();
+  const articulo = document.getElementById("change-article").value.trim();
+  const boxCambio = document.getElementById("change-box").value.trim();
+  const photoFile = document.getElementById("change-photo").files[0];
+
+  const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
+
+  try {
+    await addDoc(collection(db, "solicitudes_cambios"), {
+      semana,
+      proyecto,
+      articulo,
+      foto: fotoBase64,
+      boxCambio,
+      esMinuta: false,
+      solicitanteNombre: (userData && userData.nombre) || currentUser.email,
+      solicitanteRol: (userData && userData.rol) || "Usuario",
+      solicitanteId: currentUser.uid,
+      estado: "En proceso",
+      fechaRealizado: null,
+      validadoCostos: false,
+      fechaCreacion: new Date().toISOString(),
+      timestamp: serverTimestamp()
+    });
+
+    document.getElementById("form-new-change").reset();
+    modalNewChange.classList.add("hidden");
+
+    abrirModalWhatsApp({
+      titulo: "Solicitud Registrada",
+      subtitulo: "Notificar solicitud creada al equipo:",
+      mensajeTexto: `👞 *NUEVA SOLICITUD DE CAMBIO - BATA BOLIVIA*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n👤 *Solicitado por:* ${(userData && userData.nombre) || 'Usuario'} (${(userData && userData.rol) || ''})\n📝 *Cambio:* ${boxCambio}\n\n_Revisar en el Sistema de Gestión de Cambios Bata_`
+    });
+  } catch (err) {
+    alert("Error: " + err.message);
+  }
+};
+
+// ==================== NUEVA ENTREGA BLINDADA ====================
 document.getElementById("btn-open-nueva-entrega").onclick = () => {
   const esAdmin = esSuperAdmin();
   const rol = (userData && userData.rol) || "";
@@ -2060,3 +2165,7 @@ document.getElementById("form-nueva-entrega").onsubmit = async (e) => {
     alert("Error al registrar entrega: " + err.message);
   }
 };
+
+// Listeners de botones de reporte
+document.getElementById("btn-reporte-entregas-pdf").onclick = abrirReporteImpresoEntregas;
+document.getElementById("btn-reporte-entregas-texto").onclick = abrirResumenTextoEntregas;
