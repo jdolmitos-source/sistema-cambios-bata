@@ -66,6 +66,22 @@ let colFiltroSemanaLlegada = "";
 let articulosCostosPegados = [];
 let croquisTarjetaBase64 = null;
 
+// Función para alternar ver/ocultar contraseña (Ojito)
+window.togglePasswordVisibility = (inputId, eyeIconId) => {
+  const input = document.getElementById(inputId);
+  const icon = document.getElementById(eyeIconId);
+  if (!input || !icon) return;
+  if (input.type === "password") {
+    input.type = "text";
+    icon.classList.remove("fa-eye");
+    icon.classList.add("fa-eye-slash");
+  } else {
+    input.type = "password";
+    icon.classList.remove("fa-eye-slash");
+    icon.classList.add("fa-eye");
+  }
+};
+
 // Compresor de imágenes a tamaño liviano (~30 KB)
 const comprimirImagen = (file, maxWidth = 600, calidad = 0.75) => new Promise((resolve) => {
   if (!file) return resolve(null);
@@ -371,7 +387,6 @@ function actualizarHeaderUsuario() {
     }
   }
 
-  // Visibilidad del menú de tarjetas (exclusivo Desarrollo o Super Admin)
   const secTarjetas = document.getElementById("section-menu-tarjetas");
   if (secTarjetas) {
     if (esDesarrollo() || esAdmin) {
@@ -411,7 +426,7 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// Navegación Principal y Resaltado Lateral
+// Navegación Principal y Resaltado Lateral (PASTILLA BLANCA CON TEXTO ROJO BATA)
 const viewCambios = document.getElementById("view-cambios");
 const viewInforme = document.getElementById("view-informe");
 const viewEntregas = document.getElementById("view-entregas");
@@ -623,6 +638,7 @@ function actualizarInformePorSemana() {
 
   articulosFiltrados.sort((a, b) => (a.semana || "").localeCompare(b.semana || "", undefined, { numeric: true }));
 
+  // 5 KPIs exactos
   const total = articulosFiltrados.length;
   const retrasados = articulosFiltrados.filter(s => s.estado === "Retrasado").length;
   const enProceso = articulosFiltrados.filter(s => s.estado === "En proceso").length;
@@ -813,13 +829,13 @@ function generarModalInformeResumen() {
 
 // ==================== PROCUREMENT & STORAGE ====================
 function escucharProcurement() {
-  const qBloqueos = query(collection(db, "procurement_bloqueos"), orderBy("timestamp", "desc"));
+  const qBloqueos = query(collection(db, "procurement_bloqueos"));
   onSnapshot(qBloqueos, (snapshot) => {
     bloqueosMateriales = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     renderTablaBloqueos();
   }, (err) => console.log("Aviso Firestore Bloqueos:", err.message));
 
-  const qLlegadas = query(collection(db, "procurement_llegadas"), orderBy("timestamp", "desc"));
+  const qLlegadas = query(collection(db, "procurement_llegadas"));
   onSnapshot(qLlegadas, (snapshot) => {
     llegadasMateriales = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     renderTablaLlegadas();
@@ -921,7 +937,7 @@ function renderTablaBloqueos() {
           : `<span class="text-gray-400 text-[11px] italic">Pendiente confirmación</span>`);
 
     let eliminarHTML = puedeBorrar
-      ? `<button onclick="window.eliminarBloqueoMaterial('${b.id}', '${b.nombre}')" class="text-red-500 hover:text-red-700 font-bold text-xs"><i class="fa-solid fa-trash-can"></i></button>`
+      ? `<button onclick="window.eliminarBloqueoMaterial('${b.id}', '${b.nombre}')" class="text-red-500 hover:text-red-700 font-bold text-xs cursor-pointer"><i class="fa-solid fa-trash-can"></i></button>`
       : `<span class="text-gray-300">—</span>`;
 
     tr.innerHTML = `
@@ -1019,7 +1035,7 @@ function renderTablaLlegadas() {
           : `<span class="text-gray-300 text-[11px]">Pendiente</span>`);
 
     let eliminarHTML = esCompras
-      ? `<button onclick="window.eliminarLlegadaMaterial('${l.id}', '${l.nombre}')" class="text-red-500 hover:text-red-700 font-bold text-xs"><i class="fa-solid fa-trash-can"></i></button>`
+      ? `<button onclick="window.eliminarLlegadaMaterial('${l.id}', '${l.nombre}')" class="text-red-500 hover:text-red-700 font-bold text-xs cursor-pointer"><i class="fa-solid fa-trash-can"></i></button>`
       : `<span class="text-gray-300">—</span>`;
 
     tr.innerHTML = `
@@ -1125,7 +1141,7 @@ function initModuloTarjetas() {
     };
   }
 
-  // Parsear texto pegado de Excel
+  // Parsear texto copiado desde Excel (tabuladores)
   document.getElementById("btn-procesar-excel-paste").onclick = () => {
     const raw = document.getElementById("paste-excel-costos").value.trim();
     if (!raw) {
@@ -1175,7 +1191,7 @@ function initModuloTarjetas() {
   document.getElementById("select-copias-tarjeta").onchange = renderTarjetasPreview;
 
   // Actualizar preview en tiempo real al escribir datos técnicos
-  ["card-nombre-lateral", "card-serie", "card-fecha", "card-forro", "card-plant-int", "card-tecnico", "card-horma-suela", "card-construccion", "card-observaciones"].forEach(id => {
+  ["card-nombre-lateral", "card-serie", "card-fecha", "card-material-corte", "card-forro", "card-plant-int", "card-tecnico", "card-horma-suela", "card-construccion", "card-observaciones"].forEach(id => {
     const elem = document.getElementById(id);
     if (elem) elem.oninput = renderTarjetasPreview;
   });
@@ -1194,6 +1210,9 @@ function cargarDatosArticuloEnTarjeta(idx) {
   const inputLateral = document.getElementById("card-nombre-lateral");
   if (inputLateral) inputLateral.value = item.linea || "";
 
+  const inputMatCorte = document.getElementById("card-material-corte");
+  if (inputMatCorte) inputMatCorte.value = item.tipoMaterial || "";
+
   renderTarjetasPreview();
 }
 
@@ -1202,7 +1221,7 @@ function renderTarjetasPreview() {
   const selectArt = document.getElementById("select-articulo-tarjeta");
   const idx = parseInt(selectArt.value);
 
-  const copias = parseInt(document.getElementById("select-copias-tarjeta").value) || 4;
+  const copias = parseInt(document.getElementById("select-copias-tarjeta").value) || 5;
   const item = articulosCostosPegados[idx] || {
     articulo: "85549004",
     marca: "BATA",
@@ -1215,6 +1234,7 @@ function renderTarjetasPreview() {
   const nombreLateral = (document.getElementById("card-nombre-lateral").value || "SANDRA").toUpperCase();
   const serie = document.getElementById("card-serie").value || "37 - 44";
   const fecha = document.getElementById("card-fecha").value || "04/08/2026";
+  const materialCorte = document.getElementById("card-material-corte").value || item.tipoMaterial || "DNE GAMUZON 4EGD";
   const forro = document.getElementById("card-forro").value || "DNE FORRO CARAMELO";
   const plantInt = document.getElementById("card-plant-int").value || "DNE PLANT CAMEL PIG SKIN";
   const tecnico = (document.getElementById("card-tecnico").value || "JAVIER GOMEZ").toUpperCase();
@@ -1229,14 +1249,49 @@ function renderTarjetasPreview() {
   let tarjetasHTML = "";
 
   for (let i = 1; i <= copias; i++) {
-    const destinoEtiqueta = i === 1 ? "CORTE" : `MUESTRA #${i - 1}`;
+    // Configuración de colores en el nombre lateral según departamento
+    let bgColorLateral = "background-color: #FFFFFF;"; // Blanco por defecto (Producción)
+    let etiquetaAprobacion = "PRODUCCIÓN";
+
+    if (copias === 5) {
+      if (i === 1) {
+        bgColorLateral = "background-color: #FFFFFF;"; // Producción 1
+        etiquetaAprobacion = "CORTE (PRODUCCIÓN)";
+      } else if (i === 2) {
+        bgColorLateral = "background-color: #FFFFFF;"; // Producción 2
+        etiquetaAprobacion = "PRODUCCIÓN";
+      } else if (i === 3) {
+        bgColorLateral = "background-color: #80C342;"; // Verde Claro (C:50% M:0% Y:100% K:0%)
+        etiquetaAprobacion = "RETAIL";
+      } else if (i === 4) {
+        bgColorLateral = "background-color: #FFF200;"; // Amarillo
+        etiquetaAprobacion = "PLANEAMIENTO";
+      } else if (i === 5) {
+        bgColorLateral = "background-color: #E06D8A;"; // Rosado (C:10% M:65% Y:30% K:0%)
+        etiquetaAprobacion = "EXPORTACIÓN";
+      }
+    } else if (copias === 4) {
+      if (i === 1) {
+        bgColorLateral = "background-color: #FFFFFF;"; // Producción
+        etiquetaAprobacion = "PRODUCCIÓN";
+      } else if (i === 2) {
+        bgColorLateral = "background-color: #80C342;"; // Retail
+        etiquetaAprobacion = "RETAIL";
+      } else if (i === 3) {
+        bgColorLateral = "background-color: #FFF200;"; // Planeamiento
+        etiquetaAprobacion = "PLANEAMIENTO";
+      } else if (i === 4) {
+        bgColorLateral = "background-color: #E06D8A;"; // Exportación
+        etiquetaAprobacion = "EXPORTACIÓN";
+      }
+    }
 
     tarjetasHTML += `
-      <div class="shoe-card-container bg-white flex text-[7.5px] leading-tight text-black font-sans shadow-sm mb-3">
+      <div class="shoe-card-container bg-white flex text-[7.5px] leading-tight text-black font-sans shadow-sm">
         <!-- SECCIÓN 1 (66.6 mm): INFORMACIÓN TÉCNICA Y COSTOS -->
         <div class="shoe-panel flex border-r border-dashed border-gray-500 overflow-hidden">
-          <!-- Nombre lateral vertical -->
-          <div class="w-4 bg-gray-100 border-r border-black flex items-center justify-center font-black tracking-widest text-[9px]" style="writing-mode: vertical-rl; transform: rotate(180deg);">
+          <!-- Nombre lateral vertical con color correspondiente -->
+          <div class="w-4 border-r border-black flex items-center justify-center font-black tracking-widest text-[9px]" style="writing-mode: vertical-rl; transform: rotate(180deg); ${bgColorLateral}">
             ${nombreLateral}
           </div>
           
@@ -1266,7 +1321,7 @@ function renderTarjetasPreview() {
                 </div>
                 <div class="flex justify-between border-b border-gray-300 truncate">
                   <span class="font-bold">CORTE:</span>
-                  <span class="truncate">${item.tipoMaterial}</span>
+                  <span class="truncate">${materialCorte}</span>
                 </div>
                 <div class="flex justify-between border-b border-gray-300 truncate">
                   <span class="font-bold">FORRO:</span>
@@ -1279,7 +1334,6 @@ function renderTarjetasPreview() {
               </div>
             </div>
 
-            <!-- Precios y Márgenes -->
             <div class="grid grid-cols-4 gap-0.5 border-t border-black text-[6.5px] font-semibold pt-0.5">
               <div>TEC: ${tecnico}</div>
               <div>SUELA: ${hormaSuela}</div>
@@ -1292,7 +1346,7 @@ function renderTarjetasPreview() {
         <!-- SECCIÓN 2 (66.6 mm): FIRMAS DE APROBACIÓN -->
         <div class="shoe-panel flex flex-col justify-between p-1.5 border-r border-dashed border-gray-500 text-[7px]">
           <div class="text-[7.5px] font-black text-center text-gray-700 uppercase border-b border-gray-300 pb-0.5">
-            APROBACIONES DE DESARROLLO (${destinoEtiqueta})
+            APROBACIONES (${etiquetaAprobacion})
           </div>
 
           <div class="grid grid-cols-2 gap-1 text-center">
@@ -1343,7 +1397,7 @@ function renderTarjetasPreview() {
   container.innerHTML = tarjetasHTML;
 }
 
-// ==================== PANEL SUPER ADMIN ROBUSTO ====================
+// ==================== PANEL SUPER ADMIN ====================
 async function cargarPanelSuperAdmin() {
   if (!esSuperAdmin()) return;
 
@@ -1482,7 +1536,18 @@ window.eliminarEntregaDoc = async (id, tipo, proyecto) => {
   }
 };
 
-// ==================== TABLA GENERAL DE ENTREGAS ====================
+// ==================== TABLA GENERAL DE ENTREGAS BLINDADA ====================
+function escucharEntregas() {
+  // Consulta directa sin indexado forzado para garantizar que nada desaparezca
+  const q = query(collection(db, "entregas_departamentos"));
+  onSnapshot(q, (snapshot) => {
+    entregas = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    // Ordenamiento seguro en memoria
+    entregas.sort((a, b) => (b.fechaEntrega || "").localeCompare(a.fechaEntrega || ""));
+    renderTablaEntregas();
+  }, (err) => console.error("Error al escuchar entregas:", err));
+}
+
 function renderTablaEntregas() {
   const tbody = document.getElementById("table-entregas-body");
   tbody.innerHTML = "";
@@ -1497,8 +1562,6 @@ function renderTablaEntregas() {
     const coincideProy = !colFiltroProyectoEntregas || proyStr.includes(colFiltroProyectoEntregas);
     return coincideCategoria && coincideSem && coincideProy;
   });
-
-  entregasFiltradas.sort((a, b) => (a.semana || "").localeCompare(b.semana || "", undefined, { numeric: true }));
 
   if (entregasFiltradas.length === 0) {
     empty.classList.remove("hidden");
@@ -1547,9 +1610,9 @@ function renderTablaEntregas() {
 
     tr.innerHTML = `
       ${tdFotoHTML}
-      <td class="p-3 font-bold text-gray-700 border-r border-gray-100 font-mono">${ent.semana}</td>
+      <td class="p-3 font-bold text-gray-700 border-r border-gray-100 font-mono">${ent.semana || '—'}</td>
       <td class="p-3 text-gray-600 border-r border-gray-100 whitespace-nowrap">${formatearFecha(ent.fechaEntrega)}</td>
-      <td class="p-3 font-bold text-gray-800 border-r border-gray-100">${ent.proyecto}</td>
+      <td class="p-3 font-bold text-gray-800 border-r border-gray-100">${ent.proyecto || '—'}</td>
       ${tdArticuloHTML}
       <td class="p-3 border-r border-gray-100">
         <span class="bg-red-50 text-[#D61B28] px-2 py-0.5 rounded font-bold text-[10px] border border-red-100">${ent.tipo}</span>
@@ -1863,5 +1926,160 @@ window.confirmarValidacionCostos = async (id, proyecto, articulo, checkboxElem) 
 window.desbloquearValidacionCostos = async (id) => {
   if (confirm("¿Desbloquear validación de costos? (Acción de Super Admin)")) {
     await updateDoc(doc(db, "solicitudes_cambios", id), { validadoCostos: false });
+  }
+};
+
+// ==================== REGISTRAR NUEVA ENTREGA BLINDADA ====================
+document.getElementById("btn-open-nueva-entrega").onclick = () => {
+  const esAdmin = esSuperAdmin();
+  const rol = (userData && userData.rol) || "";
+  const esDesarrolloRol = rol.includes("Desarrollo") || esAdmin;
+  const esCostos = rol === "Costos" || esAdmin;
+
+  if (!esDesarrolloRol && !esCostos) {
+    alert("Solo los usuarios de Desarrollo de Producto o Costos pueden registrar entregas.");
+    return;
+  }
+
+  const selectTipo = document.getElementById("ent-tipo");
+  selectTipo.innerHTML = "";
+
+  if (categoriaEntregaActiva !== "todas") {
+    selectTipo.innerHTML += `<option value="${categoriaEntregaActiva}">${categoriaEntregaActiva}</option>`;
+  } else {
+    if (esDesarrolloRol) {
+      selectTipo.innerHTML += `<option value="GUÍA DE PRODUCCIÓN">GUÍA DE PRODUCCIÓN</option>`;
+      selectTipo.innerHTML += `<option value="CORTE">CORTE</option>`;
+      selectTipo.innerHTML += `<option value="MUESTRA DEFINITIVA">MUESTRA DEFINITIVA</option>`;
+      selectTipo.innerHTML += `<option value="MATERIALES">MATERIALES</option>`;
+      selectTipo.innerHTML += `<option value="HOJA DE DESBASTE">HOJA DE DESBASTE</option>`;
+      selectTipo.innerHTML += `<option value="TIZADORES">TIZADORES</option>`;
+    } else if (esCostos) {
+      selectTipo.innerHTML += `<option value="CORTE">CORTE (De Costos a Producción)</option>`;
+    }
+  }
+
+  actualizarCamposSegunTipoEntrega();
+  modalNuevaEntrega.classList.remove("hidden");
+};
+
+document.getElementById("ent-tipo").onchange = actualizarCamposSegunTipoEntrega;
+
+function actualizarCamposSegunTipoEntrega() {
+  const tipo = document.getElementById("ent-tipo").value;
+  const selectDestino = document.getElementById("ent-destino");
+  const boxArticulo = document.getElementById("box-field-articulo");
+  const labelProy = document.getElementById("label-field-proyecto");
+  const inputProy = document.getElementById("ent-proyecto");
+  const boxFoto = document.getElementById("box-field-foto");
+  const boxCopias = document.getElementById("box-field-copias");
+  const containerSingle = document.getElementById("container-destino-single");
+  const containerMultiple = document.getElementById("container-destino-multiple");
+
+  selectDestino.innerHTML = "";
+  boxCopias.classList.add("hidden");
+  containerMultiple.classList.add("hidden");
+  containerSingle.classList.remove("hidden");
+  boxFoto.classList.add("hidden");
+
+  if (tipo === "MATERIALES") {
+    labelProy.textContent = "Nombre del Material / Insumo";
+    inputProy.placeholder = "Ej: Badana Beige 1.2mm";
+    boxArticulo.classList.add("hidden");
+    selectDestino.innerHTML += `<option value="Desarrollo de producto">Desarrollo de producto</option>`;
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+    return;
+  }
+
+  boxArticulo.classList.remove("hidden");
+  labelProy.textContent = "Nombre del Proyecto";
+  inputProy.placeholder = "Ej: SKATER";
+
+  if (tipo === "GUÍA DE PRODUCCIÓN") {
+    boxFoto.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
+  }
+  else if (tipo === "CORTE") {
+    boxFoto.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+  }
+  else if (tipo === "MUESTRA DEFINITIVA") {
+    boxFoto.classList.remove("hidden");
+    containerSingle.classList.add("hidden");
+    containerMultiple.classList.remove("hidden");
+  }
+  else if (tipo === "HOJA DE DESBASTE") {
+    boxFoto.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+  }
+  else if (tipo === "TIZADORES") {
+    boxCopias.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+  }
+}
+
+document.getElementById("form-nueva-entrega").onsubmit = async (e) => {
+  e.preventDefault();
+  const semana = document.getElementById("ent-semana").value.trim();
+  const proyecto = document.getElementById("ent-proyecto").value.trim();
+  const articulo = document.getElementById("ent-articulo").value.trim();
+  const tipo = document.getElementById("ent-tipo").value;
+  const notas = document.getElementById("ent-notas").value.trim();
+  const copias = document.getElementById("ent-copias").value.trim();
+  const photoFile = document.getElementById("ent-photo").files[0];
+
+  const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
+
+  try {
+    let destinosAEntregar = [];
+
+    if (tipo === "MUESTRA DEFINITIVA") {
+      destinosAEntregar = Array.from(document.querySelectorAll(".chk-muestras-dest:checked")).map(c => c.value);
+      if (destinosAEntregar.length === 0) {
+        alert("Selecciona al menos un departamento para la muestra definitiva.");
+        return;
+      }
+    } else {
+      destinosAEntregar = [document.getElementById("ent-destino").value];
+    }
+
+    const nombreUsuario = (userData && userData.nombre) || (currentUser && currentUser.email) || "Usuario";
+    const rolUsuario = (userData && userData.rol) || "Desarrollo de producto";
+
+    for (const destino of destinosAEntregar) {
+      await addDoc(collection(db, "entregas_departamentos"), {
+        semana,
+        proyecto,
+        articulo: tipo === "MATERIALES" ? "" : articulo,
+        tipo,
+        destino,
+        copias: tipo === "TIZADORES" ? (copias || "1") : null,
+        foto: fotoBase64,
+        notas,
+        entregadoPorNombre: nombreUsuario,
+        entregadoPorRol: rolUsuario,
+        entregadoPorId: currentUser ? currentUser.uid : null,
+        recibido: false,
+        fechaEntrega: new Date().toISOString(),
+        timestamp: serverTimestamp()
+      });
+    }
+
+    document.getElementById("form-nueva-entrega").reset();
+    modalNuevaEntrega.classList.add("hidden");
+
+    const destinosTexto = destinosAEntregar.join(", ");
+    let detalleCopias = (tipo === "TIZADORES" && copias) ? `📑 *Copias:* ${copias}\n` : '';
+
+    abrirModalWhatsApp({
+      titulo: "Entrega Registrada",
+      subtitulo: `Notificar recepción a los encargados de ${destinosTexto}:`,
+      mensajeTexto: `📦 ENTREGA REALIZADA - PD BOLIVIA\n\n📅 *Semana:* ${semana}\n📌 *Elemento:* ${tipo}\n🏷️ *Detalle/Proyecto:* ${proyecto}\n${articulo ? '🔢 *Artículo:* ' + articulo + '\n' : ''}${detalleCopias}👤 *Entregado por:* ${nombreUsuario} (${rolUsuario})\n🏢 *Destino:* ${destinosTexto}\n📝 *Notas:* ${notas || 'Sin notas adicionales'}\n\n_Favor de confirmar la recepción física en el sistema._`,
+      rolFiltro: destinosAEntregar.length === 1 ? destinosAEntregar[0] : null
+    });
+  } catch (err) {
+    alert("Error al registrar entrega: " + err.message);
   }
 };
