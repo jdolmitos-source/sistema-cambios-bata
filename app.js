@@ -177,7 +177,7 @@ const safeClick = (id, fn) => {
   if (el) el.onclick = fn;
 };
 
-// ==================== REPORTES DE ENTREGAS (DEFINIDOS Y EXPUESTOS GLOBALMENTE) ====================
+// ==================== REPORTES DE ENTREGAS (GLOBALES) ====================
 window.abrirReporteImpresoEntregas = () => {
   const items = entregas.filter(item => (categoriaEntregaActiva === "todas") || 
     ((item.tipo || "").toUpperCase().trim() === categoriaEntregaActiva.toUpperCase().trim()));
@@ -473,7 +473,7 @@ function actualizarHeaderUsuario() {
       menuAdmin.classList.remove("hidden");
     } else {
       menuAdmin.classList.add("hidden");
-      if (!viewUsuarios.classList.contains("hidden")) {
+      if (!viewUsuarios?.classList.contains("hidden")) {
         activarVistaCambios();
       }
     }
@@ -588,7 +588,6 @@ safeClick("menu-btn-informe", () => {
   viewInforme?.classList.remove("hidden");
   if (menuBtnInforme) menuBtnInforme.className = CLASE_ACTIVO_PASTILLA;
   
-  // Limpieza total del filtro para evitar que quede en "33" u otro texto antiguo
   colFiltroSemanaInforme = "";
   colFiltroProyectoInforme = "";
   const inSem = document.getElementById("col-filter-semana-informe");
@@ -957,305 +956,7 @@ window.generarModalInformeResumen = () => {
   modalResumen?.classList.remove("hidden");
 };
 
-// ==================== PROCUREMENT & STORAGE ====================
-function escucharProcurement() {
-  const qBloqueos = query(collection(db, "procurement_bloqueos"));
-  onSnapshot(qBloqueos, (snapshot) => {
-    bloqueosMateriales = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderTablaBloqueos();
-  }, (err) => console.log("Aviso Firestore Bloqueos:", err.message));
-
-  const qLlegadas = query(collection(db, "procurement_llegadas"));
-  onSnapshot(qLlegadas, (snapshot) => {
-    llegadasMateriales = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderTablaLlegadas();
-  }, (err) => console.log("Aviso Firestore Llegadas:", err.message));
-}
-
-function renderProcurementView() {
-  renderTablaBloqueos();
-  renderTablaLlegadas();
-
-  safeClick("btn-open-nuevo-bloqueo", () => modalNuevoBloqueo?.classList.remove("hidden"));
-  safeClick("btn-open-nueva-llegada", () => modalNuevaLlegada?.classList.remove("hidden"));
-
-  const fItem = document.getElementById("col-filter-item-llegada");
-  const fNom = document.getElementById("col-filter-nombre-llegada");
-  const fSem = document.getElementById("col-filter-semana-llegada");
-
-  if (fItem) fItem.oninput = (e) => { colFiltroItemLlegada = e.target.value.trim().toLowerCase(); renderTablaLlegadas(); };
-  if (fNom) fNom.oninput = (e) => { colFiltroNombreLlegada = e.target.value.trim().toLowerCase(); renderTablaLlegadas(); };
-  if (fSem) fSem.oninput = (e) => { colFiltroSemanaLlegada = e.target.value.trim().toLowerCase(); renderTablaLlegadas(); };
-
-  safeClick("btn-reporte-llegadas-pdf", abrirReporteImpresoLlegadas);
-}
-
-const formBloqueo = document.getElementById("form-nuevo-bloqueo");
-if (formBloqueo) {
-  formBloqueo.onsubmit = async (e) => {
-    e.preventDefault();
-    const item = document.getElementById("bloq-item").value.trim();
-    const semana = document.getElementById("bloq-semana").value.trim();
-    const nombre = document.getElementById("bloq-nombre").value.trim();
-    const cantidad = parseFloat(document.getElementById("bloq-cantidad").value) || 0;
-    const unidad = document.getElementById("bloq-unidad").value;
-    const estado = document.getElementById("bloq-estado").value;
-    const notas = document.getElementById("bloq-notas").value.trim();
-
-    try {
-      const nombreUsuario = (userData && userData.nombre) || (currentUser && currentUser.email) || "Compras";
-      const rolUsuario = (userData && userData.rol) || "Compras";
-
-      await addDoc(collection(db, "procurement_bloqueos"), {
-        item,
-        semana,
-        nombre,
-        cantidad,
-        unidad,
-        estado,
-        notas,
-        notificadoAlmacen: false,
-        registradoPorNombre: nombreUsuario,
-        registradoPorRol: rolUsuario,
-        registradoPorId: currentUser ? currentUser.uid : null,
-        fechaCreacion: new Date().toISOString(),
-        timestamp: serverTimestamp()
-      });
-
-      formBloqueo.reset();
-      modalNuevoBloqueo?.classList.add("hidden");
-
-      abrirModalWhatsApp({
-        titulo: "Alerta de Disponibilidad Emitida",
-        subtitulo: "Enviar alerta inmediata al personal de Almacén:",
-        mensajeTexto: `📦 *ALERTA DE DISPONIBILIDAD DE MATERIAL - BATA BOLIVIA*\n*Compras a Almacén*\n\n📅 *Semana de Bloqueo:* ${semana}\n🔢 *Item:* ${item}\n🧵 *Material:* ${nombre}\n📏 *Cant. Permitida:* ${cantidad} ${unidad}\n⚠️ *Disposición:* ${estado}\n📝 *Notas:* ${notas || 'Sin notas'}\n👤 *Emitido por:* ${nombreUsuario} (${rolUsuario})\n\n_Favor ajustar las entregas físicas en almacén conforme a esta disposición._`,
-        rolFiltro: "Almacén"
-      });
-    } catch (err) {
-      alert("Error al guardar bloqueo: " + err.message);
-    }
-  };
-}
-
-function renderTablaBloqueos() {
-  const tbody = document.getElementById("table-bloqueos-body");
-  if (!tbody) return;
-  tbody.innerHTML = "";
-
-  if (bloqueosMateriales.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400 italic">No hay restricciones de materiales registradas.</td></tr>`;
-    return;
-  }
-
-  const esAlmacen = (userData && userData.rol === "Almacén") || esSuperAdmin();
-  const puedeBorrar = esComprasAdmin();
-
-  bloqueosMateriales.forEach(b => {
-    const tr = document.createElement("tr");
-    tr.className = "hover:bg-gray-50/70 border-b border-gray-100";
-
-    let estiloBadge = "bg-amber-100 text-amber-800";
-    if (b.estado === "Bloqueado para Producción") estiloBadge = "bg-red-100 text-red-800";
-    if (b.estado === "Disponible Libre") estiloBadge = "bg-green-100 text-green-800";
-
-    let accionAlmacen = b.notificadoAlmacen 
-      ? `<span class="text-green-600 font-bold text-[11px]"><i class="fa-solid fa-check"></i> Almacén Enterado</span>`
-      : (esAlmacen 
-          ? `<button onclick="window.confirmarEnteradoAlmacen('${b.id}')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-2 py-1 rounded border border-blue-200">Confirmar Enterado</button>`
-          : `<span class="text-gray-400 text-[11px] italic">Pendiente confirmación</span>`);
-
-    let eliminarHTML = puedeBorrar
-      ? `<button onclick="window.eliminarBloqueoMaterial('${b.id}', '${b.nombre}')" class="text-red-500 hover:text-red-700 font-bold text-xs cursor-pointer"><i class="fa-solid fa-trash-can"></i></button>`
-      : `<span class="text-gray-300">—</span>`;
-
-    tr.innerHTML = `
-      <td class="p-2.5 font-mono font-bold text-gray-700">${b.item}</td>
-      <td class="p-2.5 font-bold text-gray-800">${b.nombre} ${b.notas ? '<p class="text-[10px] text-gray-400 font-normal">' + b.notas + '</p>' : ''}</td>
-      <td class="p-2.5 font-mono font-bold text-amber-700">${b.semana}</td>
-      <td class="p-2.5 font-black text-gray-800">${b.cantidad} ${b.unidad || 'Mts'}</td>
-      <td class="p-2.5 text-center"><span class="px-2 py-0.5 rounded font-bold text-[10px] ${estiloBadge}">${b.estado}</span></td>
-      <td class="p-2.5 text-gray-600">${b.registradoPorNombre}</td>
-      <td class="p-2.5 text-center">${accionAlmacen}</td>
-      <td class="p-2.5 text-center">${eliminarHTML}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-window.confirmarEnteradoAlmacen = async (id) => {
-  await updateDoc(doc(db, "procurement_bloqueos", id), {
-    notificadoAlmacen: true,
-    fechaEnterado: new Date().toISOString(),
-    usuarioAlmacen: (userData && userData.nombre) || "Almacén"
-  });
-};
-
-window.eliminarBloqueoMaterial = async (id, nombre) => {
-  if (!esComprasAdmin()) {
-    alert("Solo Compras Admin o Super Admin pueden borrar bloqueos.");
-    return;
-  }
-  if (confirm(`¿Eliminar la restricción del material "${nombre}"?`)) {
-    await deleteDoc(doc(db, "procurement_bloqueos", id));
-  }
-};
-
-const formLlegada = document.getElementById("form-nueva-llegada");
-if (formLlegada) {
-  formLlegada.onsubmit = async (e) => {
-    e.preventDefault();
-    const item = document.getElementById("lleg-item").value.trim();
-    const semana = document.getElementById("lleg-semana").value.trim();
-    const nombre = document.getElementById("lleg-nombre").value.trim();
-    const cantidad = document.getElementById("lleg-cantidad").value.trim();
-    const fechaEst = document.getElementById("lleg-fecha-est").value;
-    const fechaReal = document.getElementById("lleg-fecha-real").value;
-
-    try {
-      const nombreUsuario = (userData && userData.nombre) || (currentUser && currentUser.email) || "Usuario";
-
-      await addDoc(collection(db, "procurement_llegadas"), {
-        item,
-        semana,
-        nombre,
-        cantidad,
-        fechaEstimada: fechaEst,
-        fechaReal: fechaReal || null,
-        validadoCompras: false,
-        registradoPor: nombreUsuario,
-        registradoPorId: currentUser ? currentUser.uid : null,
-        fechaCreacion: new Date().toISOString(),
-        timestamp: serverTimestamp()
-      });
-
-      formLlegada.reset();
-      modalNuevaLlegada?.classList.add("hidden");
-    } catch (err) {
-      alert("Error al guardar llegada: " + err.message);
-    }
-  };
-}
-
-function renderTablaLlegadas() {
-  const tbody = document.getElementById("table-llegadas-body");
-  if (!tbody) return;
-  tbody.innerHTML = "";
-
-  let filtradas = llegadasMateriales.filter(l => {
-    const cItem = !colFiltroItemLlegada || (l.item || "").toLowerCase().includes(colFiltroItemLlegada);
-    const cNom = !colFiltroNombreLlegada || (l.nombre || "").toLowerCase().includes(colFiltroNombreLlegada);
-    const cSem = !colFiltroSemanaLlegada || (l.semana || "").toString().includes(colFiltroSemanaLlegada);
-    return cItem && cNom && cSem;
-  });
-
-  if (filtradas.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400 italic">No hay registros de llegadas.</td></tr>`;
-    return;
-  }
-
-  const esCompras = esComprasAdmin();
-
-  filtradas.forEach(l => {
-    const tr = document.createElement("tr");
-    tr.className = "hover:bg-gray-50/70 border-b border-gray-100";
-
-    let validacionHTML = l.validadoCompras 
-      ? `<span class="text-green-700 font-bold text-xs"><i class="fa-solid fa-circle-check"></i> Validado</span>`
-      : (esCompras 
-          ? `<button onclick="window.validarLlegadaCompras('${l.id}')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-2.5 py-1 rounded border border-emerald-200">Validar</button>`
-          : `<span class="text-gray-300 text-[11px]">Pendiente</span>`);
-
-    let eliminarHTML = esCompras
-      ? `<button onclick="window.eliminarLlegadaMaterial('${l.id}', '${l.nombre}')" class="text-red-500 hover:text-red-700 font-bold text-xs cursor-pointer"><i class="fa-solid fa-trash-can"></i></button>`
-      : `<span class="text-gray-300">—</span>`;
-
-    tr.innerHTML = `
-      <td class="p-2.5 font-mono font-bold text-gray-700">${l.item}</td>
-      <td class="p-2.5 font-bold text-gray-800">${l.nombre}</td>
-      <td class="p-2.5 font-mono font-bold text-gray-600">${l.semana}</td>
-      <td class="p-2.5 font-black text-gray-700">${l.cantidad}</td>
-      <td class="p-2.5 text-gray-600">${l.fechaEstimada || '—'}</td>
-      <td class="p-2.5 font-bold ${l.fechaReal ? 'text-green-700' : 'text-amber-600'}">${l.fechaReal || 'En tránsito'}</td>
-      <td class="p-2.5 text-center">${validacionHTML}</td>
-      <td class="p-2.5 text-center">${eliminarHTML}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-window.validarLlegadaCompras = async (id) => {
-  if (confirm("¿Confirmar y validar la llegada física de este material a fábrica?")) {
-    await updateDoc(doc(db, "procurement_llegadas", id), {
-      validadoCompras: true,
-      fechaValidacion: new Date().toISOString(),
-      validadorCompras: (userData && userData.nombre) || "Compras"
-    });
-  }
-};
-
-window.eliminarLlegadaMaterial = async (id, nombre) => {
-  if (!esComprasAdmin()) {
-    alert("Solo Compras Admin o Super Admin pueden borrar llegadas.");
-    return;
-  }
-  if (confirm(`¿Eliminar el registro de llegada de "${nombre}"?`)) {
-    await deleteDoc(doc(db, "procurement_llegadas", id));
-  }
-};
-
-function abrirReporteImpresoLlegadas() {
-  if (llegadasMateriales.length === 0) {
-    alert("No hay registros de llegadas para generar el informe.");
-    return;
-  }
-
-  const contenedor = document.getElementById("contenido-impresion-llegadas");
-  if (!contenedor) return;
-
-  let html = `
-    <div class="overflow-x-auto">
-      <table class="w-full text-left border-collapse border border-gray-200 text-xs">
-        <thead class="bg-gray-100 font-bold">
-          <tr>
-            <th class="p-2 border">Item</th>
-            <th class="p-2 border">Nombre del Material</th>
-            <th class="p-2 border">Sem. Solicitud</th>
-            <th class="p-2 border">Cantidad</th>
-            <th class="p-2 border">Llegada Estimada</th>
-            <th class="p-2 border">Llegada Real</th>
-            <th class="p-2 border text-center">Estado / Validación</th>
-          </tr>
-        </thead>
-        <tbody>
-  `;
-
-  llegadasMateriales.forEach(it => {
-    html += `
-      <tr class="border-b">
-        <td class="p-2 border font-mono font-bold">${it.item}</td>
-        <td class="p-2 border font-bold">${it.nombre}</td>
-        <td class="p-2 border font-mono">${it.semana}</td>
-        <td class="p-2 border font-black">${it.cantidad}</td>
-        <td class="p-2 border">${it.fechaEstimada || '—'}</td>
-        <td class="p-2 border font-bold ${it.fechaReal ? 'text-green-700' : 'text-amber-600'}">${it.fechaReal || 'En Tránsito'}</td>
-        <td class="p-2 border text-center font-bold ${it.validadoCompras ? 'text-green-600' : 'text-gray-400'}">
-          ${it.validadoCompras ? 'Validado Compras' : 'Pendiente'}
-        </td>
-      </tr>
-    `;
-  });
-
-  html += `
-        </tbody>
-      </table>
-    </div>
-  `;
-
-  contenedor.innerHTML = html;
-  modalReporteLlegadasPrint?.classList.remove("hidden");
-}
-
-// ==================== MÓDULO TARJETAS (PD) ====================
+// ==================== MÓDULO TARJETAS (PD) CON CASILLAS POR COLOR ====================
 function initModuloTarjetas() {
   const inputFecha = document.getElementById("card-fecha");
   if (inputFecha && !inputFecha.value) {
@@ -1285,6 +986,7 @@ function initModuloTarjetas() {
     };
   }
 
+  // Pegado Inteligente
   safeClick("btn-quick-distribute", () => {
     const raw = document.getElementById("input-quick-paste-row")?.value.trim() || "";
     if (!raw) {
@@ -1329,8 +1031,11 @@ function initModuloTarjetas() {
     }
   });
 
-  const selCopias = document.getElementById("select-copias-tarjeta");
-  if (selCopias) selCopias.onchange = renderTarjetasPreview;
+  // Escucha de casillas numéricas de tarjetas
+  ["count-card-blanca", "count-card-verde", "count-card-amarilla", "count-card-rosada"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.oninput = renderTarjetasPreview;
+  });
 
   [
     "card-costo-articulo", "card-costo-linea", "card-costo-marca", "card-costo-material", 
@@ -1428,7 +1133,15 @@ function renderTarjetasPreview() {
   const container = document.getElementById("contenedor-tarjetas-preview");
   if (!container) return;
 
-  const copias = parseInt(document.getElementById("select-copias-tarjeta")?.value) || 5;
+  // Lectura de contadores por color
+  const cBlancas = parseInt(document.getElementById("count-card-blanca")?.value) || 0;
+  const cVerdes = parseInt(document.getElementById("count-card-verde")?.value) || 0;
+  const cAmarillas = parseInt(document.getElementById("count-card-amarilla")?.value) || 0;
+  const cRosadas = parseInt(document.getElementById("count-card-rosada")?.value) || 0;
+
+  const totalTarjetas = cBlancas + cVerdes + cAmarillas + cRosadas;
+  const lblTotal = document.getElementById("label-total-tarjetas-count");
+  if (lblTotal) lblTotal.textContent = totalTarjetas;
 
   const articulo = document.getElementById("card-costo-articulo")?.value || "34461836";
   const linea = (document.getElementById("card-costo-linea")?.value || "QUIQUE").toUpperCase();
@@ -1453,83 +1166,48 @@ function renderTarjetasPreview() {
     ? `<img src="${plantillaCorteTarjetaBase64}" style="width:100%; height:36px; object-fit:contain; margin:auto;">`
     : siluetaCalzadoHTML;
 
+  // Lista estructurada de tarjetas a construir según casillas numéricas
+  const listaAImprimir = [];
+
+  for (let i = 1; i <= cBlancas; i++) {
+    listaAImprimir.push({
+      color: "#FFFFFF",
+      etiqueta: i === 1 ? "CORTE (PRODUCCIÓN)" : `PRODUCCIÓN #${i - 1}`,
+      esCorte: i === 1 // Solo la primera blanca recibe la plantilla de corte
+    });
+  }
+  for (let i = 1; i <= cVerdes; i++) {
+    listaAImprimir.push({
+      color: "#80C342", // Verde Retail
+      etiqueta: `RETAIL ${cVerdes > 1 ? '#' + i : ''}`,
+      esCorte: false
+    });
+  }
+  for (let i = 1; i <= cAmarillas; i++) {
+    listaAImprimir.push({
+      color: "#FFF200", // Amarillo Planeamiento
+      etiqueta: `PLANEAMIENTO ${cAmarillas > 1 ? '#' + i : ''}`,
+      esCorte: false
+    });
+  }
+  for (let i = 1; i <= cRosadas; i++) {
+    listaAImprimir.push({
+      color: "#E06D8A", // Rosado Exportación
+      etiqueta: `EXPORTACIÓN ${cRosadas > 1 ? '#' + i : ''}`,
+      esCorte: false
+    });
+  }
+
   let tarjetasHTML = "";
 
-  for (let i = 1; i <= copias; i++) {
-    let bgColorLateral = "#FFFFFF";
-    let etiquetaAprobacion = "PRODUCCIÓN";
-    let esTarjetaCorte = false;
-
-    if (copias === 6) {
-      if (i === 1) {
-        bgColorLateral = "#FFFFFF";
-        etiquetaAprobacion = "CORTE #1 (PRODUCCIÓN)";
-        esTarjetaCorte = true;
-      } else if (i === 2) {
-        bgColorLateral = "#FFFFFF";
-        etiquetaAprobacion = "CORTE #2 (PRODUCCIÓN)";
-        esTarjetaCorte = true;
-      } else if (i === 3) {
-        bgColorLateral = "#FFFFFF";
-        etiquetaAprobacion = "PRODUCCIÓN";
-      } else if (i === 4) {
-        bgColorLateral = "#80C342";
-        etiquetaAprobacion = "RETAIL";
-      } else if (i === 5) {
-        bgColorLateral = "#FFF200";
-        etiquetaAprobacion = "PLANEAMIENTO";
-      } else if (i === 6) {
-        bgColorLateral = "#E06D8A";
-        etiquetaAprobacion = "EXPORTACIÓN";
-      }
-    } else if (copias === 5) {
-      if (i === 1) {
-        bgColorLateral = "#FFFFFF";
-        etiquetaAprobacion = "CORTE (PRODUCCIÓN)";
-        esTarjetaCorte = true;
-      } else if (i === 2) {
-        bgColorLateral = "#FFFFFF";
-        etiquetaAprobacion = "PRODUCCIÓN";
-      } else if (i === 3) {
-        bgColorLateral = "#80C342";
-        etiquetaAprobacion = "RETAIL";
-      } else if (i === 4) {
-        bgColorLateral = "#FFF200";
-        etiquetaAprobacion = "PLANEAMIENTO";
-      } else if (i === 5) {
-        bgColorLateral = "#E06D8A";
-        etiquetaAprobacion = "EXPORTACIÓN";
-      }
-    } else if (copias === 2) {
-      bgColorLateral = "#FFFFFF";
-      etiquetaAprobacion = `CORTE #${i} (PRODUCCIÓN)`;
-      esTarjetaCorte = true;
-    } else if (copias === 4) {
-      if (i === 1) {
-        bgColorLateral = "#FFFFFF";
-        etiquetaAprobacion = "CORTE (PRODUCCIÓN)";
-        esTarjetaCorte = true;
-      } else if (i === 2) {
-        bgColorLateral = "#80C342";
-        etiquetaAprobacion = "RETAIL";
-      } else if (i === 3) {
-        bgColorLateral = "#FFF200";
-        etiquetaAprobacion = "PLANEAMIENTO";
-      } else if (i === 4) {
-        bgColorLateral = "#E06D8A";
-        etiquetaAprobacion = "EXPORTACIÓN";
-      }
-    } else {
-      if (i === 1) esTarjetaCorte = true;
-    }
-
-    const imagenIzquierdaHTML = esTarjetaCorte ? siluetaPlantillaHTML : siluetaCalzadoHTML;
+  listaAImprimir.forEach((tarj) => {
+    const imagenIzquierdaHTML = tarj.esCorte ? siluetaPlantillaHTML : siluetaCalzadoHTML;
 
     // PANEL DE FIRMAS
     const bloqueFirmasHTML = `
-      <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:3px 5px; ${esTarjetaCorte ? '' : 'border-right:1px dashed #555;'} font-size:6.5px;">
+      <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:3px 5px; ${tarj.esCorte ? '' : 'border-right:1px dashed #555;'} font-size:6.5px;">
         <div style="font-size:7px; font-weight:900; text-align:center; color:#1f2937; text-transform:uppercase; border-bottom:1px solid #d1d5db; padding-bottom:1px;">
-          APROBACIONES (${etiquetaAprobacion})
+          APROBACIONES (${tarj.etiqueta})
         </div>
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; text-align:center; align-items:end; margin-top:1px;">
@@ -1568,7 +1246,7 @@ function renderTarjetasPreview() {
 
     // PANEL DE OBSERVACIONES
     const bloqueObservacionesHTML = `
-      <div class="shoe-panel" style="padding:4px; display:flex; flex-direction:column; justify-content:space-between; font-size:7px; ${esTarjetaCorte ? 'border-right:1px dashed #555;' : ''}">
+      <div class="shoe-panel" style="padding:4px; display:flex; flex-direction:column; justify-content:space-between; font-size:7px; ${tarj.esCorte ? 'border-right:1px dashed #555;' : ''}">
         <div>
           <span style="font-weight:900; color:#1f2937; text-transform:uppercase; display:block; margin-bottom:1px;">OBSERVACIONES:</span>
           <p style="font-size:6.5px; color:#374151; font-style:italic; line-height:1.2;">${observaciones || 'Sin observaciones adicionales'}</p>
@@ -1582,14 +1260,14 @@ function renderTarjetasPreview() {
       </div>
     `;
 
-    const centroHTML = esTarjetaCorte ? bloqueObservacionesHTML : bloqueFirmasHTML;
-    const derechaHTML = esTarjetaCorte ? bloqueFirmasHTML : bloqueObservacionesHTML;
+    const centroHTML = tarj.esCorte ? bloqueObservacionesHTML : bloqueFirmasHTML;
+    const derechaHTML = tarj.esCorte ? bloqueFirmasHTML : bloqueObservacionesHTML;
 
     tarjetasHTML += `
       <div class="shoe-card-container" style="background:#fff; display:flex; font-size:7.5px; line-height:1.1; color:#000;">
-        <!-- PANEL 1 (66.6 mm): CUADRÍCULA CON TEXTO CENTRADO Y BORDES COMPLETOS -->
+        <!-- PANEL 1: ESPECIFICACIONES CON CUADRÍCULA COMPLETA -->
         <div class="shoe-panel" style="display:flex; border-right:1px dashed #555; overflow:hidden;">
-          <div class="lateral-tab" style="width:16px; border-right:1px solid #000; display:flex; align-items:center; justify-content:center; font-weight:900; letter-spacing:0.1em; font-size:9px; writing-mode:vertical-rl; transform:rotate(180deg); background-color:${bgColorLateral} !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;">
+          <div class="lateral-tab" style="width:16px; border-right:1px solid #000; display:flex; align-items:center; justify-content:center; font-weight:900; letter-spacing:0.1em; font-size:9px; writing-mode:vertical-rl; transform:rotate(180deg); background-color:${tarj.color} !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;">
             ${linea}
           </div>
           
@@ -1604,7 +1282,7 @@ function renderTarjetasPreview() {
                 <span style="font-size:5.5px; font-weight:bold; text-align:center;">FECHA: ${fecha}</span>
               </div>
 
-              <!-- TABLA DE ESPECIFICACIONES CON BORDES COMPLETOS -->
+              <!-- CUADRÍCULA PROFESIONAL CON BORDES COMPLETOS Y TEXTO CENTRADO -->
               <div style="flex:1;">
                 <table style="width:100%; height:100%; border-collapse:collapse; font-size:7px; font-weight:900;">
                   <tr style="border-bottom:1px solid #000;">
@@ -1652,7 +1330,7 @@ function renderTarjetasPreview() {
         ${derechaHTML}
       </div>
     `;
-  }
+  });
 
   container.innerHTML = tarjetasHTML;
 }
@@ -1796,147 +1474,5 @@ window.eliminarEntregaDoc = async (id, tipo, proyecto) => {
   if (confirm(`¿Eliminar la entrega "${tipo}" del proyecto/material "${proyecto}" permanentemente?`)) {
     await deleteDoc(doc(db, "entregas_departamentos", id));
     cargarPanelSuperAdmin();
-  }
-};
-
-// Solicitudes y Minutas
-if (document.getElementById("form-minuta")) {
-  document.getElementById("form-minuta").onsubmit = async (e) => {
-    e.preventDefault();
-    const semana = document.getElementById("minuta-semana").value.trim();
-    const proyecto = document.getElementById("minuta-proyecto").value.trim();
-    const articulo = document.getElementById("minuta-articulo").value.trim();
-    const detalle = document.getElementById("minuta-box").value.trim();
-    const photoFile = document.getElementById("minuta-photo").files[0];
-
-    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
-
-    try {
-      await addDoc(collection(db, "solicitudes_cambios"), {
-        semana,
-        proyecto,
-        articulo,
-        foto: fotoBase64,
-        boxCambio: detalle,
-        esMinuta: true,
-        solicitanteNombre: (userData && userData.nombre) || "Jefe Desarrollo",
-        solicitanteRol: (userData && userData.rol) || "Desarrollo de producto - Jefe",
-        solicitanteId: currentUser.uid,
-        estado: "En proceso",
-        fechaRealizado: null,
-        validadoCostos: false,
-        fechaCreacion: new Date().toISOString(),
-        timestamp: serverTimestamp()
-      });
-
-      modalMinuta.classList.add("hidden");
-      document.getElementById("form-minuta").reset();
-
-      abrirModalWhatsApp({
-        titulo: "Minuta de Cambios Registrada",
-        subtitulo: "Enviar minuta a los Técnicos de Desarrollo:",
-        mensajeTexto: `📋 *MINUTA DE CAMBIOS - PLAN PILOTO*\n*Bata Bolivia / Desarrollo de Producto*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n👤 *Emitido por:* ${(userData && userData.nombre) || 'Jefe Desarrollo'}\n\n📝 *DETALLE DE CAMBIOS TÉCNICOS:*\n${detalle}\n\n_Registrado en el sistema para control de avance y realización._`,
-        rolFiltro: "Desarrollo de producto - Técnico"
-      });
-    } catch (err) {
-      alert("Error al guardar minuta: " + err.message);
-    }
-  };
-}
-
-if (document.getElementById("form-new-change")) {
-  document.getElementById("form-new-change").onsubmit = async (e) => {
-    e.preventDefault();
-    const semana = document.getElementById("change-semana").value.trim();
-    const proyecto = document.getElementById("change-project").value.trim();
-    const articulo = document.getElementById("change-article").value.trim();
-    const boxCambio = document.getElementById("change-box").value.trim();
-    const photoFile = document.getElementById("change-photo").files[0];
-
-    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
-
-    try {
-      await addDoc(collection(db, "solicitudes_cambios"), {
-        semana,
-        proyecto,
-        articulo,
-        foto: fotoBase64,
-        boxCambio,
-        esMinuta: false,
-        solicitanteNombre: (userData && userData.nombre) || (currentUser && currentUser.email) || "Usuario",
-        solicitanteRol: (userData && userData.rol) || "Usuario",
-        solicitanteId: currentUser ? currentUser.uid : null,
-        estado: "En proceso",
-        fechaRealizado: null,
-        validadoCostos: false,
-        fechaCreacion: new Date().toISOString(),
-        timestamp: serverTimestamp()
-      });
-
-      document.getElementById("form-new-change").reset();
-      modalNewChange?.classList.add("hidden");
-
-      abrirModalWhatsApp({
-        titulo: "Solicitud Registrada",
-        subtitulo: "Notificar solicitud creada al equipo:",
-        mensajeTexto: `👞 *NUEVA SOLICITUD DE CAMBIO - BATA BOLIVIA*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n👤 *Solicitado por:* ${(userData && userData.nombre) || 'Usuario'} (${(userData && userData.rol) || ''})\n📝 *Cambio:* ${boxCambio}\n\n_Revisar en el Sistema de Gestión de Cambios Bata_`
-      });
-    } catch (err) {
-      alert("Error: " + err.message);
-    }
-  };
-}
-
-// Guardar Estado
-window.guardarCambioEstado = async (id, proyecto, articulo, semana) => {
-  const select = document.getElementById(`sel-estado-${id}`);
-  if (!select) return;
-  const nuevoEstado = select.value;
-
-  const updatePayload = { estado: nuevoEstado };
-  if (nuevoEstado === "Realizado") {
-    updatePayload.fechaRealizado = new Date().toISOString();
-  } else {
-    updatePayload.fechaRealizado = null;
-  }
-
-  await updateDoc(doc(db, "solicitudes_cambios", id), updatePayload);
-
-  if (nuevoEstado === "Realizado") {
-    abrirModalWhatsApp({
-      titulo: "Proyecto Realizado",
-      subtitulo: "Enviar alerta a los usuarios de Costos para su validación:",
-      mensajeTexto: `👟 *PROYECTO REALIZADO - REQUERIMIENTO DE COSTOS*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n✅ *Estado:* Realizado por Desarrollo de Producto (${(userData && userData.nombre) || 'Usuario'})\n\n_Por favor ingresar al sistema para validar los costos asociados._`,
-      rolFiltro: "Costos"
-    });
-  } else {
-    alert("Estado guardado correctamente.");
-  }
-};
-
-window.confirmarValidacionCostos = async (id, proyecto, articulo, checkboxElem) => {
-  const confirma = confirm(`¿Estás seguro de validar los costos del proyecto "${proyecto}"? Una vez confirmado quedará bloqueado.`);
-  if (!confirma) {
-    checkboxElem.checked = false;
-    return;
-  }
-
-  await updateDoc(doc(db, "solicitudes_cambios", id), {
-    validadoCostos: true,
-    fechaValidacionCostos: new Date().toISOString(),
-    validadorCostosNombre: (userData && userData.nombre) || "Costos"
-  });
-
-  abrirModalWhatsApp({
-    titulo: "Costos Validados",
-    subtitulo: "Enviar notificación al equipo de Calidad:",
-    mensajeTexto: `📋 *VALIDACIÓN DE COSTOS COMPLETADA - ALERTA CALIDAD*\n\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n💰 *Costos:* Validados por ${(userData && userData.nombre) || 'Costos'} (Costos)\n\n_El proyecto cuenta con validación técnica y económica lista para producción._`,
-    rolFiltro: "Calidad"
-  });
-};
-
-window.desbloquearValidacionCostos = async (id) => {
-  if (confirm("¿Desbloquear validación de costos? (Acción de Super Admin)")) {
-    await updateDoc(doc(db, "solicitudes_cambios", id), { validadoCostos: false });
   }
 };
