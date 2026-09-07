@@ -1243,7 +1243,7 @@ function initModuloTarjetas() {
       const cMrg = document.getElementById("card-costo-margen");
 
       if (cArt) cArt.value = cols[0] || "";
-      if (cLin) cLin.value = cols[2] || ""; // Línea en columna 2 de Costos
+      if (cLin) cLin.value = cols[2] || ""; // Línea en columna 2
       if (cMar) cMar.value = cols[3] || "BATA"; // Marca en columna 3
       if (cBudRet) cBudRet.value = cols[10] || "0.00%"; // Margen % Budget RET en columna 10
       if (cPre) cPre.value = cols[8] || "0.00"; // Precio en columna 8
@@ -1498,6 +1498,7 @@ function renderTarjetasPreview() {
 
     tarjetasHTML += `
       <div class="shoe-card-container" style="background:#fff; display:flex; font-size:7.5px; line-height:1.1; color:#000;">
+        <!-- PANEL 1: ESPECIFICACIONES CON 5 CAMPOS INFERIORES -->
         <div class="shoe-panel" style="display:flex; border-right:1px dashed #555; overflow:hidden;">
           <div class="lateral-tab" style="width:16px; border-right:1px solid #000; display:flex; align-items:center; justify-content:center; font-weight:900; letter-spacing:0.1em; font-size:9px; writing-mode:vertical-rl; transform:rotate(180deg); background-color:${tarj.color} !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;">
             ${linea}
@@ -1511,7 +1512,7 @@ function renderTarjetasPreview() {
             <div style="display:flex; flex:1;">
               <div style="width:58px; display:flex; flex-direction:column; justify-content:space-between; border-right:1px solid #000; padding-right:1px;">
                 ${imagenIzquierdaHTML}
-                <span style="font-size:5.5px; font-weight:bold; text-align:center;">FECHA: ${fecha}</span>
+                <span style="font-size:5px; font-weight:bold; text-align:center; overflow:hidden; white-space:nowrap;">${fecha}</span>
               </div>
 
               <div style="flex:1;">
@@ -1525,7 +1526,7 @@ function renderTarjetasPreview() {
                     <td style="text-align:center; padding:0.5px;">${marca}</td>
                   </tr>
                   <tr style="border-bottom:1px solid #000;">
-                    <td style="border-right:1px solid #000; width:38%; text-align:center; padding:0.5px;">SERIE:</td>
+                    <td style="border-right:1px solid #000; text-align:center; padding:0.5px;">SERIE:</td>
                     <td style="text-align:center; padding:0.5px;">${serie}</td>
                   </tr>
                   <tr style="border-bottom:1px solid #000;">
@@ -1544,11 +1545,13 @@ function renderTarjetasPreview() {
               </div>
             </div>
 
-            <!-- 3 MÉTRICAS EN LA BASE DE LA TARJETA: PRECIO, MRG %, MRG BUD -->
-            <div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:1px; border-top:1px solid #000; font-size:6px; font-weight:800; padding-top:1px; text-align:center;">
+            <!-- LOS 5 ELEMENTOS INFERIORES EN LA BASE: TEC, SUELA, PRECIO, MRG, MRG BUD -->
+            <div style="display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); gap:1px; border-top:1px solid #000; font-size:5.5px; font-weight:800; padding-top:1px; text-align:center;">
+              <div>TEC: ${tecnico}</div>
+              <div>SUELA: ${hormaSuela}</div>
               <div>PRECIO: <b>${precio}</b></div>
               <div>MRG: <b>${margen}</b></div>
-              <div>MRG BUD: <b>${budRet}</b></div>
+              <div>BUD: <b>${budRet}</b></div>
             </div>
           </div>
         </div>
