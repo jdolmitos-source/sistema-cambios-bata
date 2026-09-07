@@ -56,7 +56,7 @@ let colFiltroItemLlegada = "";
 let colFiltroNombreLlegada = "";
 let colFiltroSemanaLlegada = "";
 
-// Memoria Tarjetas
+// Memoria para imágenes de Tarjeta
 let croquisTarjetaBase64 = null;
 let plantillaCorteTarjetaBase64 = null;
 
@@ -172,11 +172,12 @@ async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro =
   }
 }
 
-document.getElementById("btn-close-whatsapp-modal").onclick = () => {
-  document.getElementById("modal-whatsapp").classList.add("hidden");
+const safeClick = (id, fn) => {
+  const el = document.getElementById(id);
+  if (el) el.onclick = fn;
 };
 
-// Modales
+// Modales y Controles
 const welcomeContainer = document.getElementById("welcome-container");
 const appContainer = document.getElementById("app-container");
 const modalLogin = document.getElementById("modal-login");
@@ -189,70 +190,47 @@ const modalNuevaEntrega = document.getElementById("modal-nueva-entrega");
 const modalReporteEntregasPrint = document.getElementById("modal-reporte-entregas-print");
 const modalEntregasTexto = document.getElementById("modal-entregas-texto");
 const modalVisorFoto = document.getElementById("modal-visor-foto");
-
 const modalNuevoBloqueo = document.getElementById("modal-nuevo-bloqueo");
 const modalNuevaLlegada = document.getElementById("modal-nueva-llegada");
 const modalReporteLlegadasPrint = document.getElementById("modal-reporte-llegadas-print");
 const modalImpresionTarjetas = document.getElementById("modal-impresion-tarjetas");
+const modalNewChange = document.getElementById("modal-new-change");
 
-document.getElementById("btn-show-login").onclick = () => modalLogin.classList.remove("hidden");
-document.getElementById("btn-show-register").onclick = () => modalRegister.classList.remove("hidden");
-document.getElementById("close-login").onclick = () => modalLogin.classList.add("hidden");
-document.getElementById("close-register").onclick = () => modalRegister.classList.add("hidden");
-document.getElementById("close-profile").onclick = () => modalProfile.classList.add("hidden");
-if (document.getElementById("close-minuta")) {
-  document.getElementById("close-minuta").onclick = () => modalMinuta.classList.add("hidden");
-}
-if (document.getElementById("close-modal-resumen")) {
-  document.getElementById("close-modal-resumen").onclick = () => modalResumen.classList.add("hidden");
-}
-if (document.getElementById("close-texto-wsp")) {
-  document.getElementById("close-texto-wsp").onclick = () => modalTextoWsp.classList.add("hidden");
-}
-if (document.getElementById("close-nueva-entrega")) {
-  document.getElementById("close-nueva-entrega").onclick = () => modalNuevaEntrega.classList.add("hidden");
-}
-if (document.getElementById("cancel-nueva-entrega")) {
-  document.getElementById("cancel-nueva-entrega").onclick = () => modalNuevaEntrega.classList.add("hidden");
-}
-if (document.getElementById("close-modal-entregas-print")) {
-  document.getElementById("close-modal-entregas-print").onclick = () => modalReporteEntregasPrint.classList.add("hidden");
-}
-if (document.getElementById("close-modal-entregas-texto")) {
-  document.getElementById("close-modal-entregas-texto").onclick = () => modalEntregasTexto.classList.add("hidden");
-}
-if (document.getElementById("close-visor-foto")) {
-  document.getElementById("close-visor-foto").onclick = () => modalVisorFoto.classList.add("hidden");
-}
-
-if (document.getElementById("close-nuevo-bloqueo")) {
-  document.getElementById("close-nuevo-bloqueo").onclick = () => modalNuevoBloqueo.classList.add("hidden");
-}
-if (document.getElementById("cancel-nuevo-bloqueo")) {
-  document.getElementById("cancel-nuevo-bloqueo").onclick = () => modalNuevoBloqueo.classList.add("hidden");
-}
-if (document.getElementById("close-nueva-llegada")) {
-  document.getElementById("close-nueva-llegada").onclick = () => modalNuevaLlegada.classList.add("hidden");
-}
-if (document.getElementById("cancel-nueva-llegada")) {
-  document.getElementById("cancel-nueva-llegada").onclick = () => modalNuevaLlegada.classList.add("hidden");
-}
-if (document.getElementById("close-modal-llegadas-print")) {
-  document.getElementById("close-modal-llegadas-print").onclick = () => modalReporteLlegadasPrint.classList.add("hidden");
-}
-if (document.getElementById("close-modal-tarjetas")) {
-  document.getElementById("close-modal-tarjetas").onclick = () => modalImpresionTarjetas.classList.add("hidden");
-}
+safeClick("btn-close-whatsapp-modal", () => modalLogin && document.getElementById("modal-whatsapp")?.classList.add("hidden"));
+safeClick("btn-show-login", () => modalLogin?.classList.remove("hidden"));
+safeClick("btn-show-register", () => modalRegister?.classList.remove("hidden"));
+safeClick("close-login", () => modalLogin?.classList.add("hidden"));
+safeClick("close-register", () => modalRegister?.classList.add("hidden"));
+safeClick("close-profile", () => modalProfile?.classList.add("hidden"));
+safeClick("close-minuta", () => modalMinuta?.classList.add("hidden"));
+safeClick("close-modal-resumen", () => modalResumen?.classList.add("hidden"));
+safeClick("close-texto-wsp", () => modalTextoWsp?.classList.add("hidden"));
+safeClick("close-nueva-entrega", () => modalNuevaEntrega?.classList.add("hidden"));
+safeClick("cancel-nueva-entrega", () => modalNuevaEntrega?.classList.add("hidden"));
+safeClick("close-modal-entregas-print", () => modalReporteEntregasPrint?.classList.add("hidden"));
+safeClick("close-modal-entregas-texto", () => modalEntregasTexto?.classList.add("hidden"));
+safeClick("close-visor-foto", () => modalVisorFoto?.classList.add("hidden"));
+safeClick("close-nuevo-bloqueo", () => modalNuevoBloqueo?.classList.add("hidden"));
+safeClick("cancel-nuevo-bloqueo", () => modalNuevoBloqueo?.classList.add("hidden"));
+safeClick("close-nueva-llegada", () => modalNuevaLlegada?.classList.add("hidden"));
+safeClick("cancel-nueva-llegada", () => modalNuevaLlegada?.classList.add("hidden"));
+safeClick("close-modal-llegadas-print", () => modalReporteLlegadasPrint?.classList.add("hidden"));
+safeClick("close-modal-tarjetas", () => modalImpresionTarjetas?.classList.add("hidden"));
+safeClick("btn-open-new-change", () => modalNewChange?.classList.remove("hidden"));
+safeClick("modal-btn-close", () => modalNewChange?.classList.add("hidden"));
+safeClick("modal-btn-cancel", () => modalNewChange?.classList.add("hidden"));
 
 window.verFotoGrande = (src, titulo) => {
   if (!src) return;
-  document.getElementById("visor-foto-img").src = src;
-  document.getElementById("visor-foto-titulo").textContent = titulo || "Visualización de Prototipo / Guía";
-  modalVisorFoto.classList.remove("hidden");
+  const img = document.getElementById("visor-foto-img");
+  const tit = document.getElementById("visor-foto-titulo");
+  if (img) img.src = src;
+  if (tit) tit.textContent = titulo || "Visualización de Prototipo / Guía";
+  modalVisorFoto?.classList.remove("hidden");
 };
 
-document.getElementById("btn-forgot-pass").onclick = () => {
-  const email = document.getElementById("login-email").value.trim();
+safeClick("btn-forgot-pass", () => {
+  const email = document.getElementById("login-email")?.value.trim();
   if (!email) {
     alert("Por favor ingresa tu correo en la casilla antes de solicitar el reseteo.");
     return;
@@ -264,107 +242,121 @@ document.getElementById("btn-forgot-pass").onclick = () => {
     `_Hola Daniel, solicito generar el correo de restablecimiento de contraseña en Firebase Console para este usuario._`
   );
   window.open(`https://wa.me/${SUPER_ADMIN_WHATSAPP}?text=${msg}`, "_blank");
-};
+});
 
 // Perfil
-document.getElementById("btn-edit-profile").onclick = () => {
+safeClick("btn-edit-profile", () => {
   if (!userData) return;
-  document.getElementById("prof-name").value = userData.nombre || "";
-  document.getElementById("prof-phone").value = userData.celular || "";
-  modalProfile.classList.remove("hidden");
-};
+  const pName = document.getElementById("prof-name");
+  const pPhone = document.getElementById("prof-phone");
+  if (pName) pName.value = userData.nombre || "";
+  if (pPhone) pPhone.value = userData.celular || "";
+  modalProfile?.classList.remove("hidden");
+});
 
-document.getElementById("form-update-profile").onsubmit = async (e) => {
-  e.preventDefault();
-  const name = document.getElementById("prof-name").value.trim();
-  const phone = document.getElementById("prof-phone").value.trim();
-  const photoFile = document.getElementById("prof-photo").files[0];
+const formProfile = document.getElementById("form-update-profile");
+if (formProfile) {
+  formProfile.onsubmit = async (e) => {
+    e.preventDefault();
+    const name = document.getElementById("prof-name").value.trim();
+    const phone = document.getElementById("prof-phone").value.trim();
+    const photoFile = document.getElementById("prof-photo").files[0];
 
-  const updateData = { nombre: name, celular: phone };
-  if (photoFile) {
-    updateData.foto = await comprimirImagen(photoFile, 200, 0.7);
-  }
+    const updateData = { nombre: name, celular: phone };
+    if (photoFile) {
+      updateData.foto = await comprimirImagen(photoFile, 200, 0.7);
+    }
 
-  try {
-    await updateDoc(doc(db, "usuarios", currentUser.uid), updateData);
-    userData = { ...userData, ...updateData };
-    actualizarHeaderUsuario();
-    modalProfile.classList.add("hidden");
-    alert("Perfil actualizado correctamente.");
-  } catch (err) {
-    alert("Error: " + err.message);
-  }
-};
+    try {
+      await updateDoc(doc(db, "usuarios", currentUser.uid), updateData);
+      userData = { ...userData, ...updateData };
+      actualizarHeaderUsuario();
+      modalProfile?.classList.add("hidden");
+      alert("Perfil actualizado correctamente.");
+    } catch (err) {
+      alert("Error: " + err.message);
+    }
+  };
+}
 
 // Registro
-document.getElementById("form-register").onsubmit = async (e) => {
-  e.preventDefault();
-  const name = document.getElementById("reg-name").value.trim();
-  const phone = document.getElementById("reg-phone").value.trim();
-  const email = document.getElementById("reg-email").value.trim();
-  const role = document.getElementById("reg-role").value;
-  const pass = document.getElementById("reg-pass").value;
-  const photoFile = document.getElementById("reg-photo").files[0];
-  const photoBase64 = photoFile ? await comprimirImagen(photoFile, 200, 0.7) : null;
+const formRegister = document.getElementById("form-register");
+if (formRegister) {
+  formRegister.onsubmit = async (e) => {
+    e.preventDefault();
+    const name = document.getElementById("reg-name").value.trim();
+    const phone = document.getElementById("reg-phone").value.trim();
+    const email = document.getElementById("reg-email").value.trim();
+    const role = document.getElementById("reg-role").value;
+    const pass = document.getElementById("reg-pass").value;
+    const photoFile = document.getElementById("reg-photo").files[0];
+    const photoBase64 = photoFile ? await comprimirImagen(photoFile, 200, 0.7) : null;
 
-  try {
-    const cred = await createUserWithEmailAndPassword(auth, email, pass);
-    await setDoc(doc(db, "usuarios", cred.user.uid), {
-      nombre: name,
-      celular: phone,
-      email: email,
-      rol: role,
-      foto: photoBase64,
-      fechaCreacion: serverTimestamp()
-    });
-    modalRegister.classList.add("hidden");
-  } catch (err) {
-    alert("Error de registro: " + err.message);
-  }
-};
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, pass);
+      await setDoc(doc(db, "usuarios", cred.user.uid), {
+        nombre: name,
+        celular: phone,
+        email: email,
+        rol: role,
+        foto: photoBase64,
+        fechaCreacion: serverTimestamp()
+      });
+      modalRegister?.classList.add("hidden");
+    } catch (err) {
+      alert("Error de registro: " + err.message);
+    }
+  };
+}
 
 // Login
-document.getElementById("form-login").onsubmit = async (e) => {
-  e.preventDefault();
-  const email = document.getElementById("login-email").value.trim();
-  const pass = document.getElementById("login-pass").value;
-  try {
-    await signInWithEmailAndPassword(auth, email, pass);
-    modalLogin.classList.add("hidden");
-  } catch (err) {
-    alert("Credenciales incorrectas o usuario no registrado.");
-  }
-};
+const formLogin = document.getElementById("form-login");
+if (formLogin) {
+  formLogin.onsubmit = async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("login-email").value.trim();
+    const pass = document.getElementById("login-pass").value;
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+      modalLogin?.classList.add("hidden");
+    } catch (err) {
+      alert("Credenciales incorrectas o usuario no registrado.");
+    }
+  };
+}
 
-document.getElementById("btn-logout").onclick = () => {
+safeClick("btn-logout", () => {
   signOut(auth).then(() => {
     window.location.reload();
   });
-};
+});
 
 function actualizarHeaderUsuario() {
   const esAdmin = esSuperAdmin();
-  document.getElementById("user-display-name").textContent = (userData && userData.nombre) || (currentUser && currentUser.email) || "Usuario";
-  document.getElementById("user-display-role").textContent = esAdmin ? "SUPER ADMIN" : ((userData && userData.rol) || "Usuario");
+  const uName = document.getElementById("user-display-name");
+  const uRole = document.getElementById("user-display-role");
+  if (uName) uName.textContent = (userData && userData.nombre) || (currentUser && currentUser.email) || "Usuario";
+  if (uRole) uRole.textContent = esAdmin ? "SUPER ADMIN" : ((userData && userData.rol) || "Usuario");
   
   const avatarImg = document.getElementById("user-display-avatar");
   const avatarIcon = document.getElementById("user-display-avatar-icon");
   if (userData && userData.foto) {
-    avatarImg.src = userData.foto;
-    avatarImg.classList.remove("hidden");
-    avatarIcon.classList.add("hidden");
+    if (avatarImg) { avatarImg.src = userData.foto; avatarImg.classList.remove("hidden"); }
+    if (avatarIcon) avatarIcon.classList.add("hidden");
   } else {
-    avatarImg.classList.add("hidden");
-    avatarIcon.classList.remove("hidden");
+    if (avatarImg) avatarImg.classList.add("hidden");
+    if (avatarIcon) avatarIcon.classList.remove("hidden");
   }
 
   const menuAdmin = document.getElementById("menu-btn-usuarios");
-  if (esAdmin) {
-    menuAdmin.classList.remove("hidden");
-  } else {
-    menuAdmin.classList.add("hidden");
-    if (!viewUsuarios.classList.contains("hidden")) {
-      activarVistaCambios();
+  if (menuAdmin) {
+    if (esAdmin) {
+      menuAdmin.classList.remove("hidden");
+    } else {
+      menuAdmin.classList.add("hidden");
+      if (!viewUsuarios.classList.contains("hidden")) {
+        activarVistaCambios();
+      }
     }
   }
 
@@ -404,7 +396,7 @@ onAuthStateChanged(auth, async (user) => {
         };
       }
     } catch (e) {
-      console.error("Error al cargar perfil usuario:", e);
+      console.error("Error al cargar perfil:", e);
       userData = {
         nombre: esSuperAdmin() ? "Super Admin" : (user.email.split("@")[0]),
         email: user.email,
@@ -413,8 +405,8 @@ onAuthStateChanged(auth, async (user) => {
       };
     }
     actualizarHeaderUsuario();
-    welcomeContainer.classList.add("hidden");
-    appContainer.classList.remove("hidden");
+    welcomeContainer?.classList.add("hidden");
+    appContainer?.classList.remove("hidden");
     activarVistaCambios();
     escucharCambios();
     escucharEntregas();
@@ -422,8 +414,8 @@ onAuthStateChanged(auth, async (user) => {
   } else {
     currentUser = null;
     userData = null;
-    welcomeContainer.classList.remove("hidden");
-    appContainer.classList.add("hidden");
+    welcomeContainer?.classList.remove("hidden");
+    appContainer?.classList.add("hidden");
   }
 });
 
@@ -444,7 +436,6 @@ const menuBtnUsuarios = document.getElementById("menu-btn-usuarios");
 
 const CLASE_INACTIVO_PRINCIPAL = "sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white hover:bg-white/15 transition cursor-pointer";
 const CLASE_INACTIVO_SUB = "sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white/90 hover:bg-white/15 hover:text-white transition cursor-pointer pl-5";
-
 const CLASE_ACTIVO_PASTILLA = "sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-black text-xs bg-white text-[#D61B28] shadow-md transition cursor-pointer scale-[1.02]";
 const CLASE_ACTIVO_SUB_PASTILLA = "sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-black bg-white text-[#D61B28] shadow-md transition cursor-pointer pl-5 scale-[1.02]";
 
@@ -457,26 +448,26 @@ function resetMenuStyles() {
     b.className = CLASE_INACTIVO_SUB;
   });
 
-  viewCambios.classList.add("hidden");
-  viewInforme.classList.add("hidden");
-  viewEntregas.classList.add("hidden");
-  viewProcurement.classList.add("hidden");
-  viewTarjetas.classList.add("hidden");
-  viewUsuarios.classList.add("hidden");
+  viewCambios?.classList.add("hidden");
+  viewInforme?.classList.add("hidden");
+  viewEntregas?.classList.add("hidden");
+  viewProcurement?.classList.add("hidden");
+  viewTarjetas?.classList.add("hidden");
+  viewUsuarios?.classList.add("hidden");
 }
 
 function activarVistaCambios() {
   resetMenuStyles();
-  viewCambios.classList.remove("hidden");
-  menuBtnCambios.className = CLASE_ACTIVO_PASTILLA;
+  viewCambios?.classList.remove("hidden");
+  if (menuBtnCambios) menuBtnCambios.className = CLASE_ACTIVO_PASTILLA;
 }
 
-menuBtnCambios.onclick = activarVistaCambios;
+safeClick("menu-btn-cambios", activarVistaCambios);
 
-menuBtnInforme.onclick = () => {
+safeClick("menu-btn-informe", () => {
   resetMenuStyles();
-  viewInforme.classList.remove("hidden");
-  menuBtnInforme.className = CLASE_ACTIVO_PASTILLA;
+  viewInforme?.classList.remove("hidden");
+  if (menuBtnInforme) menuBtnInforme.className = CLASE_ACTIVO_PASTILLA;
   
   colFiltroSemanaInforme = "";
   colFiltroProyectoInforme = "";
@@ -486,45 +477,48 @@ menuBtnInforme.onclick = () => {
   if (inProy) inProy.value = "";
   
   renderInformeView();
-};
+});
 
-menuBtnEntregasTodas.onclick = () => {
+safeClick("menu-btn-entregas-todas", () => {
   window.cambiarSubmenuEntrega("todas");
-};
+});
 
-menuBtnProcurement.onclick = () => {
+safeClick("menu-btn-procurement", () => {
   resetMenuStyles();
-  viewProcurement.classList.remove("hidden");
-  menuBtnProcurement.className = CLASE_ACTIVO_PASTILLA;
+  viewProcurement?.classList.remove("hidden");
+  if (menuBtnProcurement) menuBtnProcurement.className = CLASE_ACTIVO_PASTILLA;
   renderProcurementView();
-};
+});
 
-menuBtnTarjetas.onclick = () => {
+safeClick("menu-btn-tarjetas", () => {
   resetMenuStyles();
-  viewTarjetas.classList.remove("hidden");
-  menuBtnTarjetas.className = CLASE_ACTIVO_PASTILLA;
+  viewTarjetas?.classList.remove("hidden");
+  if (menuBtnTarjetas) menuBtnTarjetas.className = CLASE_ACTIVO_PASTILLA;
   initModuloTarjetas();
-};
+});
 
-menuBtnUsuarios.onclick = () => {
+safeClick("menu-btn-usuarios", () => {
   if (!esSuperAdmin()) {
     alert("Acceso denegado.");
     return;
   }
   resetMenuStyles();
-  viewUsuarios.classList.remove("hidden");
-  menuBtnUsuarios.className = CLASE_ACTIVO_PASTILLA;
+  viewUsuarios?.classList.remove("hidden");
+  if (menuBtnUsuarios) menuBtnUsuarios.className = CLASE_ACTIVO_PASTILLA;
   cargarPanelSuperAdmin();
-};
+});
 
-if (document.getElementById("btn-open-minuta-header")) {
-  document.getElementById("btn-open-minuta-header").onclick = () => modalMinuta.classList.remove("hidden");
-}
+// Botones de submenús de entregas
+safeClick("sub-btn-MATERIALES", () => window.cambiarSubmenuEntrega("MATERIALES"));
+safeClick("sub-btn-GUIA", () => window.cambiarSubmenuEntrega("GUÍA DE PRODUCCIÓN"));
+safeClick("sub-btn-CORTE", () => window.cambiarSubmenuEntrega("CORTE"));
+safeClick("sub-btn-MUESTRA", () => window.cambiarSubmenuEntrega("MUESTRA DEFINITIVA"));
+safeClick("sub-btn-DESBASTE", () => window.cambiarSubmenuEntrega("HOJA DE DESBASTE"));
+safeClick("sub-btn-TIZADORES", () => window.cambiarSubmenuEntrega("TIZADORES"));
 
-// Submenús de Entregas
 window.cambiarSubmenuEntrega = (categoria) => {
   resetMenuStyles();
-  viewEntregas.classList.remove("hidden");
+  viewEntregas?.classList.remove("hidden");
   categoriaEntregaActiva = categoria;
 
   const titulo = document.getElementById("entregas-vista-titulo");
@@ -535,9 +529,9 @@ window.cambiarSubmenuEntrega = (categoria) => {
   const btnTextEntrega = document.getElementById("btn-text-nueva-entrega");
 
   if (categoria === "todas") {
-    menuBtnEntregasTodas.className = CLASE_ACTIVO_PASTILLA;
-    titulo.innerHTML = `<i class="fa-solid fa-truck-ramp-box"></i><span>Control de Entregas (Todas)</span>`;
-    subtitulo.textContent = "Visualizador consolidado de todas las entregas físicas a departamentos.";
+    if (menuBtnEntregasTodas) menuBtnEntregasTodas.className = CLASE_ACTIVO_PASTILLA;
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-truck-ramp-box"></i><span>Control de Entregas (Todas)</span>`;
+    if (subtitulo) subtitulo.textContent = "Visualizador consolidado de todas las entregas físicas a departamentos.";
     if (thFoto) thFoto.classList.remove("hidden");
     if (thArt) thArt.classList.remove("hidden");
     if (labelThProy) labelThProy.textContent = "Proyecto";
@@ -545,8 +539,8 @@ window.cambiarSubmenuEntrega = (categoria) => {
   } else if (categoria === "MATERIALES") {
     const btn = document.getElementById("sub-btn-MATERIALES");
     if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
-    titulo.innerHTML = `<i class="fa-solid fa-boxes-packing text-blue-600"></i><span>Entrega de Materiales</span>`;
-    subtitulo.textContent = "Insumos y materiales (Semana y Nombre). Destinos: Desarrollo de producto, Producción.";
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-boxes-packing text-blue-600"></i><span>Entrega de Materiales</span>`;
+    if (subtitulo) subtitulo.textContent = "Insumos y materiales (Semana y Nombre). Destinos: Desarrollo de producto, Producción.";
     if (thFoto) thFoto.classList.add("hidden");
     if (thArt) thArt.classList.add("hidden");
     if (labelThProy) labelThProy.textContent = "Nombre del Material";
@@ -554,8 +548,8 @@ window.cambiarSubmenuEntrega = (categoria) => {
   } else if (categoria === "GUÍA DE PRODUCCIÓN") {
     const btn = document.getElementById("sub-btn-GUIA");
     if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
-    titulo.innerHTML = `<i class="fa-solid fa-file-contract text-emerald-600"></i><span>Entrega de Guías de Producción</span>`;
-    subtitulo.textContent = "Entrega física de guías de producción. Destino exclusivo: Costos.";
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-file-contract text-emerald-600"></i><span>Entrega de Guías de Producción</span>`;
+    if (subtitulo) subtitulo.textContent = "Entrega física de guías de producción. Destino exclusivo: Costos.";
     if (thFoto) thFoto.classList.remove("hidden");
     if (thArt) thArt.classList.remove("hidden");
     if (labelThProy) labelThProy.textContent = "Proyecto";
@@ -563,8 +557,8 @@ window.cambiarSubmenuEntrega = (categoria) => {
   } else if (categoria === "CORTE") {
     const btn = document.getElementById("sub-btn-CORTE");
     if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
-    titulo.innerHTML = `<i class="fa-solid fa-scissors text-amber-600"></i><span>Entrega de Cortes</span>`;
-    subtitulo.textContent = "Entrega de cortes. Destinos: Costos, Producción.";
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-scissors text-amber-600"></i><span>Entrega de Cortes</span>`;
+    if (subtitulo) subtitulo.textContent = "Entrega de cortes. Destinos: Costos, Producción.";
     if (thFoto) thFoto.classList.remove("hidden");
     if (thArt) thArt.classList.remove("hidden");
     if (labelThProy) labelThProy.textContent = "Proyecto";
@@ -572,8 +566,8 @@ window.cambiarSubmenuEntrega = (categoria) => {
   } else if (categoria === "MUESTRA DEFINITIVA") {
     const btn = document.getElementById("sub-btn-MUESTRA");
     if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
-    titulo.innerHTML = `<i class="fa-solid fa-shoe-prints text-purple-600"></i><span>Entrega de Muestras Definitivas</span>`;
-    subtitulo.textContent = "Muestras definitivas con foto. Destinos: Producción, Planeamiento, Retail.";
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-shoe-prints text-purple-600"></i><span>Entrega de Muestras Definitivas</span>`;
+    if (subtitulo) subtitulo.textContent = "Muestras definitivas con foto. Destinos: Producción, Planeamiento, Retail.";
     if (thFoto) thFoto.classList.remove("hidden");
     if (thArt) thArt.classList.remove("hidden");
     if (labelThProy) labelThProy.textContent = "Proyecto";
@@ -581,8 +575,8 @@ window.cambiarSubmenuEntrega = (categoria) => {
   } else if (categoria === "HOJA DE DESBASTE") {
     const btn = document.getElementById("sub-btn-DESBASTE");
     if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
-    titulo.innerHTML = `<i class="fa-solid fa-layer-group text-cyan-600"></i><span>Entrega de Hoja de Desbaste</span>`;
-    subtitulo.textContent = "Entrega de especificaciones de desbaste. Destinos: Costos, Producción.";
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-layer-group text-cyan-600"></i><span>Entrega de Hoja de Desbaste</span>`;
+    if (subtitulo) subtitulo.textContent = "Entrega de especificaciones de desbaste. Destinos: Costos, Producción.";
     if (thFoto) thFoto.classList.remove("hidden");
     if (thArt) thArt.classList.remove("hidden");
     if (labelThProy) labelThProy.textContent = "Proyecto";
@@ -590,8 +584,8 @@ window.cambiarSubmenuEntrega = (categoria) => {
   } else if (categoria === "TIZADORES") {
     const btn = document.getElementById("sub-btn-TIZADORES");
     if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
-    titulo.innerHTML = `<i class="fa-solid fa-copy text-rose-600"></i><span>Entrega de Tizadores (Copias)</span>`;
-    subtitulo.textContent = "Entrega de tizadores a Producción con especificación de número de copias.";
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-copy text-rose-600"></i><span>Entrega de Tizadores (Copias)</span>`;
+    if (subtitulo) subtitulo.textContent = "Entrega de tizadores a Producción con especificación de número de copias.";
     if (thFoto) thFoto.classList.add("hidden");
     if (thArt) thArt.classList.remove("hidden");
     if (labelThProy) labelThProy.textContent = "Proyecto";
@@ -622,14 +616,17 @@ function renderInformeView() {
     };
   }
 
-  document.getElementById("chk-toggle-all-semana").onchange = (e) => {
-    const chks = document.querySelectorAll(".chk-articulo-informe");
-    chks.forEach(c => c.checked = e.target.checked);
-    actualizarConteoSeleccionados();
-  };
+  const chkAll = document.getElementById("chk-toggle-all-semana");
+  if (chkAll) {
+    chkAll.onchange = (e) => {
+      const chks = document.querySelectorAll(".chk-articulo-informe");
+      chks.forEach(c => c.checked = e.target.checked);
+      actualizarConteoSeleccionados();
+    };
+  }
 
-  document.getElementById("btn-generar-texto-wsp").onclick = generarTextoNotificacionBata;
-  document.getElementById("btn-generar-informe-resumen").onclick = generarModalInformeResumen;
+  safeClick("btn-generar-texto-wsp", generarTextoNotificacionBata);
+  safeClick("btn-generar-informe-resumen", generarModalInformeResumen);
 }
 
 function actualizarInformePorSemana() {
@@ -649,33 +646,42 @@ function actualizarInformePorSemana() {
   const realizados = articulosFiltrados.filter(s => s.estado === "Realizado").length;
   const validadosCostos = articulosFiltrados.filter(s => s.validadoCostos).length;
 
-  document.getElementById("kpi-sem-total").textContent = total;
-  document.getElementById("kpi-sem-retrasados").textContent = retrasados;
-  document.getElementById("kpi-sem-proceso").textContent = enProceso;
-  document.getElementById("kpi-sem-realizados").textContent = realizados;
-  document.getElementById("kpi-sem-costos").textContent = `${validadosCostos} de ${total}`;
+  const kTotal = document.getElementById("kpi-sem-total");
+  const kRet = document.getElementById("kpi-sem-retrasados");
+  const kProc = document.getElementById("kpi-sem-proceso");
+  const kReal = document.getElementById("kpi-sem-realizados");
+  const kCost = document.getElementById("kpi-sem-costos");
+
+  if (kTotal) kTotal.textContent = total;
+  if (kRet) kRet.textContent = retrasados;
+  if (kProc) kProc.textContent = enProceso;
+  if (kReal) kReal.textContent = realizados;
+  if (kCost) kCost.textContent = `${validadosCostos} de ${total}`;
 
   const badgeContainer = document.getElementById("badge-congelamiento-container");
-  if (total === 0) {
-    badgeContainer.innerHTML = `<span class="bg-gray-100 text-gray-500 font-bold text-[11px] px-3 py-1 rounded-full border border-gray-200">Sin artículos coincidentes</span>`;
-  } else if (realizados === total && validadosCostos === total) {
-    badgeContainer.innerHTML = `
-      <span class="bg-green-100 text-green-800 font-bold text-[11px] px-3.5 py-1.5 rounded-full border border-green-300 inline-flex items-center space-x-1.5 shadow-sm">
-        <i class="fa-solid fa-circle-check text-green-600"></i>
-        <span>Listo para Congelamiento (100% Realizado y Validado en Costos)</span>
-      </span>
-    `;
-  } else {
-    const pendientes = total - validadosCostos;
-    badgeContainer.innerHTML = `
-      <span class="bg-amber-50 text-amber-800 font-bold text-[11px] px-3.5 py-1.5 rounded-full border border-amber-200 inline-flex items-center space-x-1.5">
-        <i class="fa-solid fa-clock text-amber-600"></i>
-        <span>${pendientes} artículo(s) pendientes por validar en Costos</span>
-      </span>
-    `;
+  if (badgeContainer) {
+    if (total === 0) {
+      badgeContainer.innerHTML = `<span class="bg-gray-100 text-gray-500 font-bold text-[11px] px-3 py-1 rounded-full border border-gray-200">Sin artículos coincidentes</span>`;
+    } else if (realizados === total && validadosCostos === total) {
+      badgeContainer.innerHTML = `
+        <span class="bg-green-100 text-green-800 font-bold text-[11px] px-3.5 py-1.5 rounded-full border border-green-300 inline-flex items-center space-x-1.5 shadow-sm">
+          <i class="fa-solid fa-circle-check text-green-600"></i>
+          <span>Listo para Congelamiento (100% Realizado y Validado en Costos)</span>
+        </span>
+      `;
+    } else {
+      const pendientes = total - validadosCostos;
+      badgeContainer.innerHTML = `
+        <span class="bg-amber-50 text-amber-800 font-bold text-[11px] px-3.5 py-1.5 rounded-full border border-amber-200 inline-flex items-center space-x-1.5">
+          <i class="fa-solid fa-clock text-amber-600"></i>
+          <span>${pendientes} artículo(s) pendientes por validar en Costos</span>
+        </span>
+      `;
+    }
   }
 
   const tbody = document.getElementById("table-informe-articulos-body");
+  if (!tbody) return;
   tbody.innerHTML = "";
 
   if (total === 0) {
@@ -748,26 +754,28 @@ function generarTextoNotificacionBata() {
   });
 
   const textarea = document.getElementById("texto-wsp-output");
-  textarea.value = texto;
+  if (textarea) textarea.value = texto;
 
-  document.getElementById("btn-copiar-texto-wsp").onclick = () => {
-    textarea.select();
-    navigator.clipboard.writeText(texto);
-    alert("Texto copiado al portapapeles.");
-  };
+  safeClick("btn-copiar-texto-wsp", () => {
+    if (textarea) {
+      textarea.select();
+      navigator.clipboard.writeText(texto);
+      alert("Texto copiado al portapapeles.");
+    }
+  });
 
-  document.getElementById("btn-enviar-correo-informe").onclick = () => {
+  safeClick("btn-enviar-correo-informe", () => {
     const asunto = encodeURIComponent(`Bata Bolivia - Cambios Realizados para Semana ${semanaTitulo}`);
     const cuerpo = encodeURIComponent(texto);
     window.location.href = `mailto:?subject=${asunto}&body=${cuerpo}`;
-  };
+  });
 
-  document.getElementById("btn-enviar-wsp-directo").onclick = () => {
+  safeClick("btn-enviar-wsp-directo", () => {
     const encoded = encodeURIComponent(texto);
     window.open(`https://wa.me/?text=${encoded}`, "_blank");
-  };
+  });
 
-  modalTextoWsp.classList.remove("hidden");
+  modalTextoWsp?.classList.remove("hidden");
 }
 
 function generarModalInformeResumen() {
@@ -779,6 +787,7 @@ function generarModalInformeResumen() {
 
   const items = solicitudes.filter(s => seleccionadosIds.includes(s.id));
   const contenedor = document.getElementById("reporte-resumen-contenido");
+  if (!contenedor) return;
 
   let html = `
     <div class="overflow-x-auto">
@@ -828,7 +837,7 @@ function generarModalInformeResumen() {
   `;
 
   contenedor.innerHTML = html;
-  modalResumen.classList.remove("hidden");
+  modalResumen?.classList.remove("hidden");
 }
 
 // ==================== PROCUREMENT & STORAGE ====================
@@ -850,13 +859,8 @@ function renderProcurementView() {
   renderTablaBloqueos();
   renderTablaLlegadas();
 
-  document.getElementById("btn-open-nuevo-bloqueo").onclick = () => {
-    modalNuevoBloqueo.classList.remove("hidden");
-  };
-
-  document.getElementById("btn-open-nueva-llegada").onclick = () => {
-    modalNuevaLlegada.classList.remove("hidden");
-  };
+  safeClick("btn-open-nuevo-bloqueo", () => modalNuevoBloqueo?.classList.remove("hidden"));
+  safeClick("btn-open-nueva-llegada", () => modalNuevaLlegada?.classList.remove("hidden"));
 
   const fItem = document.getElementById("col-filter-item-llegada");
   const fNom = document.getElementById("col-filter-nombre-llegada");
@@ -866,56 +870,59 @@ function renderProcurementView() {
   if (fNom) fNom.oninput = (e) => { colFiltroNombreLlegada = e.target.value.trim().toLowerCase(); renderTablaLlegadas(); };
   if (fSem) fSem.oninput = (e) => { colFiltroSemanaLlegada = e.target.value.trim().toLowerCase(); renderTablaLlegadas(); };
 
-  document.getElementById("btn-reporte-llegadas-pdf").onclick = abrirReporteImpresoLlegadas;
+  safeClick("btn-reporte-llegadas-pdf", abrirReporteImpresoLlegadas);
 }
 
-// Formulario Bloqueo
-document.getElementById("form-nuevo-bloqueo").onsubmit = async (e) => {
-  e.preventDefault();
-  const item = document.getElementById("bloq-item").value.trim();
-  const semana = document.getElementById("bloq-semana").value.trim();
-  const nombre = document.getElementById("bloq-nombre").value.trim();
-  const cantidad = parseFloat(document.getElementById("bloq-cantidad").value) || 0;
-  const unidad = document.getElementById("bloq-unidad").value;
-  const estado = document.getElementById("bloq-estado").value;
-  const notas = document.getElementById("bloq-notas").value.trim();
+const formBloqueo = document.getElementById("form-nuevo-bloqueo");
+if (formBloqueo) {
+  formBloqueo.onsubmit = async (e) => {
+    e.preventDefault();
+    const item = document.getElementById("bloq-item").value.trim();
+    const semana = document.getElementById("bloq-semana").value.trim();
+    const nombre = document.getElementById("bloq-nombre").value.trim();
+    const cantidad = parseFloat(document.getElementById("bloq-cantidad").value) || 0;
+    const unidad = document.getElementById("bloq-unidad").value;
+    const estado = document.getElementById("bloq-estado").value;
+    const notas = document.getElementById("bloq-notas").value.trim();
 
-  try {
-    const nombreUsuario = (userData && userData.nombre) || (currentUser && currentUser.email) || "Compras";
-    const rolUsuario = (userData && userData.rol) || "Compras";
+    try {
+      const nombreUsuario = (userData && userData.nombre) || (currentUser && currentUser.email) || "Compras";
+      const rolUsuario = (userData && userData.rol) || "Compras";
 
-    await addDoc(collection(db, "procurement_bloqueos"), {
-      item,
-      semana,
-      nombre,
-      cantidad,
-      unidad,
-      estado,
-      notas,
-      notificadoAlmacen: false,
-      registradoPorNombre: nombreUsuario,
-      registradoPorRol: rolUsuario,
-      registradoPorId: currentUser ? currentUser.uid : null,
-      fechaCreacion: new Date().toISOString(),
-      timestamp: serverTimestamp()
-    });
+      await addDoc(collection(db, "procurement_bloqueos"), {
+        item,
+        semana,
+        nombre,
+        cantidad,
+        unidad,
+        estado,
+        notas,
+        notificadoAlmacen: false,
+        registradoPorNombre: nombreUsuario,
+        registradoPorRol: rolUsuario,
+        registradoPorId: currentUser ? currentUser.uid : null,
+        fechaCreacion: new Date().toISOString(),
+        timestamp: serverTimestamp()
+      });
 
-    document.getElementById("form-nuevo-bloqueo").reset();
-    modalNuevoBloqueo.classList.add("hidden");
+      formBloqueo.reset();
+      modalNuevoBloqueo?.classList.add("hidden");
 
-    abrirModalWhatsApp({
-      titulo: "Alerta de Disponibilidad Emitida",
-      subtitulo: "Enviar alerta inmediata al personal de Almacén:",
-      mensajeTexto: `📦 *ALERTA DE DISPONIBILIDAD DE MATERIAL - BATA BOLIVIA*\n*Compras a Almacén*\n\n📅 *Semana de Bloqueo:* ${semana}\n🔢 *Item:* ${item}\n🧵 *Material:* ${nombre}\n📏 *Cant. Permitida:* ${cantidad} ${unidad}\n⚠️ *Disposición:* ${estado}\n📝 *Notas:* ${notas || 'Sin notas'}\n👤 *Emitido por:* ${nombreUsuario} (${rolUsuario})\n\n_Favor ajustar las entregas físicas en almacén conforme a esta disposición._`,
-      rolFiltro: "Almacén"
-    });
-  } catch (err) {
-    alert("Error al guardar bloqueo: " + err.message);
-  }
-};
+      abrirModalWhatsApp({
+        titulo: "Alerta de Disponibilidad Emitida",
+        subtitulo: "Enviar alerta inmediata al personal de Almacén:",
+        mensajeTexto: `📦 *ALERTA DE DISPONIBILIDAD DE MATERIAL - BATA BOLIVIA*\n*Compras a Almacén*\n\n📅 *Semana de Bloqueo:* ${semana}\n🔢 *Item:* ${item}\n🧵 *Material:* ${nombre}\n📏 *Cant. Permitida:* ${cantidad} ${unidad}\n⚠️ *Disposición:* ${estado}\n📝 *Notas:* ${notas || 'Sin notas'}\n👤 *Emitido por:* ${nombreUsuario} (${rolUsuario})\n\n_Favor ajustar las entregas físicas en almacén conforme a esta disposición._`,
+        rolFiltro: "Almacén"
+      });
+    } catch (err) {
+      alert("Error al guardar bloqueo: " + err.message);
+    }
+  };
+}
 
 function renderTablaBloqueos() {
   const tbody = document.getElementById("table-bloqueos-body");
+  if (!tbody) return;
   tbody.innerHTML = "";
 
   if (bloqueosMateriales.length === 0) {
@@ -976,42 +983,45 @@ window.eliminarBloqueoMaterial = async (id, nombre) => {
   }
 };
 
-// Formulario Nueva Llegada
-document.getElementById("form-nueva-llegada").onsubmit = async (e) => {
-  e.preventDefault();
-  const item = document.getElementById("lleg-item").value.trim();
-  const semana = document.getElementById("lleg-semana").value.trim();
-  const nombre = document.getElementById("lleg-nombre").value.trim();
-  const cantidad = document.getElementById("lleg-cantidad").value.trim();
-  const fechaEst = document.getElementById("lleg-fecha-est").value;
-  const fechaReal = document.getElementById("lleg-fecha-real").value;
+const formLlegada = document.getElementById("form-nueva-llegada");
+if (formLlegada) {
+  formLlegada.onsubmit = async (e) => {
+    e.preventDefault();
+    const item = document.getElementById("lleg-item").value.trim();
+    const semana = document.getElementById("lleg-semana").value.trim();
+    const nombre = document.getElementById("lleg-nombre").value.trim();
+    const cantidad = document.getElementById("lleg-cantidad").value.trim();
+    const fechaEst = document.getElementById("lleg-fecha-est").value;
+    const fechaReal = document.getElementById("lleg-fecha-real").value;
 
-  try {
-    const nombreUsuario = (userData && userData.nombre) || (currentUser && currentUser.email) || "Usuario";
+    try {
+      const nombreUsuario = (userData && userData.nombre) || (currentUser && currentUser.email) || "Usuario";
 
-    await addDoc(collection(db, "procurement_llegadas"), {
-      item,
-      semana,
-      nombre,
-      cantidad,
-      fechaEstimada: fechaEst,
-      fechaReal: fechaReal || null,
-      validadoCompras: false,
-      registradoPor: nombreUsuario,
-      registradoPorId: currentUser ? currentUser.uid : null,
-      fechaCreacion: new Date().toISOString(),
-      timestamp: serverTimestamp()
-    });
+      await addDoc(collection(db, "procurement_llegadas"), {
+        item,
+        semana,
+        nombre,
+        cantidad,
+        fechaEstimada: fechaEst,
+        fechaReal: fechaReal || null,
+        validadoCompras: false,
+        registradoPor: nombreUsuario,
+        registradoPorId: currentUser ? currentUser.uid : null,
+        fechaCreacion: new Date().toISOString(),
+        timestamp: serverTimestamp()
+      });
 
-    document.getElementById("form-nueva-llegada").reset();
-    modalNuevaLlegada.classList.add("hidden");
-  } catch (err) {
-    alert("Error al guardar llegada: " + err.message);
-  }
-};
+      formLlegada.reset();
+      modalNuevaLlegada?.classList.add("hidden");
+    } catch (err) {
+      alert("Error al guardar llegada: " + err.message);
+    }
+  };
+}
 
 function renderTablaLlegadas() {
   const tbody = document.getElementById("table-llegadas-body");
+  if (!tbody) return;
   tbody.innerHTML = "";
 
   let filtradas = llegadasMateriales.filter(l => {
@@ -1083,6 +1093,8 @@ function abrirReporteImpresoLlegadas() {
   }
 
   const contenedor = document.getElementById("contenido-impresion-llegadas");
+  if (!contenedor) return;
+
   let html = `
     <div class="overflow-x-auto">
       <table class="w-full text-left border-collapse border border-gray-200 text-xs">
@@ -1123,7 +1135,7 @@ function abrirReporteImpresoLlegadas() {
   `;
 
   contenedor.innerHTML = html;
-  modalReporteLlegadasPrint.classList.remove("hidden");
+  modalReporteLlegadasPrint?.classList.remove("hidden");
 }
 
 // ==================== MÓDULO TARJETAS (PD) ====================
@@ -1156,9 +1168,8 @@ function initModuloTarjetas() {
     };
   }
 
-  // Pegado Inteligente
-  document.getElementById("btn-quick-distribute").onclick = () => {
-    const raw = document.getElementById("input-quick-paste-row").value.trim();
+  safeClick("btn-quick-distribute", () => {
+    const raw = document.getElementById("input-quick-paste-row")?.value.trim() || "";
     if (!raw) {
       alert("Copia una fila de tu tabla de Excel y pégala en el campo.");
       return;
@@ -1170,30 +1181,39 @@ function initModuloTarjetas() {
     }
 
     if (cols.length >= 4) {
-      document.getElementById("card-costo-articulo").value = cols[0] || "";
-      document.getElementById("card-costo-linea").value = cols[1] || "";
-      document.getElementById("card-costo-marca").value = cols[2] || "BATA";
-      document.getElementById("card-costo-material").value = cols[3] || "";
-      document.getElementById("card-material-corte").value = cols[3] || "";
+      const cArt = document.getElementById("card-costo-articulo");
+      const cLin = document.getElementById("card-costo-linea");
+      const cMar = document.getElementById("card-costo-marca");
+      const cMat = document.getElementById("card-costo-material");
+      const cMatCorte = document.getElementById("card-material-corte");
+      const cPre = document.getElementById("card-costo-precio");
+      const cMrg = document.getElementById("card-costo-margen");
+
+      if (cArt) cArt.value = cols[0] || "";
+      if (cLin) cLin.value = cols[1] || "";
+      if (cMar) cMar.value = cols[2] || "BATA";
+      if (cMat) cMat.value = cols[3] || "";
+      if (cMatCorte) cMatCorte.value = cols[3] || "";
 
       if (cols.length === 7) {
-        document.getElementById("card-costo-precio").value = cols[4] || "0.00";
-        document.getElementById("card-costo-margen").value = cols[5] || "0%";
+        if (cPre) cPre.value = cols[4] || "0.00";
+        if (cMrg) cMrg.value = cols[5] || "0%";
       } else if (cols.length >= 10) {
-        document.getElementById("card-costo-precio").value = cols[8] || "0.00";
-        document.getElementById("card-costo-margen").value = cols[9] || "0%";
+        if (cPre) cPre.value = cols[8] || "0.00";
+        if (cMrg) cMrg.value = cols[9] || "0%";
       } else {
-        document.getElementById("card-costo-precio").value = cols[cols.length - 3] || "0.00";
-        document.getElementById("card-costo-margen").value = cols[cols.length - 2] || "0%";
+        if (cPre) cPre.value = cols[cols.length - 3] || "0.00";
+        if (cMrg) cMrg.value = cols[cols.length - 2] || "0%";
       }
 
       renderTarjetasPreview();
     } else {
       alert("No se detectaron suficientes columnas. Pega directamente la fila copiada de Excel.");
     }
-  };
+  });
 
-  document.getElementById("select-copias-tarjeta").onchange = renderTarjetasPreview;
+  const selCopias = document.getElementById("select-copias-tarjeta");
+  if (selCopias) selCopias.onchange = renderTarjetasPreview;
 
   [
     "card-costo-articulo", "card-costo-linea", "card-costo-marca", "card-costo-material", 
@@ -1204,24 +1224,24 @@ function initModuloTarjetas() {
     if (elem) elem.oninput = renderTarjetasPreview;
   });
 
-  // Abrir modal de vista previa
-  document.getElementById("btn-imprimir-tarjetas-action").onclick = () => {
-    const previewHTML = document.getElementById("contenedor-tarjetas-preview").innerHTML;
-    document.getElementById("hoja-impresion-tarjetas").innerHTML = previewHTML;
-    modalImpresionTarjetas.classList.remove("hidden");
-  };
+  safeClick("btn-imprimir-tarjetas-action", () => {
+    const previewHTML = document.getElementById("contenedor-tarjetas-preview")?.innerHTML || "";
+    const hTarj = document.getElementById("hoja-impresion-tarjetas");
+    if (hTarj) hTarj.innerHTML = previewHTML;
+    modalImpresionTarjetas?.classList.remove("hidden");
+  });
 
-  // Impresión limpia en la hoja
-  document.getElementById("btn-ejecutar-print-tarjetas").onclick = () => {
+  safeClick("btn-ejecutar-print-tarjetas", () => {
     const printArea = document.getElementById("contenedor-tarjetas-print-area");
-    printArea.innerHTML = document.getElementById("contenedor-tarjetas-preview").innerHTML;
+    if (!printArea) return;
+    printArea.innerHTML = document.getElementById("contenedor-tarjetas-preview")?.innerHTML || "";
     printArea.classList.remove("hidden");
     
     setTimeout(() => {
       window.print();
       printArea.classList.add("hidden");
     }, 150);
-  };
+  });
 
   renderTarjetasPreview();
 }
@@ -1230,23 +1250,23 @@ function renderTarjetasPreview() {
   const container = document.getElementById("contenedor-tarjetas-preview");
   if (!container) return;
 
-  const copias = parseInt(document.getElementById("select-copias-tarjeta").value) || 5;
+  const copias = parseInt(document.getElementById("select-copias-tarjeta")?.value) || 5;
 
-  const articulo = document.getElementById("card-costo-articulo").value || "34461836";
-  const linea = (document.getElementById("card-costo-linea").value || "QUIQUE").toUpperCase();
-  const marca = document.getElementById("card-costo-marca").value || "TEENER";
-  const precio = document.getElementById("card-costo-precio").value || "259.00";
-  const margen = document.getElementById("card-costo-margen").value || "55.00%";
+  const articulo = document.getElementById("card-costo-articulo")?.value || "34461836";
+  const linea = (document.getElementById("card-costo-linea")?.value || "QUIQUE").toUpperCase();
+  const marca = document.getElementById("card-costo-marca")?.value || "TEENER";
+  const precio = document.getElementById("card-costo-precio")?.value || "259.00";
+  const margen = document.getElementById("card-costo-margen")?.value || "55.00%";
 
-  const serie = document.getElementById("card-serie").value || "37-44";
-  const fecha = document.getElementById("card-fecha").value || "4/9/2026";
-  const materialCorte = document.getElementById("card-material-corte").value || "IMITACION";
-  const forro = document.getElementById("card-forro").value || "DNE FORRO CARAMELO";
-  const plantInt = document.getElementById("card-plant-int").value || "DNE PLANT CAMEL PIG SKIN";
-  const tecnico = (document.getElementById("card-tecnico").value || "JAVIER GOMEZ").toUpperCase();
-  const hormaSuela = (document.getElementById("card-horma-suela").value || "MARVIN").toUpperCase();
-  const construccion = (document.getElementById("card-construccion").value || "TRUE MOC").toUpperCase();
-  const observaciones = document.getElementById("card-observaciones").value || "";
+  const serie = document.getElementById("card-serie")?.value || "37-44";
+  const fecha = document.getElementById("card-fecha")?.value || "4/9/2026";
+  const materialCorte = document.getElementById("card-material-corte")?.value || "IMITACION";
+  const forro = document.getElementById("card-forro")?.value || "DNE FORRO CARAMELO";
+  const plantInt = document.getElementById("card-plant-int")?.value || "DNE PLANT CAMEL PIG SKIN";
+  const tecnico = (document.getElementById("card-tecnico")?.value || "JAVIER GOMEZ").toUpperCase();
+  const hormaSuela = (document.getElementById("card-horma-suela")?.value || "MARVIN").toUpperCase();
+  const construccion = (document.getElementById("card-construccion")?.value || "TRUE MOC").toUpperCase();
+  const observaciones = document.getElementById("card-observaciones")?.value || "";
 
   const siluetaCalzadoHTML = croquisTarjetaBase64 
     ? `<img src="${croquisTarjetaBase64}" style="width:100%; height:38px; object-fit:contain; margin:auto;">`
@@ -1412,143 +1432,583 @@ function renderTarjetasPreview() {
   container.innerHTML = tarjetasHTML;
 }
 
-// ==================== SOLICITUDES Y MINUTAS ====================
-if (document.getElementById("form-minuta")) {
-  document.getElementById("form-minuta").onsubmit = async (e) => {
-    e.preventDefault();
-    const semana = document.getElementById("minuta-semana").value.trim();
-    const proyecto = document.getElementById("minuta-proyecto").value.trim();
-    const articulo = document.getElementById("minuta-articulo").value.trim();
-    const detalle = document.getElementById("minuta-box").value.trim();
-    const photoFile = document.getElementById("minuta-photo").files[0];
+// ==================== PANEL SUPER ADMIN ====================
+async function cargarPanelSuperAdmin() {
+  if (!esSuperAdmin()) return;
 
-    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
+  const tbodyUsers = document.getElementById("table-users-body");
+  const tbodySols = document.getElementById("table-admin-solicitudes-body");
+  const tbodyEnts = document.getElementById("table-admin-entregas-body");
 
-    try {
-      await addDoc(collection(db, "solicitudes_cambios"), {
-        semana,
-        proyecto,
-        articulo,
-        foto: fotoBase64,
-        boxCambio: detalle,
-        esMinuta: true,
-        solicitanteNombre: (userData && userData.nombre) || "Jefe Desarrollo",
-        solicitanteRol: (userData && userData.rol) || "Desarrollo de producto - Jefe",
-        solicitanteId: currentUser ? currentUser.uid : null,
-        estado: "En proceso",
-        fechaRealizado: null,
-        validadoCostos: false,
-        fechaCreacion: new Date().toISOString(),
-        timestamp: serverTimestamp()
+  if (tbodyUsers) tbodyUsers.innerHTML = `<tr><td colspan="6" class="p-3 text-center text-gray-400">Cargando usuarios...</td></tr>`;
+
+  try {
+    const snap = await getDocs(collection(db, "usuarios"));
+    if (tbodyUsers) {
+      tbodyUsers.innerHTML = "";
+      snap.forEach(docU => {
+        const u = docU.data();
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-gray-50 border-b border-gray-100";
+        
+        const avatar = u.foto 
+          ? `<img src="${u.foto}" class="w-7 h-7 rounded-full object-cover">` 
+          : `<div class="w-7 h-7 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center"><i class="fa-solid fa-user text-[10px]"></i></div>`;
+
+        tr.innerHTML = `
+          <td class="p-3">${avatar}</td>
+          <td class="p-3 font-bold text-gray-800">${u.nombre || '—'}</td>
+          <td class="p-3 text-gray-600">${u.email || '—'}</td>
+          <td class="p-3 font-mono text-gray-600">${u.celular ? '+591 ' + u.celular : '<span class="text-red-400">Sin celular</span>'}</td>
+          <td class="p-3">
+            <select onchange="window.cambiarRolUsuario('${docU.id}', this.value)" class="border border-gray-300 rounded px-2 py-1 text-xs bg-white font-semibold text-gray-700 focus:ring-1 focus:ring-[#D61B28]">
+              <option value="Calidad" ${u.rol === 'Calidad' ? 'selected' : ''}>Calidad</option>
+              <option value="Costos" ${u.rol === 'Costos' ? 'selected' : ''}>Costos</option>
+              <option value="Compras" ${u.rol === 'Compras' ? 'selected' : ''}>Compras</option>
+              <option value="Compras Admin" ${u.rol === 'Compras Admin' ? 'selected' : ''}>Compras Admin</option>
+              <option value="Almacén" ${u.rol === 'Almacén' ? 'selected' : ''}>Almacén</option>
+              <option value="Producción" ${u.rol === 'Producción' ? 'selected' : ''}>Producción</option>
+              <option value="Planeamiento" ${u.rol === 'Planeamiento' ? 'selected' : ''}>Planeamiento</option>
+              <option value="Retail" ${u.rol === 'Retail' ? 'selected' : ''}>Retail</option>
+              <option value="Desarrollo de producto" ${u.rol === 'Desarrollo de producto' ? 'selected' : ''}>Desarrollo (General)</option>
+              <option value="Desarrollo de producto - Técnico" ${u.rol === 'Desarrollo de producto - Técnico' ? 'selected' : ''}>Desarrollo - Técnico (Modelista)</option>
+              <option value="Desarrollo de producto - Jefe" ${u.rol === 'Desarrollo de producto - Jefe' ? 'selected' : ''}>Desarrollo - Jefe</option>
+            </select>
+          </td>
+          <td class="p-3 text-center">
+            ${docU.id !== currentUser.uid ? `
+              <button onclick="window.eliminarUsuarioDoc('${docU.id}', '${u.nombre}')" class="text-red-600 hover:text-red-800 font-bold text-xs cursor-pointer">
+                <i class="fa-solid fa-trash"></i> Eliminar
+              </button>
+            ` : '<span class="text-gray-400 text-[10px] font-bold">Super Admin</span>'}
+          </td>
+        `;
+        tbodyUsers.appendChild(tr);
       });
-
-      modalMinuta.classList.add("hidden");
-      document.getElementById("form-minuta").reset();
-
-      abrirModalWhatsApp({
-        titulo: "Minuta de Cambios Registrada",
-        subtitulo: "Enviar minuta a los Técnicos de Desarrollo:",
-        mensajeTexto: `📋 *MINUTA DE CAMBIOS - PLAN PILOTO*\n*Bata Bolivia / Desarrollo de Producto*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n👤 *Emitido por:* ${(userData && userData.nombre) || 'Jefe Desarrollo'}\n\n📝 *DETALLE DE CAMBIOS TÉCNICOS:*\n${detalle}\n\n_Registrado en el sistema para control de avance y realización._`,
-        rolFiltro: "Desarrollo de producto - Técnico"
-      });
-    } catch (err) {
-      alert("Error al guardar minuta: " + err.message);
-    }
-  };
-}
-
-const modalNewChange = document.getElementById("modal-new-change");
-if (document.getElementById("btn-open-new-change")) {
-  document.getElementById("btn-open-new-change").onclick = () => modalNewChange.classList.remove("hidden");
-}
-if (document.getElementById("modal-btn-close")) {
-  document.getElementById("modal-btn-close").onclick = () => modalNewChange.classList.add("hidden");
-}
-if (document.getElementById("modal-btn-cancel")) {
-  document.getElementById("modal-btn-cancel").onclick = () => modalNewChange.classList.add("hidden");
-}
-
-if (document.getElementById("form-new-change")) {
-  document.getElementById("form-new-change").onsubmit = async (e) => {
-    e.preventDefault();
-    const semana = document.getElementById("change-semana").value.trim();
-    const proyecto = document.getElementById("change-project").value.trim();
-    const articulo = document.getElementById("change-article").value.trim();
-    const boxCambio = document.getElementById("change-box").value.trim();
-    const photoFile = document.getElementById("change-photo").files[0];
-
-    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
-
-    try {
-      await addDoc(collection(db, "solicitudes_cambios"), {
-        semana,
-        proyecto,
-        articulo,
-        foto: fotoBase64,
-        boxCambio,
-        esMinuta: false,
-        solicitanteNombre: (userData && userData.nombre) || (currentUser && currentUser.email) || "Usuario",
-        solicitanteRol: (userData && userData.rol) || "Usuario",
-        solicitanteId: currentUser ? currentUser.uid : null,
-        estado: "En proceso",
-        fechaRealizado: null,
-        validadoCostos: false,
-        fechaCreacion: new Date().toISOString(),
-        timestamp: serverTimestamp()
-      });
-
-      document.getElementById("form-new-change").reset();
-      modalNewChange.classList.add("hidden");
-
-      abrirModalWhatsApp({
-        titulo: "Solicitud Registrada",
-        subtitulo: "Notificar solicitud creada al equipo:",
-        mensajeTexto: `👞 *NUEVA SOLICITUD DE CAMBIO - BATA BOLIVIA*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n👤 *Solicitado por:* ${(userData && userData.nombre) || 'Usuario'} (${(userData && userData.rol) || ''})\n📝 *Cambio:* ${boxCambio}\n\n_Revisar en el Sistema de Gestión de Cambios Bata_`
-      });
-    } catch (err) {
-      alert("Error: " + err.message);
-    }
-  };
-}
-
-// ==================== NUEVA ENTREGA BLINDADA ====================
-if (document.getElementById("btn-open-nueva-entrega")) {
-  document.getElementById("btn-open-nueva-entrega").onclick = () => {
-    const esAdmin = esSuperAdmin();
-    const rol = (userData && userData.rol) || "";
-    const esDesarrolloRol = rol.includes("Desarrollo") || esAdmin;
-    const esCostos = rol === "Costos" || esAdmin;
-
-    if (!esDesarrolloRol && !esCostos && !esAdmin) {
-      alert("Solo usuarios autorizados pueden registrar entregas.");
-      return;
     }
 
-    const selectTipo = document.getElementById("ent-tipo");
-    selectTipo.innerHTML = "";
+    if (tbodySols) {
+      tbodySols.innerHTML = "";
+      if (solicitudes.length === 0) {
+        tbodySols.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400">No hay solicitudes registradas.</td></tr>`;
+      } else {
+        solicitudes.forEach(sol => {
+          const tr = document.createElement("tr");
+          tr.className = "hover:bg-gray-50 border-b border-gray-100";
+          tr.innerHTML = `
+            <td class="p-3 font-semibold text-gray-500 font-mono">${sol.semana || '—'}</td>
+            <td class="p-3 text-gray-600 whitespace-nowrap">${formatearFecha(sol.fechaCreacion)}</td>
+            <td class="p-3">
+              ${sol.esMinuta ? '<span class="bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded text-[10px]">MINUTA PILOTO</span>' : '<span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-[10px]">CAMBIO</span>'}
+            </td>
+            <td class="p-3 font-bold text-gray-800">${sol.proyecto}</td>
+            <td class="p-3 font-mono text-gray-700">${sol.articulo}</td>
+            <td class="p-3 text-gray-600">${sol.solicitanteNombre || '—'}</td>
+            <td class="p-3"><span class="px-2 py-0.5 rounded font-bold text-[10px] ${sol.estado === 'Realizado' ? 'bg-green-50 text-green-700' : (sol.estado === 'Retrasado' ? 'bg-red-50 text-red-700' : 'bg-orange-50 text-orange-700')}">${sol.estado}</span></td>
+            <td class="p-3 text-center">
+              <button onclick="window.eliminarSolicitudProyecto('${sol.id}', '${sol.proyecto}')" class="text-red-500 hover:text-red-700 p-1 rounded font-bold text-xs cursor-pointer">
+                <i class="fa-solid fa-trash-can"></i> Eliminar
+              </button>
+            </td>
+          `;
+          tbodySols.appendChild(tr);
+        });
+      }
+    }
 
-    if (categoriaEntregaActiva !== "todas") {
-      selectTipo.innerHTML += `<option value="${categoriaEntregaActiva}">${categoriaEntregaActiva}</option>`;
+    if (tbodyEnts) {
+      tbodyEnts.innerHTML = "";
+      if (entregas.length === 0) {
+        tbodyEnts.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-400">No hay entregas registradas.</td></tr>`;
+      } else {
+        entregas.forEach(ent => {
+          const tr = document.createElement("tr");
+          tr.className = "hover:bg-gray-50 border-b border-gray-100";
+          tr.innerHTML = `
+            <td class="p-3 font-semibold text-gray-500 font-mono">${ent.semana || '—'}</td>
+            <td class="p-3 text-gray-600 whitespace-nowrap">${formatearFecha(ent.fechaEntrega)}</td>
+            <td class="p-3 font-semibold text-[#D61B28]">${ent.tipo}</td>
+            <td class="p-3 font-bold text-gray-800">${ent.proyecto} ${ent.copias ? '(' + ent.copias + ' copias)' : ''}</td>
+            <td class="p-3 font-mono text-gray-700">${ent.articulo || '—'}</td>
+            <td class="p-3 font-bold text-gray-700">${ent.destino}</td>
+            <td class="p-3 text-center">
+              <button onclick="window.eliminarEntregaDoc('${ent.id}', '${ent.tipo}', '${ent.proyecto}')" class="text-red-500 hover:text-red-700 p-1 rounded font-bold text-xs cursor-pointer">
+                <i class="fa-solid fa-trash-can"></i> Eliminar
+              </button>
+            </td>
+          `;
+          tbodyEnts.appendChild(tr);
+        });
+      }
+    }
+
+  } catch (error) {
+    console.error("Error al cargar panel Super Admin:", error);
+    if (tbodyUsers) tbodyUsers.innerHTML = `<tr><td colspan="6" class="p-3 text-center text-red-500">Error al cargar datos. Comprueba la conexión y reglas de Firestore.</td></tr>`;
+  }
+}
+
+window.cambiarRolUsuario = async (userId, nuevoRol) => {
+  await updateDoc(doc(db, "usuarios", userId), { rol: nuevoRol });
+  alert("Rol asignado correctamente.");
+};
+
+window.eliminarUsuarioDoc = async (id, nombre) => {
+  if (confirm(`¿Eliminar al usuario ${nombre}?`)) {
+    await deleteDoc(doc(db, "usuarios", id));
+    cargarPanelSuperAdmin();
+  }
+};
+
+window.eliminarSolicitudProyecto = async (id, proyecto) => {
+  if (confirm(`¿Eliminar el registro "${proyecto}" permanentemente de la base de datos?`)) {
+    await deleteDoc(doc(db, "solicitudes_cambios", id));
+    cargarPanelSuperAdmin();
+  }
+};
+
+window.eliminarEntregaDoc = async (id, tipo, proyecto) => {
+  if (confirm(`¿Eliminar la entrega "${tipo}" del proyecto/material "${proyecto}" permanentemente?`)) {
+    await deleteDoc(doc(db, "entregas_departamentos", id));
+    cargarPanelSuperAdmin();
+  }
+};
+
+// ==================== TABLA GENERAL DE ENTREGAS ====================
+function escucharEntregas() {
+  const q = query(collection(db, "entregas_departamentos"));
+  onSnapshot(q, (snapshot) => {
+    entregas = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    entregas.sort((a, b) => (b.fechaEntrega || "").localeCompare(a.fechaEntrega || ""));
+    renderTablaEntregas();
+  }, (err) => console.error("Error al escuchar entregas:", err));
+}
+
+function renderTablaEntregas() {
+  const tbody = document.getElementById("table-entregas-body");
+  const empty = document.getElementById("entregas-empty-state");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  let entregasFiltradas = entregas.filter(item => {
+    const coincideCategoria = (categoriaEntregaActiva === "todas") || 
+      ((item.tipo || "").toUpperCase().trim() === categoriaEntregaActiva.toUpperCase().trim());
+    const semStr = (item.semana || "").toString().toLowerCase().trim();
+    const proyStr = (item.proyecto || "").toString().toLowerCase().trim();
+    const coincideSem = !colFiltroSemanaEntregas || semStr.includes(colFiltroSemanaEntregas);
+    const coincideProy = !colFiltroProyectoEntregas || proyStr.includes(colFiltroProyectoEntregas);
+    return coincideCategoria && coincideSem && coincideProy;
+  });
+
+  if (entregasFiltradas.length === 0) {
+    empty?.classList.remove("hidden");
+    return;
+  }
+  empty?.classList.add("hidden");
+
+  const esAdmin = esSuperAdmin();
+
+  entregasFiltradas.forEach(ent => {
+    const tr = document.createElement("tr");
+    tr.className = "hover:bg-gray-50/80 transition border-b border-gray-100";
+
+    const puedeConfirmar = (userData && userData.rol === ent.destino) || esAdmin;
+
+    let recepcionHTML = "";
+    if (ent.recibido) {
+      recepcionHTML = `
+        <span class="text-green-700 font-bold flex items-center justify-center space-x-1">
+          <i class="fa-solid fa-circle-check text-green-600"></i>
+          <span>Recibido</span>
+        </span>
+      `;
     } else {
-      selectTipo.innerHTML += `<option value="GUÍA DE PRODUCCIÓN">GUÍA DE PRODUCCIÓN</option>`;
-      selectTipo.innerHTML += `<option value="CORTE">CORTE</option>`;
-      selectTipo.innerHTML += `<option value="MUESTRA DEFINITIVA">MUESTRA DEFINITIVA</option>`;
-      selectTipo.innerHTML += `<option value="MATERIALES">MATERIALES</option>`;
-      selectTipo.innerHTML += `<option value="HOJA DE DESBASTE">HOJA DE DESBASTE</option>`;
-      selectTipo.innerHTML += `<option value="TIZADORES">TIZADORES</option>`;
+      if (puedeConfirmar) {
+        recepcionHTML = `
+          <button onclick="window.confirmarRecepcionEntrega('${ent.id}', '${ent.tipo}', '${ent.proyecto}')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-2.5 py-1 rounded-lg border border-blue-200 transition cursor-pointer">
+            Confirmar Recepción
+          </button>
+        `;
+      } else {
+        recepcionHTML = `<span class="text-amber-600 font-semibold italic text-[11px]">En tránsito a ${ent.destino}</span>`;
+      }
     }
 
-    actualizarCamposSegunTipoEntrega();
-    modalNuevaEntrega.classList.remove("hidden");
-  };
+    const fotoHTML = ent.foto 
+      ? `<img src="${ent.foto}" onclick="window.verFotoGrande('${ent.foto}', '${ent.proyecto} - ${ent.articulo || ent.tipo}')" class="w-10 h-7 object-cover rounded border border-gray-200 shadow-xs cursor-pointer hover:opacity-80 transition mx-auto" title="Click para ampliar">`
+      : `<div class="w-10 h-7 rounded border border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-[10px] mx-auto"><i class="fa-regular fa-image"></i></div>`;
+
+    const tdFotoHTML = (categoriaEntregaActiva !== "MATERIALES" && categoriaEntregaActiva !== "TIZADORES") ? `<td class="p-2 border-r border-gray-100 text-center">${fotoHTML}</td>` : '';
+    const tdArticuloHTML = categoriaEntregaActiva !== "MATERIALES" ? `<td class="p-3 font-mono text-gray-700 border-r border-gray-100">${ent.articulo || '—'}</td>` : '';
+
+    let detalleExtra = "";
+    if (ent.copias) detalleExtra += `<span class="bg-rose-100 text-rose-800 font-bold text-[9px] px-1.5 py-0.2 rounded ml-1">${ent.copias} copias</span>`;
+    if (ent.notas) detalleExtra += `<p class="text-[10px] text-gray-400 mt-0.5">${ent.notas}</p>`;
+
+    tr.innerHTML = `
+      ${tdFotoHTML}
+      <td class="p-3 font-bold text-gray-700 border-r border-gray-100 font-mono">${ent.semana || '—'}</td>
+      <td class="p-3 text-gray-600 border-r border-gray-100 whitespace-nowrap">${formatearFecha(ent.fechaEntrega)}</td>
+      <td class="p-3 font-bold text-gray-800 border-r border-gray-100">${ent.proyecto || '—'}</td>
+      ${tdArticuloHTML}
+      <td class="p-3 border-r border-gray-100">
+        <span class="bg-red-50 text-[#D61B28] px-2 py-0.5 rounded font-bold text-[10px] border border-red-100">${ent.tipo}</span>
+        ${detalleExtra}
+      </td>
+      <td class="p-3 border-r border-gray-100 whitespace-nowrap">
+        <span class="font-bold text-gray-800 block">${ent.entregadoPorNombre}</span>
+        <span class="text-[10px] text-gray-400">${ent.entregadoPorRol}</span>
+      </td>
+      <td class="p-3 border-r border-gray-100 font-bold text-gray-700">${ent.destino}</td>
+      <td class="p-3 text-center whitespace-nowrap">${recepcionHTML}</td>
+    `;
+    tbody.appendChild(tr);
+  });
 }
 
-if (document.getElementById("ent-tipo")) {
-  document.getElementById("ent-tipo").onchange = actualizarCamposSegunTipoEntrega;
+window.confirmarRecepcionEntrega = async (id, tipo, proyecto) => {
+  if (confirm(`¿Confirmar que has recibido físicamente "${tipo}" (${proyecto})?`)) {
+    await updateDoc(doc(db, "entregas_departamentos", id), {
+      recibido: true,
+      fechaRecepcion: new Date().toISOString(),
+      recibidoPorNombre: (userData && userData.nombre) || "Usuario"
+    });
+  }
+};
+
+function abrirReporteImpresoEntregas() {
+  const items = entregas.filter(item => (categoriaEntregaActiva === "todas") || 
+    ((item.tipo || "").toUpperCase().trim() === categoriaEntregaActiva.toUpperCase().trim()));
+  if (items.length === 0) {
+    alert("No hay registros de entregas para generar el reporte.");
+    return;
+  }
+
+  const contenedor = document.getElementById("contenido-impresion-entregas");
+  if (!contenedor) return;
+
+  let html = `
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse border border-gray-200 text-xs">
+        <thead class="bg-gray-100 font-bold">
+          <tr>
+            <th class="p-2 border text-center w-12">Foto</th>
+            <th class="p-2 border">Sem.</th>
+            <th class="p-2 border">Fecha/Hora</th>
+            <th class="p-2 border">Proyecto / Detalle</th>
+            <th class="p-2 border">Artículo</th>
+            <th class="p-2 border">Elemento Entregado</th>
+            <th class="p-2 border">Entregado Por</th>
+            <th class="p-2 border">Destino</th>
+            <th class="p-2 border text-center">Estado Recepción</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  items.forEach(it => {
+    const fotoPrint = it.foto 
+      ? `<img src="${it.foto}" style="width: 44px; height: 30px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; margin: auto;">`
+      : `<span style="color: #bbb;">—</span>`;
+
+    let elementoTexto = it.tipo;
+    if (it.copias) elementoTexto += ` (${it.copias} copias)`;
+    if (it.notas) elementoTexto += ` - ${it.notas}`;
+
+    html += `
+      <tr class="border-b">
+        <td class="p-1 border text-center">${fotoPrint}</td>
+        <td class="p-2 border font-bold font-mono">${it.semana}</td>
+        <td class="p-2 border whitespace-nowrap">${formatearFecha(it.fechaEntrega)}</td>
+        <td class="p-2 border font-bold text-gray-800">${it.proyecto}</td>
+        <td class="p-2 border font-mono">${it.articulo || '—'}</td>
+        <td class="p-2 border">${elementoTexto}</td>
+        <td class="p-2 border">${it.entregadoPorNombre} <span class="text-[10px] text-gray-400">(${it.entregadoPorRol})</span></td>
+        <td class="p-2 border font-bold">${it.destino}</td>
+        <td class="p-2 border text-center font-bold ${it.recibido ? 'text-green-600' : 'text-amber-600'}">
+          ${it.recibido ? 'Recibido' : 'En Tránsito'}
+        </td>
+      </tr>
+    `;
+  });
+
+  html += `
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  contenedor.innerHTML = html;
+  modalReporteEntregasPrint?.classList.remove("hidden");
 }
+
+function abrirResumenTextoEntregas() {
+  const items = entregas.filter(item => (categoriaEntregaActiva === "todas") || 
+    ((item.tipo || "").toUpperCase().trim() === categoriaEntregaActiva.toUpperCase().trim()));
+  if (items.length === 0) {
+    alert("No hay entregas registradas en esta categoría.");
+    return;
+  }
+
+  let texto = `CONTROL DE ENTREGAS A DEPARTAMENTOS - BATA BOLIVIA\n`;
+  texto += `Categoría: ${categoriaEntregaActiva.toUpperCase()}\n`;
+  texto += `Fecha: ${new Date().toLocaleDateString("es-BO")}\n\n`;
+
+  items.forEach((it, idx) => {
+    let extra = it.copias ? ` (${it.copias} copias)` : '';
+    texto += `${idx + 1}. [Sem: ${it.semana}] ${it.proyecto.toUpperCase()} ${it.articulo ? '| Art: ' + it.articulo : ''}\n`;
+    texto += `   • Elemento: ${it.tipo}${extra}\n`;
+    texto += `   • Entregado por: ${it.entregadoPorNombre} (${it.entregadoPorRol}) -> Destino: ${it.destino}\n`;
+    texto += `   • Estado: ${it.recibido ? 'RECIBIDO' : 'EN TRÁNSITO'}\n\n`;
+  });
+
+  const textarea = document.getElementById("texto-entregas-output");
+  if (textarea) textarea.value = texto;
+
+  safeClick("btn-copiar-texto-entregas", () => {
+    if (textarea) {
+      textarea.select();
+      navigator.clipboard.writeText(texto);
+      alert("Texto de entregas copiado al portapapeles.");
+    }
+  });
+
+  safeClick("btn-enviar-correo-entregas", () => {
+    const asunto = encodeURIComponent(`Bata Bolivia - Control de Entregas (${categoriaEntregaActiva})`);
+    const cuerpo = encodeURIComponent(texto);
+    window.location.href = `mailto:?subject=${asunto}&body=${cuerpo}`;
+  });
+
+  safeClick("btn-enviar-wsp-entregas", () => {
+    const encoded = encodeURIComponent(texto);
+    window.open(`https://wa.me/?text=${encoded}`, "_blank");
+  });
+
+  modalEntregasTexto?.classList.remove("hidden");
+}
+
+// Escucha en tiempo real de Solicitudes
+function escucharCambios() {
+  const q = query(collection(db, "solicitudes_cambios"));
+  onSnapshot(q, (snapshot) => {
+    const ahora = new Date();
+    solicitudes = snapshot.docs.map(docSnap => {
+      const data = docSnap.data();
+      const id = docSnap.id;
+
+      if (data.estado === "En proceso" && data.fechaCreacion) {
+        const fechaCrea = new Date(data.fechaCreacion);
+        const diferenciaDias = (ahora - fechaCrea) / (1000 * 60 * 60 * 24);
+        if (diferenciaDias >= 7) {
+          data.estado = "Retrasado";
+          updateDoc(doc(db, "solicitudes_cambios", id), { estado: "Retrasado" });
+        }
+      }
+
+      return { id, ...data };
+    });
+    solicitudes.sort((a, b) => (b.fechaCreacion || "").localeCompare(a.fechaCreacion || ""));
+    renderTabla();
+    if (!viewInforme?.classList.contains("hidden")) {
+      actualizarInformePorSemana();
+    }
+  });
+}
+
+function formatearFecha(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return d.toLocaleDateString("es-BO", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+// Render Tabla de Cambios Pública
+function renderTabla() {
+  const tbody = document.getElementById("table-cambios-body");
+  const empty = document.getElementById("table-empty-state");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  if (solicitudes.length === 0) {
+    empty?.classList.remove("hidden");
+    return;
+  }
+  empty?.classList.add("hidden");
+
+  const esAdmin = esSuperAdmin();
+  const esDesarrolloUsuario = esDesarrollo() || esAdmin;
+  const esCostos = (userData && userData.rol === "Costos") || esAdmin;
+
+  solicitudes.forEach((item) => {
+    const tr = document.createElement("tr");
+    tr.className = item.esMinuta 
+      ? "bg-amber-50/70 hover:bg-amber-100/70 transition border-b border-amber-200" 
+      : "hover:bg-gray-50/80 transition border-b border-gray-100";
+
+    let badgeMinuta = item.esMinuta 
+      ? `<span class="bg-amber-500 text-white font-black text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider block mb-1 w-fit shadow-xs">PLAN PILOTO</span>` 
+      : '';
+
+    let estadoHTML = "";
+    if (esDesarrolloUsuario) {
+      estadoHTML = `
+        <div class="flex items-center space-x-1.5">
+          <select id="sel-estado-${item.id}" class="border border-orange-200 text-orange-600 bg-orange-50 font-semibold rounded-lg px-2 py-1 text-xs focus:ring-1 focus:ring-[#D61B28]">
+            <option value="En proceso" ${item.estado === "En proceso" ? "selected" : ""}>En proceso</option>
+            <option value="Realizado" ${item.estado === "Realizado" ? "selected" : ""}>Realizado</option>
+            <option value="Retrasado" ${item.estado === "Retrasado" ? "selected" : ""}>Retrasado</option>
+          </select>
+          <button onclick="window.guardarCambioEstado('${item.id}', '${item.proyecto}', '${item.articulo}', '${item.semana || ''}')" title="Guardar y Notificar a Costos" class="bg-gray-100 hover:bg-[#D61B28] hover:text-white text-gray-600 p-1.5 rounded-lg text-xs transition cursor-pointer">
+            <i class="fa-solid fa-floppy-disk"></i>
+          </button>
+        </div>
+      `;
+    } else {
+      const estilo = item.estado === "Realizado" ? "border-green-200 text-green-700 bg-green-50" : (item.estado === "Retrasado" ? "border-red-200 text-red-700 bg-red-50" : "border-orange-200 text-orange-600 bg-orange-50");
+      estadoHTML = `<span class="border ${estilo} px-3 py-1 rounded-lg font-bold text-xs">${item.estado}</span>`;
+    }
+
+    const fechaRealizadoHTML = item.fechaRealizado 
+      ? `<span class="font-bold text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200">${formatearFecha(item.fechaRealizado)}</span>`
+      : `<span class="text-gray-300 text-[11px]">—</span>`;
+
+    let costosHTML = "";
+    if (item.estado === "Realizado") {
+      if (item.validadoCostos) {
+        costosHTML = `
+          <div class="flex items-center justify-center space-x-1 text-green-700 font-bold text-xs">
+            <i class="fa-solid fa-circle-check text-green-600"></i>
+            <span>Validado</span>
+            ${esAdmin ? `<button onclick="window.desbloquearValidacionCostos('${item.id}')" class="text-red-500 hover:text-red-700 text-[10px] ml-1 cursor-pointer" title="Desbloquear como Super Admin"><i class="fa-solid fa-unlock"></i></button>` : ''}
+          </div>
+        `;
+      } else {
+        costosHTML = `
+          <div class="flex items-center justify-center space-x-1">
+            <input type="checkbox" ${!esCostos ? "disabled title='Solo el usuario de Costos puede validar'" : ""} 
+                   onchange="window.confirmarValidacionCostos('${item.id}', '${item.proyecto}', '${item.articulo}', this)"
+                   class="h-4 w-4 accent-[#D61B28] rounded border-gray-300 cursor-${esCostos ? 'pointer' : 'not-allowed'}">
+            <span class="text-[11px] ${esCostos ? 'text-gray-600 font-semibold' : 'text-gray-300'}">Confirmar</span>
+          </div>
+        `;
+      }
+    } else {
+      costosHTML = `<input type="checkbox" disabled class="h-4 w-4 text-gray-300 rounded border-gray-200 opacity-40">`;
+    }
+
+    const fotoHTML = item.foto 
+      ? `<img src="${item.foto}" onclick="window.verFotoGrande('${item.foto}', '${item.proyecto} - ${item.articulo}')" class="w-10 h-7 object-cover rounded border border-gray-200 shadow-xs cursor-pointer hover:opacity-80 transition mx-auto" title="Click para ampliar">`
+      : `<div class="w-10 h-7 rounded border border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-[10px] mx-auto"><i class="fa-regular fa-image"></i></div>`;
+
+    tr.innerHTML = `
+      <td class="p-2 border-r border-gray-100 text-center">${fotoHTML}</td>
+      <td class="p-3 font-bold text-gray-700 border-r border-gray-100 font-mono">${item.semana || '—'}</td>
+      <td class="p-3 text-gray-600 border-r border-gray-100 whitespace-nowrap">${formatearFecha(item.fechaCreacion)}</td>
+      <td class="p-3 border-r border-gray-100 whitespace-nowrap">
+        <span class="font-bold text-gray-800 block">${item.solicitanteNombre || '—'}</span>
+        <span class="text-[10px] text-gray-400">${item.solicitanteRol || ''}</span>
+      </td>
+      <td class="p-3.5 font-bold text-gray-800 border-r border-gray-100">${badgeMinuta}${item.proyecto}</td>
+      <td class="p-3.5 font-mono text-gray-700 border-r border-gray-100">${item.articulo}</td>
+      <td class="p-3.5 text-gray-700 border-r border-gray-100 leading-relaxed">${item.boxCambio}</td>
+      <td class="p-3.5 text-center border-r border-gray-100 whitespace-nowrap">${estadoHTML}</td>
+      <td class="p-3.5 text-center border-r border-gray-100 whitespace-nowrap">${fechaRealizadoHTML}</td>
+      <td class="p-3.5 text-center whitespace-nowrap">${costosHTML}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Guardar Estado
+window.guardarCambioEstado = async (id, proyecto, articulo, semana) => {
+  const select = document.getElementById(`sel-estado-${id}`);
+  if (!select) return;
+  const nuevoEstado = select.value;
+
+  const updatePayload = { estado: nuevoEstado };
+  if (nuevoEstado === "Realizado") {
+    updatePayload.fechaRealizado = new Date().toISOString();
+  } else {
+    updatePayload.fechaRealizado = null;
+  }
+
+  await updateDoc(doc(db, "solicitudes_cambios", id), updatePayload);
+
+  if (nuevoEstado === "Realizado") {
+    abrirModalWhatsApp({
+      titulo: "Proyecto Realizado",
+      subtitulo: "Enviar alerta a los usuarios de Costos para su validación:",
+      mensajeTexto: `👟 *PROYECTO REALIZADO - REQUERIMIENTO DE COSTOS*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n✅ *Estado:* Realizado por Desarrollo de Producto (${(userData && userData.nombre) || 'Usuario'})\n\n_Por favor ingresar al sistema para validar los costos asociados._`,
+      rolFiltro: "Costos"
+    });
+  } else {
+    alert("Estado guardado correctamente.");
+  }
+};
+
+// Validación Costos
+window.confirmarValidacionCostos = async (id, proyecto, articulo, checkboxElem) => {
+  const confirma = confirm(`¿Estás seguro de validar los costos del proyecto "${proyecto}"? Una vez confirmado quedará bloqueado.`);
+  if (!confirma) {
+    checkboxElem.checked = false;
+    return;
+  }
+
+  await updateDoc(doc(db, "solicitudes_cambios", id), {
+    validadoCostos: true,
+    fechaValidacionCostos: new Date().toISOString(),
+    validadorCostosNombre: (userData && userData.nombre) || "Costos"
+  });
+
+  abrirModalWhatsApp({
+    titulo: "Costos Validados",
+    subtitulo: "Enviar notificación al equipo de Calidad:",
+    mensajeTexto: `📋 *VALIDACIÓN DE COSTOS COMPLETADA - ALERTA CALIDAD*\n\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n💰 *Costos:* Validados por ${(userData && userData.nombre) || 'Costos'} (Costos)\n\n_El proyecto cuenta con validación técnica y económica lista para producción._`,
+    rolFiltro: "Calidad"
+  });
+};
+
+window.desbloquearValidacionCostos = async (id) => {
+  if (confirm("¿Desbloquear validación de costos? (Acción de Super Admin)")) {
+    await updateDoc(doc(db, "solicitudes_cambios", id), { validadoCostos: false });
+  }
+};
+
+// Nueva Entrega
+safeClick("btn-open-nueva-entrega", () => {
+  const esAdmin = esSuperAdmin();
+  const rol = (userData && userData.rol) || "";
+  const esDesarrolloRol = rol.includes("Desarrollo") || esAdmin;
+  const esCostos = rol === "Costos" || esAdmin;
+
+  if (!esDesarrolloRol && !esCostos && !esAdmin) {
+    alert("Solo usuarios autorizados pueden registrar entregas.");
+    return;
+  }
+
+  const selectTipo = document.getElementById("ent-tipo");
+  if (!selectTipo) return;
+  selectTipo.innerHTML = "";
+
+  if (categoriaEntregaActiva !== "todas") {
+    selectTipo.innerHTML += `<option value="${categoriaEntregaActiva}">${categoriaEntregaActiva}</option>`;
+  } else {
+    selectTipo.innerHTML += `<option value="GUÍA DE PRODUCCIÓN">GUÍA DE PRODUCCIÓN</option>`;
+    selectTipo.innerHTML += `<option value="CORTE">CORTE</option>`;
+    selectTipo.innerHTML += `<option value="MUESTRA DEFINITIVA">MUESTRA DEFINITIVA</option>`;
+    selectTipo.innerHTML += `<option value="MATERIALES">MATERIALES</option>`;
+    selectTipo.innerHTML += `<option value="HOJA DE DESBASTE">HOJA DE DESBASTE</option>`;
+    selectTipo.innerHTML += `<option value="TIZADORES">TIZADORES</option>`;
+  }
+
+  actualizarCamposSegunTipoEntrega();
+  modalNuevaEntrega?.classList.remove("hidden");
+});
+
+const selEntTipo = document.getElementById("ent-tipo");
+if (selEntTipo) selEntTipo.onchange = actualizarCamposSegunTipoEntrega;
 
 function actualizarCamposSegunTipoEntrega() {
-  const tipo = document.getElementById("ent-tipo").value;
+  const tipo = document.getElementById("ent-tipo")?.value;
   const selectDestino = document.getElementById("ent-destino");
   const boxArticulo = document.getElementById("box-field-articulo");
   const labelProy = document.getElementById("label-field-proyecto");
@@ -1558,52 +2018,54 @@ function actualizarCamposSegunTipoEntrega() {
   const containerSingle = document.getElementById("container-destino-single");
   const containerMultiple = document.getElementById("container-destino-multiple");
 
+  if (!selectDestino) return;
   selectDestino.innerHTML = "";
-  boxCopias.classList.add("hidden");
-  containerMultiple.classList.add("hidden");
-  containerSingle.classList.remove("hidden");
-  boxFoto.classList.add("hidden");
+  boxCopias?.classList.add("hidden");
+  containerMultiple?.classList.add("hidden");
+  containerSingle?.classList.remove("hidden");
+  boxFoto?.classList.add("hidden");
 
   if (tipo === "MATERIALES") {
-    labelProy.textContent = "Nombre del Material / Insumo";
-    inputProy.placeholder = "Ej: Badana Beige 1.2mm";
-    boxArticulo.classList.add("hidden");
+    if (labelProy) labelProy.textContent = "Nombre del Material / Insumo";
+    if (inputProy) inputProy.placeholder = "Ej: Badana Beige 1.2mm";
+    boxArticulo?.classList.add("hidden");
     selectDestino.innerHTML += `<option value="Desarrollo de producto">Desarrollo de producto</option>`;
     selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
     return;
   }
 
-  boxArticulo.classList.remove("hidden");
-  labelProy.textContent = "Nombre del Proyecto";
-  inputProy.placeholder = "Ej: SKATER";
+  boxArticulo?.classList.remove("hidden");
+  if (labelProy) labelProy.textContent = "Nombre del Proyecto";
+  if (inputProy) inputProy.placeholder = "Ej: SKATER";
 
   if (tipo === "GUÍA DE PRODUCCIÓN") {
-    boxFoto.classList.remove("hidden");
+    boxFoto?.classList.remove("hidden");
     selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
   }
   else if (tipo === "CORTE") {
-    boxFoto.classList.remove("hidden");
+    boxFoto?.classList.remove("hidden");
     selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
     selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
   }
   else if (tipo === "MUESTRA DEFINITIVA") {
-    boxFoto.classList.remove("hidden");
-    containerSingle.classList.add("hidden");
-    containerMultiple.classList.remove("hidden");
+    boxFoto?.classList.remove("hidden");
+    containerSingle?.classList.add("hidden");
+    containerMultiple?.classList.remove("hidden");
   }
   else if (tipo === "HOJA DE DESBASTE") {
-    boxFoto.classList.remove("hidden");
+    boxFoto?.classList.remove("hidden");
     selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
     selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
   }
   else if (tipo === "TIZADORES") {
-    boxCopias.classList.remove("hidden");
+    boxCopias?.classList.remove("hidden");
     selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
   }
 }
 
-if (document.getElementById("form-nueva-entrega")) {
-  document.getElementById("form-nueva-entrega").onsubmit = async (e) => {
+const formEntrega = document.getElementById("form-nueva-entrega");
+if (formEntrega) {
+  formEntrega.onsubmit = async (e) => {
     e.preventDefault();
     const semana = document.getElementById("ent-semana").value.trim();
     const proyecto = document.getElementById("ent-proyecto").value.trim();
@@ -1650,8 +2112,8 @@ if (document.getElementById("form-nueva-entrega")) {
         });
       }
 
-      document.getElementById("form-nueva-entrega").reset();
-      modalNuevaEntrega.classList.add("hidden");
+      formEntrega.reset();
+      modalNuevaEntrega?.classList.add("hidden");
 
       const destinosTexto = destinosAEntregar.join(", ");
       let detalleCopias = (tipo === "TIZADORES" && copias) ? `📑 *Copias:* ${copias}\n` : '';
@@ -1668,10 +2130,5 @@ if (document.getElementById("form-nueva-entrega")) {
   };
 }
 
-// Botones de reporte
-if (document.getElementById("btn-reporte-entregas-pdf")) {
-  document.getElementById("btn-reporte-entregas-pdf").onclick = abrirReporteImpresoEntregas;
-}
-if (document.getElementById("btn-reporte-entregas-texto")) {
-  document.getElementById("btn-reporte-entregas-texto").onclick = abrirResumenTextoEntregas;
-}
+safeClick("btn-reporte-entregas-pdf", abrirReporteImpresoEntregas);
+safeClick("btn-reporte-entregas-texto", abrirResumenTextoEntregas);
