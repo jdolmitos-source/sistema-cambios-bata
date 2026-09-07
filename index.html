@@ -361,7 +361,7 @@
           </div>
         </section>
 
-        <!-- VISTA 2: INFORME EJECUTIVO -->
+        <!-- VISTA 2: INFORME EJECUTIVO CON 5 MINI-KPIS -->
         <section id="view-informe" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -660,34 +660,34 @@
             <div class="border-b border-gray-100 pb-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
               <span class="font-bold text-gray-800 text-sm flex items-center space-x-1.5">
                 <i class="fa-solid fa-shoe-prints text-[#D61B28]"></i>
-                <span>2. Especificaciones Técnicas y Configuración de Tarjetas por Destino</span>
+                <span>2. Configuración Numérica de Tarjetas por Destino</span>
               </span>
-              <!-- SELECTORES NUMÉRICOS SEPARADOS: CORTE (INVERTIDAS) Y PRODUCCIÓN (NORMALES) -->
+              <!-- SELECTORES NUMÉRICOS POR DEPARTAMENTO -->
               <div class="flex flex-wrap items-center gap-3 bg-gray-50 p-2 rounded-xl border border-gray-200">
                 <div class="flex items-center space-x-1.5" title="Blanca - Invierte Observaciones al centro y Firmas al final">
                   <span class="w-3.5 h-3.5 rounded-md border border-gray-400 bg-white"></span>
                   <label class="font-bold text-gray-700 text-[11px]">Corte (Invertidas):</label>
-                  <input type="number" id="count-card-corte" min="0" max="10" value="1" class="w-12 px-1.5 py-0.5 border border-gray-300 rounded font-bold text-center">
+                  <input type="number" id="count-card-corte" min="0" max="20" value="1" class="w-12 px-1.5 py-0.5 border border-gray-300 rounded font-bold text-center">
                 </div>
                 <div class="flex items-center space-x-1.5" title="Blanca - Orden normal: Firmas al centro y Observaciones al final">
                   <span class="w-3.5 h-3.5 rounded-md border border-gray-400 bg-white"></span>
                   <label class="font-bold text-gray-700 text-[11px]">Producción (Normal):</label>
-                  <input type="number" id="count-card-prod" min="0" max="10" value="1" class="w-12 px-1.5 py-0.5 border border-gray-300 rounded font-bold text-center">
+                  <input type="number" id="count-card-prod" min="0" max="20" value="1" class="w-12 px-1.5 py-0.5 border border-gray-300 rounded font-bold text-center">
                 </div>
                 <div class="flex items-center space-x-1.5">
                   <span class="w-3.5 h-3.5 rounded-md border border-emerald-600 bg-[#80C342]" title="Retail"></span>
                   <label class="font-bold text-gray-700 text-[11px]">Retail (Verde):</label>
-                  <input type="number" id="count-card-verde" min="0" max="10" value="1" class="w-12 px-1.5 py-0.5 border border-gray-300 rounded font-bold text-center">
+                  <input type="number" id="count-card-verde" min="0" max="20" value="1" class="w-12 px-1.5 py-0.5 border border-gray-300 rounded font-bold text-center">
                 </div>
                 <div class="flex items-center space-x-1.5">
                   <span class="w-3.5 h-3.5 rounded-md border border-amber-500 bg-[#FFF200]" title="Planeamiento"></span>
                   <label class="font-bold text-gray-700 text-[11px]">Plan (Amarillo):</label>
-                  <input type="number" id="count-card-amarilla" min="0" max="10" value="1" class="w-12 px-1.5 py-0.5 border border-gray-300 rounded font-bold text-center">
+                  <input type="number" id="count-card-amarilla" min="0" max="20" value="1" class="w-12 px-1.5 py-0.5 border border-gray-300 rounded font-bold text-center">
                 </div>
                 <div class="flex items-center space-x-1.5">
                   <span class="w-3.5 h-3.5 rounded-md border border-rose-500 bg-[#E06D8A]" title="Exportaciones"></span>
                   <label class="font-bold text-gray-700 text-[11px]">Export (Rosado):</label>
-                  <input type="number" id="count-card-rosada" min="0" max="10" value="1" class="w-12 px-1.5 py-0.5 border border-gray-300 rounded font-bold text-center">
+                  <input type="number" id="count-card-rosada" min="0" max="20" value="1" class="w-12 px-1.5 py-0.5 border border-gray-300 rounded font-bold text-center">
                 </div>
                 <div class="text-[#D61B28] font-black text-[11px] pl-2 border-l border-gray-300">
                   Total: <span id="label-total-tarjetas-count">5</span>
