@@ -44,8 +44,7 @@
       }
       #modal-reporte-entregas-print:not(.hidden), #modal-reporte-entregas-print:not(.hidden) *,
       #modal-resumen-reporte:not(.hidden), #modal-resumen-reporte:not(.hidden) *,
-      #modal-reporte-llegadas-print:not(.hidden), #modal-reporte-llegadas-print:not(.hidden) *,
-      #contenedor-tarjetas-print-area, #contenedor-tarjetas-print-area * {
+      #modal-reporte-llegadas-print:not(.hidden), #modal-reporte-llegadas-print:not(.hidden) * {
         visibility: visible !important;
       }
       #modal-reporte-entregas-print:not(.hidden), 
@@ -58,15 +57,6 @@
         margin: 0 !important;
         padding: 5mm !important;
         background: white !important;
-      }
-      #contenedor-tarjetas-print-area {
-        position: absolute !important;
-        left: 0 !important;
-        top: 0 !important;
-        width: 200mm !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        background: transparent !important;
       }
       .no-print {
         display: none !important;
@@ -604,7 +594,7 @@
           </div>
         </section>
 
-        <!-- VISTA 5: TARJETAS DE MUESTRA (PD) -->
+        <!-- VISTA 5: TARJETAS DE MUESTRA (PD) CON DISTRIBUIDOR DE COPIAS POR COLOR -->
         <section id="view-tarjetas" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -665,23 +655,38 @@
             </div>
           </div>
 
-          <!-- PANEL ESPECIFICACIONES -->
+          <!-- PANEL ESPECIFICACIONES CON SELECTOR NUMÉRICO POR COLOR -->
           <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4 text-xs">
-            <div class="border-b border-gray-100 pb-2 flex justify-between items-center">
+            <div class="border-b border-gray-100 pb-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
               <span class="font-bold text-gray-800 text-sm flex items-center space-x-1.5">
                 <i class="fa-solid fa-shoe-prints text-[#D61B28]"></i>
-                <span>2. Especificaciones Técnicas y Copias (Desarrollo)</span>
+                <span>2. Especificaciones Técnicas y Configuración de Tarjetas por Color</span>
               </span>
-              <div>
-                <label class="font-bold text-gray-700 mr-1">Cantidad / Destinos:</label>
-                <select id="select-copias-tarjeta" class="px-2 py-1 border border-gray-300 rounded-lg font-black text-[#D61B28]">
-                  <option value="5">5 Copias (2 Blancas [Corte+Prod], 1 Verde, 1 Amarilla, 1 Rosada)</option>
-                  <option value="6">6 Copias (2 Cortes [Blancas], 1 Prod [Blanca], 1 Verde, 1 Amarilla, 1 Rosada)</option>
-                  <option value="2">2 Copias (Solo 2 Cortes [Blancas])</option>
-                  <option value="4">4 Copias (1 Corte [Blanca], 1 Verde, 1 Amarilla, 1 Rosada)</option>
-                  <option value="1">1 Copia (Solo 1 Corte [Blanca])</option>
-                  <option value="3">3 Copias</option>
-                </select>
+              <!-- SELECTORES NUMÉRICOS POR DEPARTAMENTO / COLOR -->
+              <div class="flex flex-wrap items-center gap-3 bg-gray-50 p-2 rounded-xl border border-gray-200">
+                <div class="flex items-center space-x-1.5">
+                  <span class="w-3.5 h-3.5 rounded-md border border-gray-400 bg-white" title="Producción / Corte"></span>
+                  <label class="font-bold text-gray-700 text-[11px]">Blancas (Corte/Prod):</label>
+                  <input type="number" id="count-card-blanca" min="0" max="10" value="2" class="w-12 px-1.5 py-0.5 border border-gray-300 rounded font-bold text-center">
+                </div>
+                <div class="flex items-center space-x-1.5">
+                  <span class="w-3.5 h-3.5 rounded-md border border-emerald-600 bg-[#80C342]" title="Retail"></span>
+                  <label class="font-bold text-gray-700 text-[11px]">Verdes (Retail):</label>
+                  <input type="number" id="count-card-verde" min="0" max="10" value="1" class="w-12 px-1.5 py-0.5 border border-gray-300 rounded font-bold text-center">
+                </div>
+                <div class="flex items-center space-x-1.5">
+                  <span class="w-3.5 h-3.5 rounded-md border border-amber-500 bg-[#FFF200]" title="Planeamiento"></span>
+                  <label class="font-bold text-gray-700 text-[11px]">Amarillas (Plan):</label>
+                  <input type="number" id="count-card-amarilla" min="0" max="10" value="1" class="w-12 px-1.5 py-0.5 border border-gray-300 rounded font-bold text-center">
+                </div>
+                <div class="flex items-center space-x-1.5">
+                  <span class="w-3.5 h-3.5 rounded-md border border-rose-500 bg-[#E06D8A]" title="Exportaciones"></span>
+                  <label class="font-bold text-gray-700 text-[11px]">Rosadas (Export):</label>
+                  <input type="number" id="count-card-rosada" min="0" max="10" value="1" class="w-12 px-1.5 py-0.5 border border-gray-300 rounded font-bold text-center">
+                </div>
+                <div class="text-[#D61B28] font-black text-[11px] pl-2 border-l border-gray-300">
+                  Total: <span id="label-total-tarjetas-count">5</span>
+                </div>
               </div>
             </div>
 
@@ -846,7 +851,7 @@
     </div>
   </div>
 
-  <!-- MODAL: NUEVA ENTREGA (CAMPOS CONDICIONALES SIN ATRIBUTOS REQUIRED OCULTOS) -->
+  <!-- MODAL: NUEVA ENTREGA -->
   <div id="modal-nueva-entrega" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden text-xs">
       <div class="bg-[#D61B28] px-6 py-4 flex justify-between items-center text-white">
@@ -1024,7 +1029,7 @@
             <input type="date" id="lleg-fecha-real" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
           </div>
         </div>
-        <div class="pt-2 flex justify-end space-x-2">
+        <div pt-2 flex justify-end space-x-2>
           <button type="button" id="cancel-nueva-llegada" class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg font-bold cursor-pointer">Cancelar</button>
           <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold flex items-center space-x-2 shadow cursor-pointer">
             <i class="fa-solid fa-floppy-disk"></i>
