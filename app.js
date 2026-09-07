@@ -56,7 +56,7 @@ let colFiltroItemLlegada = "";
 let colFiltroNombreLlegada = "";
 let colFiltroSemanaLlegada = "";
 
-// Memoria para imágenes de Tarjeta
+// Memoria Tarjetas
 let croquisTarjetaBase64 = null;
 let plantillaCorteTarjetaBase64 = null;
 
@@ -177,7 +177,7 @@ const safeClick = (id, fn) => {
   if (el) el.onclick = fn;
 };
 
-// ==================== APERTURA DE MODALES GLOBALES (ROBUSTO) ====================
+// ==================== APERTURA DE MODALES GLOBALES ====================
 window.abrirModalCambio = () => {
   document.getElementById("modal-new-change")?.classList.remove("hidden");
 };
@@ -1057,7 +1057,7 @@ if (formMinuta) {
         esMinuta: true,
         solicitanteNombre: (userData && userData.nombre) || "Jefe Desarrollo",
         solicitanteRol: (userData && userData.rol) || "Desarrollo de producto - Jefe",
-        solicitanteId: currentUser ? currentUser.uid : null,
+        solicitanteId: currentUser.uid,
         estado: "En proceso",
         fechaRealizado: null,
         validadoCostos: false,
@@ -1102,7 +1102,7 @@ if (formNewChange) {
         esMinuta: false,
         solicitanteNombre: (userData && userData.nombre) || (currentUser && currentUser.email) || "Usuario",
         solicitanteRol: (userData && userData.rol) || "Usuario",
-        solicitanteId: currentUser ? currentUser.uid : null,
+        solicitanteId: currentUser.uid,
         estado: "En proceso",
         fechaRealizado: null,
         validadoCostos: false,
@@ -1238,27 +1238,16 @@ function initModuloTarjetas() {
       const cArt = document.getElementById("card-costo-articulo");
       const cLin = document.getElementById("card-costo-linea");
       const cMar = document.getElementById("card-costo-marca");
-      const cMat = document.getElementById("card-costo-material");
-      const cMatCorte = document.getElementById("card-material-corte");
+      const cBudRet = document.getElementById("card-costo-budret");
       const cPre = document.getElementById("card-costo-precio");
       const cMrg = document.getElementById("card-costo-margen");
 
       if (cArt) cArt.value = cols[0] || "";
-      if (cLin) cLin.value = cols[1] || "";
-      if (cMar) cMar.value = cols[2] || "BATA";
-      if (cMat) cMat.value = cols[3] || "";
-      if (cMatCorte) cMatCorte.value = cols[3] || "";
-
-      if (cols.length === 7) {
-        if (cPre) cPre.value = cols[4] || "0.00";
-        if (cMrg) cMrg.value = cols[5] || "0%";
-      } else if (cols.length >= 10) {
-        if (cPre) cPre.value = cols[8] || "0.00";
-        if (cMrg) cMrg.value = cols[9] || "0%";
-      } else {
-        if (cPre) cPre.value = cols[cols.length - 3] || "0.00";
-        if (cMrg) cMrg.value = cols[cols.length - 2] || "0%";
-      }
+      if (cLin) cLin.value = cols[2] || ""; // Línea en columna 2 de Costos
+      if (cMar) cMar.value = cols[3] || "BATA"; // Marca en columna 3
+      if (cBudRet) cBudRet.value = cols[10] || "0.00%"; // Margen % Budget RET en columna 10
+      if (cPre) cPre.value = cols[8] || "0.00"; // Precio en columna 8
+      if (cMrg) cMrg.value = cols[9] || "0%"; // Margen en columna 9
 
       renderTarjetasPreview();
     } else {
@@ -1266,14 +1255,13 @@ function initModuloTarjetas() {
     }
   });
 
-  // Escuchar inputs numéricos
   ["count-card-corte", "count-card-prod", "count-card-verde", "count-card-amarilla", "count-card-rosada"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.oninput = renderTarjetasPreview;
   });
 
   [
-    "card-costo-articulo", "card-costo-linea", "card-costo-marca", "card-costo-material", 
+    "card-costo-articulo", "card-costo-linea", "card-costo-marca", "card-costo-budret", 
     "card-costo-precio", "card-costo-margen", "card-serie", "card-fecha", "card-material-corte", 
     "card-forro", "card-plant-int", "card-tecnico", "card-horma-suela", "card-construccion", "card-observaciones"
   ].forEach(id => {
@@ -1288,6 +1276,7 @@ function initModuloTarjetas() {
     modalImpresionTarjetas?.classList.remove("hidden");
   });
 
+  // Impresión aislada por ventana emergente
   safeClick("btn-ejecutar-print-tarjetas", () => {
     const contenidoHTML = document.getElementById("contenedor-tarjetas-preview")?.innerHTML || "";
     if (!contenidoHTML) return;
@@ -1382,6 +1371,7 @@ function renderTarjetasPreview() {
   const marca = (document.getElementById("card-costo-marca")?.value || "TEENER").toUpperCase();
   const precio = document.getElementById("card-costo-precio")?.value || "259.00";
   const margen = document.getElementById("card-costo-margen")?.value || "55.00%";
+  const budRet = document.getElementById("card-costo-budret")?.value || "37.39%";
 
   const serie = document.getElementById("card-serie")?.value || "37-44";
   const fecha = document.getElementById("card-fecha")?.value || "4/9/2026";
@@ -1402,7 +1392,6 @@ function renderTarjetasPreview() {
 
   const listaAImprimir = [];
 
-  // TARJETAS DE CORTE: Blancas + Invertidas
   for (let i = 1; i <= cCortes; i++) {
     listaAImprimir.push({
       color: "#FFFFFF",
@@ -1411,7 +1400,6 @@ function renderTarjetasPreview() {
       recibePlantilla: true
     });
   }
-  // TARJETAS DE PRODUCCIÓN: Blancas + Normales
   for (let i = 1; i <= cProd; i++) {
     listaAImprimir.push({
       color: "#FFFFFF",
@@ -1420,7 +1408,6 @@ function renderTarjetasPreview() {
       recibePlantilla: false
     });
   }
-  // RETAIL: Verde
   for (let i = 1; i <= cVerdes; i++) {
     listaAImprimir.push({
       color: "#80C342",
@@ -1429,7 +1416,6 @@ function renderTarjetasPreview() {
       recibePlantilla: false
     });
   }
-  // PLANEAMIENTO: Amarillo
   for (let i = 1; i <= cAmarillas; i++) {
     listaAImprimir.push({
       color: "#FFF200",
@@ -1438,7 +1424,6 @@ function renderTarjetasPreview() {
       recibePlantilla: false
     });
   }
-  // EXPORTACIONES: Rosado
   for (let i = 1; i <= cRosadas; i++) {
     listaAImprimir.push({
       color: "#E06D8A",
@@ -1453,7 +1438,6 @@ function renderTarjetasPreview() {
   listaAImprimir.forEach((tarj) => {
     const imagenIzquierdaHTML = tarj.recibePlantilla ? siluetaPlantillaHTML : siluetaCalzadoHTML;
 
-    // PANEL DE FIRMAS
     const bloqueFirmasHTML = `
       <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:3px 5px; ${tarj.esInvertida ? '' : 'border-right:1px dashed #555;'} font-size:6.5px;">
         <div style="font-size:7px; font-weight:900; text-align:center; color:#1f2937; text-transform:uppercase; border-bottom:1px solid #d1d5db; padding-bottom:1px;">
@@ -1494,7 +1478,6 @@ function renderTarjetasPreview() {
       </div>
     `;
 
-    // PANEL DE OBSERVACIONES
     const bloqueObservacionesHTML = `
       <div class="shoe-panel" style="padding:4px; display:flex; flex-direction:column; justify-content:space-between; font-size:7px; ${tarj.esInvertida ? 'border-right:1px dashed #555;' : ''}">
         <div>
@@ -1515,7 +1498,6 @@ function renderTarjetasPreview() {
 
     tarjetasHTML += `
       <div class="shoe-card-container" style="background:#fff; display:flex; font-size:7.5px; line-height:1.1; color:#000;">
-        <!-- PANEL 1: ESPECIFICACIONES CON CUADRÍCULA -->
         <div class="shoe-panel" style="display:flex; border-right:1px dashed #555; overflow:hidden;">
           <div class="lateral-tab" style="width:16px; border-right:1px solid #000; display:flex; align-items:center; justify-content:center; font-weight:900; letter-spacing:0.1em; font-size:9px; writing-mode:vertical-rl; transform:rotate(180deg); background-color:${tarj.color} !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;">
             ${linea}
@@ -1543,30 +1525,30 @@ function renderTarjetasPreview() {
                     <td style="text-align:center; padding:0.5px;">${marca}</td>
                   </tr>
                   <tr style="border-bottom:1px solid #000;">
-                    <td style="border-right:1px solid #000; text-align:center; padding:0.5px;">SERIE:</td>
+                    <td style="border-right:1px solid #000; width:38%; text-align:center; padding:0.5px;">SERIE:</td>
                     <td style="text-align:center; padding:0.5px;">${serie}</td>
                   </tr>
                   <tr style="border-bottom:1px solid #000;">
-                    <td style="border-right:1px solid #000; text-align:center; padding:0.5px;">CORTE:</td>
+                    <td style="border-right:1px solid #000; width:38%; text-align:center; padding:0.5px;">CORTE:</td>
                     <td style="text-align:center; padding:0.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${materialCorte}</td>
                   </tr>
                   <tr style="border-bottom:1px solid #000;">
-                    <td style="border-right:1px solid #000; text-align:center; padding:0.5px;">FORRO:</td>
+                    <td style="border-right:1px solid #000; width:38%; text-align:center; padding:0.5px;">FORRO:</td>
                     <td style="text-align:center; padding:0.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${forro}</td>
                   </tr>
                   <tr>
-                    <td style="border-right:1px solid #000; text-align:center; padding:0.5px;">PLANT:</td>
+                    <td style="border-right:1px solid #000; width:38%; text-align:center; padding:0.5px;">PLANT:</td>
                     <td style="text-align:center; padding:0.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${plantInt}</td>
                   </tr>
                 </table>
               </div>
             </div>
 
-            <div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:1px; border-top:1px solid #000; font-size:6px; font-weight:800; padding-top:1px; text-align:center;">
-              <div>TEC: ${tecnico}</div>
-              <div>SUELA: ${hormaSuela}</div>
+            <!-- 3 MÉTRICAS EN LA BASE DE LA TARJETA: PRECIO, MRG %, MRG BUD -->
+            <div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:1px; border-top:1px solid #000; font-size:6px; font-weight:800; padding-top:1px; text-align:center;">
               <div>PRECIO: <b>${precio}</b></div>
               <div>MRG: <b>${margen}</b></div>
+              <div>MRG BUD: <b>${budRet}</b></div>
             </div>
           </div>
         </div>
