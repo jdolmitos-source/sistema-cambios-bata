@@ -44,7 +44,8 @@
       }
       #modal-reporte-entregas-print:not(.hidden), #modal-reporte-entregas-print:not(.hidden) *,
       #modal-resumen-reporte:not(.hidden), #modal-resumen-reporte:not(.hidden) *,
-      #modal-reporte-llegadas-print:not(.hidden), #modal-reporte-llegadas-print:not(.hidden) * {
+      #modal-reporte-llegadas-print:not(.hidden), #modal-reporte-llegadas-print:not(.hidden) *,
+      #contenedor-tarjetas-print-area, #contenedor-tarjetas-print-area * {
         visibility: visible !important;
       }
       #modal-reporte-entregas-print:not(.hidden), 
@@ -57,6 +58,15 @@
         margin: 0 !important;
         padding: 5mm !important;
         background: white !important;
+      }
+      #contenedor-tarjetas-print-area {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 200mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
       }
       .no-print {
         display: none !important;
@@ -323,11 +333,11 @@
               <p class="text-[11px] text-gray-400 font-medium mt-0.5">Mostrando todos los registros y minutas de plan piloto</p>
             </div>
             <div class="flex items-center space-x-2">
-              <button type="button" id="btn-open-minuta-header" class="hidden bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
+              <button type="button" id="btn-open-minuta-header" onclick="window.abrirModalMinuta()" class="hidden bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
                 <i class="fa-solid fa-clipboard-list"></i>
                 <span>Generar Minuta</span>
               </button>
-              <button type="button" id="btn-open-new-change" class="bg-[#D61B28] hover:bg-red-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
+              <button type="button" id="btn-open-new-change" onclick="window.abrirModalCambio()" class="bg-[#D61B28] hover:bg-red-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
                 <i class="fa-solid fa-plus"></i>
                 <span>Solicitud de Cambios</span>
               </button>
@@ -464,7 +474,7 @@
                 <i class="fa-solid fa-print text-xs"></i>
                 <span>Reporte Impreso / PDF</span>
               </button>
-              <button type="button" id="btn-open-nueva-entrega" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
+              <button type="button" id="btn-open-nueva-entrega" onclick="window.abrirModalEntrega()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
                 <i class="fa-solid fa-box-open"></i>
                 <span id="btn-text-nueva-entrega">Registrar Entrega</span>
               </button>
@@ -518,15 +528,15 @@
               <p class="text-xs text-gray-400">Control de disponibilidad de materiales restringidos y llegada de importaciones a fábrica.</p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-              <button type="button" id="btn-reporte-llegadas-pdf" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow flex items-center space-x-1.5 transition cursor-pointer">
+              <button type="button" id="btn-reporte-llegadas-pdf" onclick="window.abrirReporteImpresoLlegadas()" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow flex items-center space-x-1.5 transition cursor-pointer">
                 <i class="fa-solid fa-print text-xs"></i>
                 <span>Informe PDF de Llegadas</span>
               </button>
-              <button type="button" id="btn-open-nuevo-bloqueo" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow flex items-center space-x-1.5 transition cursor-pointer">
+              <button type="button" id="btn-open-nuevo-bloqueo" onclick="window.abrirModalBloqueo()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow flex items-center space-x-1.5 transition cursor-pointer">
                 <i class="fa-solid fa-ban text-xs"></i>
                 <span>Gestionar Disponibilidad</span>
               </button>
-              <button type="button" id="btn-open-nueva-llegada" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
+              <button type="button" id="btn-open-nueva-llegada" onclick="window.abrirModalLlegada()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
                 <i class="fa-solid fa-truck-fast"></i>
                 <span>Registrar Llegada</span>
               </button>
@@ -594,7 +604,7 @@
           </div>
         </section>
 
-        <!-- VISTA 5: TARJETAS DE MUESTRA (PD) CON DISTRIBUIDOR DE COPIAS POR COLOR -->
+        <!-- VISTA 5: TARJETAS DE MUESTRA (PD) CON CASILLAS POR COLOR -->
         <section id="view-tarjetas" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -662,7 +672,6 @@
                 <i class="fa-solid fa-shoe-prints text-[#D61B28]"></i>
                 <span>2. Especificaciones Técnicas y Configuración de Tarjetas por Color</span>
               </span>
-              <!-- SELECTORES NUMÉRICOS POR DEPARTAMENTO / COLOR -->
               <div class="flex flex-wrap items-center gap-3 bg-gray-50 p-2 rounded-xl border border-gray-200">
                 <div class="flex items-center space-x-1.5">
                   <span class="w-3.5 h-3.5 rounded-md border border-gray-400 bg-white" title="Producción / Corte"></span>
@@ -851,7 +860,7 @@
     </div>
   </div>
 
-  <!-- MODAL: NUEVA ENTREGA -->
+  <!-- MODAL: NUEVA ENTREGA (CAMPOS CONDICIONALES SIN REQUIRED OCULTO) -->
   <div id="modal-nueva-entrega" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden text-xs">
       <div class="bg-[#D61B28] px-6 py-4 flex justify-between items-center text-white">
@@ -1029,7 +1038,7 @@
             <input type="date" id="lleg-fecha-real" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
           </div>
         </div>
-        <div pt-2 flex justify-end space-x-2>
+        <div class="pt-2 flex justify-end space-x-2">
           <button type="button" id="cancel-nueva-llegada" class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg font-bold cursor-pointer">Cancelar</button>
           <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold flex items-center space-x-2 shadow cursor-pointer">
             <i class="fa-solid fa-floppy-disk"></i>
