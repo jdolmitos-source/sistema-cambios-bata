@@ -196,7 +196,7 @@ const modalReporteLlegadasPrint = document.getElementById("modal-reporte-llegada
 const modalImpresionTarjetas = document.getElementById("modal-impresion-tarjetas");
 const modalNewChange = document.getElementById("modal-new-change");
 
-safeClick("btn-close-whatsapp-modal", () => modalLogin && document.getElementById("modal-whatsapp")?.classList.add("hidden"));
+safeClick("btn-close-whatsapp-modal", () => document.getElementById("modal-whatsapp")?.classList.add("hidden"));
 safeClick("btn-show-login", () => modalLogin?.classList.remove("hidden"));
 safeClick("btn-show-register", () => modalRegister?.classList.remove("hidden"));
 safeClick("close-login", () => modalLogin?.classList.add("hidden"));
@@ -1224,6 +1224,7 @@ function initModuloTarjetas() {
     if (elem) elem.oninput = renderTarjetasPreview;
   });
 
+  // Abrir modal de vista previa
   safeClick("btn-imprimir-tarjetas-action", () => {
     const previewHTML = document.getElementById("contenedor-tarjetas-preview")?.innerHTML || "";
     const hTarj = document.getElementById("hoja-impresion-tarjetas");
@@ -1231,16 +1232,77 @@ function initModuloTarjetas() {
     modalImpresionTarjetas?.classList.remove("hidden");
   });
 
+  // Impresión aislada por ventana dedicada (garantiza cero congelamiento en la app)
   safeClick("btn-ejecutar-print-tarjetas", () => {
-    const printArea = document.getElementById("contenedor-tarjetas-print-area");
-    if (!printArea) return;
-    printArea.innerHTML = document.getElementById("contenedor-tarjetas-preview")?.innerHTML || "";
-    printArea.classList.remove("hidden");
-    
+    const contenidoHTML = document.getElementById("contenedor-tarjetas-preview")?.innerHTML || "";
+    if (!contenidoHTML) return;
+
+    const ventanaPrint = window.open("", "_blank", "width=900,height=650");
+    if (!ventanaPrint) {
+      alert("Por favor permite las ventanas emergentes para imprimir las tarjetas.");
+      return;
+    }
+
+    ventanaPrint.document.open();
+    ventanaPrint.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Impresión de Tarjetas - Bata Bolivia</title>
+        <style>
+          @page {
+            size: letter portrait;
+            margin: 8mm;
+          }
+          * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          html, body {
+            margin: 0;
+            padding: 0;
+            background: #fff;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          }
+          .shoe-card-container {
+            width: 200mm !important;
+            height: 34mm !important;
+            max-height: 34mm !important;
+            border: 1px solid #000 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            display: flex;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            background: #fff;
+          }
+          .shoe-panel {
+            width: 66.66mm !important;
+            height: 100% !important;
+            box-sizing: border-box !important;
+          }
+          .lateral-tab {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+        </style>
+      </head>
+      <body>
+        <div style="display:flex; flex-direction:column; align-items:flex-start; margin:0; padding:0;">
+          ${contenidoHTML}
+        </div>
+      </body>
+      </html>
+    `);
+    ventanaPrint.document.close();
+
     setTimeout(() => {
-      window.print();
-      printArea.classList.add("hidden");
-    }, 150);
+      ventanaPrint.focus();
+      ventanaPrint.print();
+      ventanaPrint.close();
+    }, 250);
   });
 
   renderTarjetasPreview();
@@ -1283,7 +1345,30 @@ function renderTarjetasPreview() {
     let etiquetaAprobacion = "PRODUCCIÓN";
     let esTarjetaCorte = false;
 
-    if (copias === 5) {
+    // Distribución según cantidad de copias
+    if (copias === 6) {
+      if (i === 1) {
+        bgColorLateral = "#FFFFFF";
+        etiquetaAprobacion = "CORTE #1 (PRODUCCIÓN)";
+        esTarjetaCorte = true;
+      } else if (i === 2) {
+        bgColorLateral = "#FFFFFF";
+        etiquetaAprobacion = "CORTE #2 (PRODUCCIÓN)";
+        esTarjetaCorte = true;
+      } else if (i === 3) {
+        bgColorLateral = "#FFFFFF";
+        etiquetaAprobacion = "PRODUCCIÓN";
+      } else if (i === 4) {
+        bgColorLateral = "#80C342"; // Verde Claro Retail
+        etiquetaAprobacion = "RETAIL";
+      } else if (i === 5) {
+        bgColorLateral = "#FFF200"; // Amarillo Planeamiento
+        etiquetaAprobacion = "PLANEAMIENTO";
+      } else if (i === 6) {
+        bgColorLateral = "#E06D8A"; // Rosado Exportación
+        etiquetaAprobacion = "EXPORTACIÓN";
+      }
+    } else if (copias === 5) {
       if (i === 1) {
         bgColorLateral = "#FFFFFF";
         etiquetaAprobacion = "CORTE (PRODUCCIÓN)";
@@ -1292,15 +1377,19 @@ function renderTarjetasPreview() {
         bgColorLateral = "#FFFFFF";
         etiquetaAprobacion = "PRODUCCIÓN";
       } else if (i === 3) {
-        bgColorLateral = "#80C342"; // Verde Claro Retail
+        bgColorLateral = "#80C342";
         etiquetaAprobacion = "RETAIL";
       } else if (i === 4) {
-        bgColorLateral = "#FFF200"; // Amarillo Planeamiento
+        bgColorLateral = "#FFF200";
         etiquetaAprobacion = "PLANEAMIENTO";
       } else if (i === 5) {
-        bgColorLateral = "#E06D8A"; // Rosado Exportación
+        bgColorLateral = "#E06D8A";
         etiquetaAprobacion = "EXPORTACIÓN";
       }
+    } else if (copias === 2) {
+      bgColorLateral = "#FFFFFF";
+      etiquetaAprobacion = `CORTE #${i} (PRODUCCIÓN)`;
+      esTarjetaCorte = true;
     } else if (copias === 4) {
       if (i === 1) {
         bgColorLateral = "#FFFFFF";
@@ -1322,9 +1411,70 @@ function renderTarjetasPreview() {
 
     const imagenIzquierdaHTML = esTarjetaCorte ? siluetaPlantillaHTML : siluetaCalzadoHTML;
 
+    // PANEL DE FIRMAS REDISEÑADO: Máximo espacio superior para firmar y cargos empujados a la base
+    const bloqueFirmasHTML = `
+      <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:3px 5px; ${esTarjetaCorte ? '' : 'border-right:1px dashed #555;'} font-size:6.5px;">
+        <div style="font-size:7px; font-weight:900; text-align:center; color:#1f2937; text-transform:uppercase; border-bottom:1px solid #d1d5db; padding-bottom:1px;">
+          APROBACIONES (${etiquetaAprobacion})
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; text-align:center; align-items:end; margin-top:1px;">
+          <div style="display:flex; flex-direction:column; justify-content:flex-end; height:12mm;">
+            <div style="border-bottom:1px solid #000; width:100%; margin-bottom:1px;"></div>
+            <span style="font-weight:bold; font-size:6px; display:block;">P.D. CHIEF</span>
+            <span style="font-size:5px; color:#9ca3af;">Fecha: ___/___/___</span>
+          </div>
+          <div style="display:flex; flex-direction:column; justify-content:flex-end; height:12mm;">
+            <div style="border-bottom:1px solid #000; width:100%; margin-bottom:1px;"></div>
+            <span style="font-weight:bold; font-size:6px; display:block;">MERCHANDISING MAN.</span>
+            <span style="font-size:5px; color:#9ca3af;">Fecha: ___/___/___</span>
+          </div>
+        </div>
+
+        <div style="text-align:center; width:65%; margin:0 auto; display:flex; flex-direction:column; justify-content:flex-end; height:10mm;">
+          <div style="border-bottom:1px solid #000; width:100%; margin-bottom:1px;"></div>
+          <span style="font-weight:bold; font-size:6px; display:block;">PURCHASING MANAGER</span>
+          <span style="font-size:5px; color:#9ca3af;">Fecha: ___/___/___</span>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; text-align:center; align-items:end;">
+          <div style="display:flex; flex-direction:column; justify-content:flex-end; height:10mm;">
+            <div style="border-bottom:1px solid #000; width:100%; margin-bottom:1px;"></div>
+            <span style="font-weight:bold; font-size:6px; display:block;">PRODUCTION MANAGER</span>
+            <span style="font-size:5px; color:#9ca3af;">Fecha: ___/___/___</span>
+          </div>
+          <div style="display:flex; flex-direction:column; justify-content:flex-end; height:10mm;">
+            <div style="border-bottom:1px solid #000; width:100%; margin-bottom:1px;"></div>
+            <span style="font-weight:bold; font-size:6px; display:block;">COUNTRY MANAGER</span>
+            <span style="font-size:5px; color:#9ca3af;">Fecha: ___/___/___</span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // PANEL DE OBSERVACIONES
+    const bloqueObservacionesHTML = `
+      <div class="shoe-panel" style="padding:4px; display:flex; flex-direction:column; justify-content:space-between; font-size:7px; ${esTarjetaCorte ? 'border-right:1px dashed #555;' : ''}">
+        <div>
+          <span style="font-weight:900; color:#1f2937; text-transform:uppercase; display:block; margin-bottom:1px;">OBSERVACIONES:</span>
+          <p style="font-size:6.5px; color:#374151; font-style:italic; line-height:1.2;">${observaciones || 'Sin observaciones adicionales'}</p>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <div style="border-bottom:1px dotted #9ca3af; height:6px;"></div>
+          <div style="border-bottom:1px dotted #9ca3af; height:6px;"></div>
+          <div style="border-bottom:1px dotted #9ca3af; height:6px;"></div>
+          <div style="text-align:right; font-size:6px; color:#9ca3af; font-weight:bold; letter-spacing:0.1em;">BATA BOLIVIA PD</div>
+        </div>
+      </div>
+    `;
+
+    // Inversión condicional: En CORTE va Observaciones en medio (Panel 2) y Firmas al final (Panel 3)
+    const centroHTML = esTarjetaCorte ? bloqueObservacionesHTML : bloqueFirmasHTML;
+    const derechaHTML = esTarjetaCorte ? bloqueFirmasHTML : bloqueObservacionesHTML;
+
     tarjetasHTML += `
       <div class="shoe-card-container" style="background:#fff; display:flex; font-size:7.5px; line-height:1.1; color:#000;">
-        <!-- SECCIÓN 1 (66.6 mm) -->
+        <!-- PANEL 1 (66.6 mm): INFORMACIÓN TÉCNICA -->
         <div class="shoe-panel" style="display:flex; border-right:1px dashed #555; overflow:hidden;">
           <div class="lateral-tab" style="width:16px; border-right:1px solid #000; display:flex; align-items:center; justify-content:center; font-weight:900; letter-spacing:0.1em; font-size:9px; writing-mode:vertical-rl; transform:rotate(180deg); background-color:${bgColorLateral} !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;">
             ${linea}
@@ -1338,13 +1488,13 @@ function renderTarjetasPreview() {
             <div style="display:flex; flex:1;">
               <div style="width:65px; display:flex; flex-direction:column; justify-content:space-between; border-right:1px solid #000; padding-right:2px;">
                 ${imagenIzquierdaHTML}
-                <span style="font-size:6.5px; font-weight:bold;">FECHA: ${fecha}</span>
+                <span style="font-size:6px; font-weight:bold;">FECHA: ${fecha}</span>
               </div>
 
               <div style="flex:1; padding-left:4px; display:flex; flex-direction:column; justify-content:space-between;">
                 <div style="display:flex; justify-content:space-between; border-bottom:1px solid #e5e7eb;">
                   <span style="font-weight:bold;">ART:</span>
-                  <span style="font-weight:900; font-size:9px; font-family:monospace;">${articulo}</span>
+                  <span style="font-weight:900; font-size:8.5px; font-family:monospace;">${articulo}</span>
                 </div>
                 <div style="display:flex; justify-content:space-between; border-bottom:1px solid #e5e7eb;">
                   <span style="font-weight:bold;">MARCA:</span>
@@ -1378,201 +1528,17 @@ function renderTarjetasPreview() {
           </div>
         </div>
 
-        <!-- SECCIÓN 2 (66.6 mm) -->
-        <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:5px; border-right:1px dashed #555; font-size:7px;">
-          <div style="font-size:7.5px; font-weight:900; text-align:center; color:#374151; text-transform:uppercase; border-bottom:1px solid #d1d5db; padding-bottom:2px;">
-            APROBACIONES (${etiquetaAprobacion})
-          </div>
+        <!-- PANEL 2 -->
+        ${centroHTML}
 
-          <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:4px; text-align:center;">
-            <div style="border-bottom:1px solid #000; padding-bottom:2px;">
-              <span style="font-weight:bold; display:block;">P.D. CHIEF</span>
-              <span style="font-size:6px; color:#9ca3af;">Fecha: ___/___/___</span>
-            </div>
-            <div style="border-bottom:1px solid #000; padding-bottom:2px;">
-              <span style="font-weight:bold; display:block;">MERCHANDISING MAN.</span>
-              <span style="font-size:6px; color:#9ca3af;">Fecha: ___/___/___</span>
-            </div>
-          </div>
-
-          <div style="text-align:center; border-bottom:1px solid #000; padding-bottom:2px; margin:auto; width:75%;">
-            <span style="font-weight:bold; display:block;">PURCHASING MANAGER</span>
-            <span style="font-size:6px; color:#9ca3af;">Fecha: ___/___/___</span>
-          </div>
-
-          <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:4px; text-align:center;">
-            <div style="border-bottom:1px solid #000; padding-bottom:2px;">
-              <span style="font-weight:bold; display:block;">PRODUCTION MANAGER</span>
-              <span style="font-size:6px; color:#9ca3af;">Fecha: ___/___/___</span>
-            </div>
-            <div style="border-bottom:1px solid #000; padding-bottom:2px;">
-              <span style="font-weight:bold; display:block;">COUNTRY MANAGER</span>
-              <span style="font-size:6px; color:#9ca3af;">Fecha: ___/___/___</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- SECCIÓN 3 (66.6 mm) -->
-        <div class="shoe-panel" style="padding:5px; display:flex; flex-direction:column; justify-content:space-between; font-size:7.5px;">
-          <div>
-            <span style="font-weight:900; color:#1f2937; text-transform:uppercase; display:block; margin-bottom:2px;">OBSERVACIONES:</span>
-            <p style="font-size:7px; color:#374151; font-style:italic; line-height:1.2;">${observaciones || 'Sin observaciones adicionales'}</p>
-          </div>
-          <div style="display:flex; flex-direction:column; gap:4px;">
-            <div style="border-bottom:1px dotted #9ca3af; height:6px;"></div>
-            <div style="border-bottom:1px dotted #9ca3af; height:6px;"></div>
-            <div style="border-bottom:1px dotted #9ca3af; height:6px;"></div>
-            <div style="text-align:right; font-size:6px; color:#9ca3af; font-weight:bold; letter-spacing:0.1em;">BATA BOLIVIA PD</div>
-          </div>
-        </div>
+        <!-- PANEL 3 -->
+        ${derechaHTML}
       </div>
     `;
   }
 
   container.innerHTML = tarjetasHTML;
 }
-
-// ==================== PANEL SUPER ADMIN ====================
-async function cargarPanelSuperAdmin() {
-  if (!esSuperAdmin()) return;
-
-  const tbodyUsers = document.getElementById("table-users-body");
-  const tbodySols = document.getElementById("table-admin-solicitudes-body");
-  const tbodyEnts = document.getElementById("table-admin-entregas-body");
-
-  if (tbodyUsers) tbodyUsers.innerHTML = `<tr><td colspan="6" class="p-3 text-center text-gray-400">Cargando usuarios...</td></tr>`;
-
-  try {
-    const snap = await getDocs(collection(db, "usuarios"));
-    if (tbodyUsers) {
-      tbodyUsers.innerHTML = "";
-      snap.forEach(docU => {
-        const u = docU.data();
-        const tr = document.createElement("tr");
-        tr.className = "hover:bg-gray-50 border-b border-gray-100";
-        
-        const avatar = u.foto 
-          ? `<img src="${u.foto}" class="w-7 h-7 rounded-full object-cover">` 
-          : `<div class="w-7 h-7 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center"><i class="fa-solid fa-user text-[10px]"></i></div>`;
-
-        tr.innerHTML = `
-          <td class="p-3">${avatar}</td>
-          <td class="p-3 font-bold text-gray-800">${u.nombre || '—'}</td>
-          <td class="p-3 text-gray-600">${u.email || '—'}</td>
-          <td class="p-3 font-mono text-gray-600">${u.celular ? '+591 ' + u.celular : '<span class="text-red-400">Sin celular</span>'}</td>
-          <td class="p-3">
-            <select onchange="window.cambiarRolUsuario('${docU.id}', this.value)" class="border border-gray-300 rounded px-2 py-1 text-xs bg-white font-semibold text-gray-700 focus:ring-1 focus:ring-[#D61B28]">
-              <option value="Calidad" ${u.rol === 'Calidad' ? 'selected' : ''}>Calidad</option>
-              <option value="Costos" ${u.rol === 'Costos' ? 'selected' : ''}>Costos</option>
-              <option value="Compras" ${u.rol === 'Compras' ? 'selected' : ''}>Compras</option>
-              <option value="Compras Admin" ${u.rol === 'Compras Admin' ? 'selected' : ''}>Compras Admin</option>
-              <option value="Almacén" ${u.rol === 'Almacén' ? 'selected' : ''}>Almacén</option>
-              <option value="Producción" ${u.rol === 'Producción' ? 'selected' : ''}>Producción</option>
-              <option value="Planeamiento" ${u.rol === 'Planeamiento' ? 'selected' : ''}>Planeamiento</option>
-              <option value="Retail" ${u.rol === 'Retail' ? 'selected' : ''}>Retail</option>
-              <option value="Desarrollo de producto" ${u.rol === 'Desarrollo de producto' ? 'selected' : ''}>Desarrollo (General)</option>
-              <option value="Desarrollo de producto - Técnico" ${u.rol === 'Desarrollo de producto - Técnico' ? 'selected' : ''}>Desarrollo - Técnico (Modelista)</option>
-              <option value="Desarrollo de producto - Jefe" ${u.rol === 'Desarrollo de producto - Jefe' ? 'selected' : ''}>Desarrollo - Jefe</option>
-            </select>
-          </td>
-          <td class="p-3 text-center">
-            ${docU.id !== currentUser.uid ? `
-              <button onclick="window.eliminarUsuarioDoc('${docU.id}', '${u.nombre}')" class="text-red-600 hover:text-red-800 font-bold text-xs cursor-pointer">
-                <i class="fa-solid fa-trash"></i> Eliminar
-              </button>
-            ` : '<span class="text-gray-400 text-[10px] font-bold">Super Admin</span>'}
-          </td>
-        `;
-        tbodyUsers.appendChild(tr);
-      });
-    }
-
-    if (tbodySols) {
-      tbodySols.innerHTML = "";
-      if (solicitudes.length === 0) {
-        tbodySols.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400">No hay solicitudes registradas.</td></tr>`;
-      } else {
-        solicitudes.forEach(sol => {
-          const tr = document.createElement("tr");
-          tr.className = "hover:bg-gray-50 border-b border-gray-100";
-          tr.innerHTML = `
-            <td class="p-3 font-semibold text-gray-500 font-mono">${sol.semana || '—'}</td>
-            <td class="p-3 text-gray-600 whitespace-nowrap">${formatearFecha(sol.fechaCreacion)}</td>
-            <td class="p-3">
-              ${sol.esMinuta ? '<span class="bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded text-[10px]">MINUTA PILOTO</span>' : '<span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-[10px]">CAMBIO</span>'}
-            </td>
-            <td class="p-3 font-bold text-gray-800">${sol.proyecto}</td>
-            <td class="p-3 font-mono text-gray-700">${sol.articulo}</td>
-            <td class="p-3 text-gray-600">${sol.solicitanteNombre || '—'}</td>
-            <td class="p-3"><span class="px-2 py-0.5 rounded font-bold text-[10px] ${sol.estado === 'Realizado' ? 'bg-green-50 text-green-700' : (sol.estado === 'Retrasado' ? 'bg-red-50 text-red-700' : 'bg-orange-50 text-orange-700')}">${sol.estado}</span></td>
-            <td class="p-3 text-center">
-              <button onclick="window.eliminarSolicitudProyecto('${sol.id}', '${sol.proyecto}')" class="text-red-500 hover:text-red-700 p-1 rounded font-bold text-xs cursor-pointer">
-                <i class="fa-solid fa-trash-can"></i> Eliminar
-              </button>
-            </td>
-          `;
-          tbodySols.appendChild(tr);
-        });
-      }
-    }
-
-    if (tbodyEnts) {
-      tbodyEnts.innerHTML = "";
-      if (entregas.length === 0) {
-        tbodyEnts.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-400">No hay entregas registradas.</td></tr>`;
-      } else {
-        entregas.forEach(ent => {
-          const tr = document.createElement("tr");
-          tr.className = "hover:bg-gray-50 border-b border-gray-100";
-          tr.innerHTML = `
-            <td class="p-3 font-semibold text-gray-500 font-mono">${ent.semana || '—'}</td>
-            <td class="p-3 text-gray-600 whitespace-nowrap">${formatearFecha(ent.fechaEntrega)}</td>
-            <td class="p-3 font-semibold text-[#D61B28]">${ent.tipo}</td>
-            <td class="p-3 font-bold text-gray-800">${ent.proyecto} ${ent.copias ? '(' + ent.copias + ' copias)' : ''}</td>
-            <td class="p-3 font-mono text-gray-700">${ent.articulo || '—'}</td>
-            <td class="p-3 font-bold text-gray-700">${ent.destino}</td>
-            <td class="p-3 text-center">
-              <button onclick="window.eliminarEntregaDoc('${ent.id}', '${ent.tipo}', '${ent.proyecto}')" class="text-red-500 hover:text-red-700 p-1 rounded font-bold text-xs cursor-pointer">
-                <i class="fa-solid fa-trash-can"></i> Eliminar
-              </button>
-            </td>
-          `;
-          tbodyEnts.appendChild(tr);
-        });
-      }
-    }
-
-  } catch (error) {
-    console.error("Error al cargar panel Super Admin:", error);
-    if (tbodyUsers) tbodyUsers.innerHTML = `<tr><td colspan="6" class="p-3 text-center text-red-500">Error al cargar datos. Comprueba la conexión y reglas de Firestore.</td></tr>`;
-  }
-}
-
-window.cambiarRolUsuario = async (userId, nuevoRol) => {
-  await updateDoc(doc(db, "usuarios", userId), { rol: nuevoRol });
-  alert("Rol asignado correctamente.");
-};
-
-window.eliminarUsuarioDoc = async (id, nombre) => {
-  if (confirm(`¿Eliminar al usuario ${nombre}?`)) {
-    await deleteDoc(doc(db, "usuarios", id));
-    cargarPanelSuperAdmin();
-  }
-};
-
-window.eliminarSolicitudProyecto = async (id, proyecto) => {
-  if (confirm(`¿Eliminar el registro "${proyecto}" permanentemente de la base de datos?`)) {
-    await deleteDoc(doc(db, "solicitudes_cambios", id));
-    cargarPanelSuperAdmin();
-  }
-};
-
-window.eliminarEntregaDoc = async (id, tipo, proyecto) => {
-  if (confirm(`¿Eliminar la entrega "${tipo}" del proyecto/material "${proyecto}" permanentemente?`)) {
-    await deleteDoc(doc(db, "entregas_departamentos", id));
-    cargarPanelSuperAdmin();
-  }
-};
 
 // ==================== TABLA GENERAL DE ENTREGAS ====================
 function escucharEntregas() {
@@ -1787,6 +1753,10 @@ function abrirResumenTextoEntregas() {
   modalEntregasTexto?.classList.remove("hidden");
 }
 
+// Listeners de reportes de entregas
+safeClick("btn-reporte-entregas-pdf", abrirReporteImpresoEntregas);
+safeClick("btn-reporte-entregas-texto", abrirResumenTextoEntregas);
+
 // Escucha en tiempo real de Solicitudes
 function escucharCambios() {
   const q = query(collection(db, "solicitudes_cambios"));
@@ -1972,163 +1942,3 @@ window.desbloquearValidacionCostos = async (id) => {
     await updateDoc(doc(db, "solicitudes_cambios", id), { validadoCostos: false });
   }
 };
-
-// Nueva Entrega
-safeClick("btn-open-nueva-entrega", () => {
-  const esAdmin = esSuperAdmin();
-  const rol = (userData && userData.rol) || "";
-  const esDesarrolloRol = rol.includes("Desarrollo") || esAdmin;
-  const esCostos = rol === "Costos" || esAdmin;
-
-  if (!esDesarrolloRol && !esCostos && !esAdmin) {
-    alert("Solo usuarios autorizados pueden registrar entregas.");
-    return;
-  }
-
-  const selectTipo = document.getElementById("ent-tipo");
-  if (!selectTipo) return;
-  selectTipo.innerHTML = "";
-
-  if (categoriaEntregaActiva !== "todas") {
-    selectTipo.innerHTML += `<option value="${categoriaEntregaActiva}">${categoriaEntregaActiva}</option>`;
-  } else {
-    selectTipo.innerHTML += `<option value="GUÍA DE PRODUCCIÓN">GUÍA DE PRODUCCIÓN</option>`;
-    selectTipo.innerHTML += `<option value="CORTE">CORTE</option>`;
-    selectTipo.innerHTML += `<option value="MUESTRA DEFINITIVA">MUESTRA DEFINITIVA</option>`;
-    selectTipo.innerHTML += `<option value="MATERIALES">MATERIALES</option>`;
-    selectTipo.innerHTML += `<option value="HOJA DE DESBASTE">HOJA DE DESBASTE</option>`;
-    selectTipo.innerHTML += `<option value="TIZADORES">TIZADORES</option>`;
-  }
-
-  actualizarCamposSegunTipoEntrega();
-  modalNuevaEntrega?.classList.remove("hidden");
-});
-
-const selEntTipo = document.getElementById("ent-tipo");
-if (selEntTipo) selEntTipo.onchange = actualizarCamposSegunTipoEntrega;
-
-function actualizarCamposSegunTipoEntrega() {
-  const tipo = document.getElementById("ent-tipo")?.value;
-  const selectDestino = document.getElementById("ent-destino");
-  const boxArticulo = document.getElementById("box-field-articulo");
-  const labelProy = document.getElementById("label-field-proyecto");
-  const inputProy = document.getElementById("ent-proyecto");
-  const boxFoto = document.getElementById("box-field-foto");
-  const boxCopias = document.getElementById("box-field-copias");
-  const containerSingle = document.getElementById("container-destino-single");
-  const containerMultiple = document.getElementById("container-destino-multiple");
-
-  if (!selectDestino) return;
-  selectDestino.innerHTML = "";
-  boxCopias?.classList.add("hidden");
-  containerMultiple?.classList.add("hidden");
-  containerSingle?.classList.remove("hidden");
-  boxFoto?.classList.add("hidden");
-
-  if (tipo === "MATERIALES") {
-    if (labelProy) labelProy.textContent = "Nombre del Material / Insumo";
-    if (inputProy) inputProy.placeholder = "Ej: Badana Beige 1.2mm";
-    boxArticulo?.classList.add("hidden");
-    selectDestino.innerHTML += `<option value="Desarrollo de producto">Desarrollo de producto</option>`;
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-    return;
-  }
-
-  boxArticulo?.classList.remove("hidden");
-  if (labelProy) labelProy.textContent = "Nombre del Proyecto";
-  if (inputProy) inputProy.placeholder = "Ej: SKATER";
-
-  if (tipo === "GUÍA DE PRODUCCIÓN") {
-    boxFoto?.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
-  }
-  else if (tipo === "CORTE") {
-    boxFoto?.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-  }
-  else if (tipo === "MUESTRA DEFINITIVA") {
-    boxFoto?.classList.remove("hidden");
-    containerSingle?.classList.add("hidden");
-    containerMultiple?.classList.remove("hidden");
-  }
-  else if (tipo === "HOJA DE DESBASTE") {
-    boxFoto?.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-  }
-  else if (tipo === "TIZADORES") {
-    boxCopias?.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-  }
-}
-
-const formEntrega = document.getElementById("form-nueva-entrega");
-if (formEntrega) {
-  formEntrega.onsubmit = async (e) => {
-    e.preventDefault();
-    const semana = document.getElementById("ent-semana").value.trim();
-    const proyecto = document.getElementById("ent-proyecto").value.trim();
-    const articulo = document.getElementById("ent-articulo").value.trim();
-    const tipo = document.getElementById("ent-tipo").value;
-    const notas = document.getElementById("ent-notas").value.trim();
-    const copias = document.getElementById("ent-copias").value.trim();
-    const photoFile = document.getElementById("ent-photo").files[0];
-
-    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
-
-    try {
-      let destinosAEntregar = [];
-
-      if (tipo === "MUESTRA DEFINITIVA") {
-        destinosAEntregar = Array.from(document.querySelectorAll(".chk-muestras-dest:checked")).map(c => c.value);
-        if (destinosAEntregar.length === 0) {
-          alert("Selecciona al menos un departamento para la muestra definitiva.");
-          return;
-        }
-      } else {
-        destinosAEntregar = [document.getElementById("ent-destino").value];
-      }
-
-      const nombreUsuario = (userData && userData.nombre) || (currentUser && currentUser.email) || "Usuario";
-      const rolUsuario = (userData && userData.rol) || (esSuperAdmin() ? "Super Admin" : "Desarrollo de producto");
-
-      for (const destino of destinosAEntregar) {
-        await addDoc(collection(db, "entregas_departamentos"), {
-          semana,
-          proyecto,
-          articulo: tipo === "MATERIALES" ? "" : articulo,
-          tipo,
-          destino,
-          copias: tipo === "TIZADORES" ? (copias || "1") : null,
-          foto: fotoBase64,
-          notas,
-          entregadoPorNombre: nombreUsuario,
-          entregadoPorRol: rolUsuario,
-          entregadoPorId: currentUser ? currentUser.uid : null,
-          recibido: false,
-          fechaEntrega: new Date().toISOString(),
-          timestamp: serverTimestamp()
-        });
-      }
-
-      formEntrega.reset();
-      modalNuevaEntrega?.classList.add("hidden");
-
-      const destinosTexto = destinosAEntregar.join(", ");
-      let detalleCopias = (tipo === "TIZADORES" && copias) ? `📑 *Copias:* ${copias}\n` : '';
-
-      abrirModalWhatsApp({
-        titulo: "Entrega Registrada",
-        subtitulo: `Notificar recepción a los encargados de ${destinosTexto}:`,
-        mensajeTexto: `📦 ENTREGA REALIZADA - PD BOLIVIA\n\n📅 *Semana:* ${semana}\n📌 *Elemento:* ${tipo}\n🏷️ *Detalle/Proyecto:* ${proyecto}\n${articulo ? '🔢 *Artículo:* ' + articulo + '\n' : ''}${detalleCopias}👤 *Entregado por:* ${nombreUsuario} (${rolUsuario})\n🏢 *Destino:* ${destinosTexto}\n📝 *Notas:* ${notas || 'Sin notas adicionales'}\n\n_Favor de confirmar la recepción física en el sistema._`,
-        rolFiltro: destinosAEntregar.length === 1 ? destinosAEntregar[0] : null
-      });
-    } catch (err) {
-      alert("Error al registrar entrega: " + err.message);
-    }
-  };
-}
-
-safeClick("btn-reporte-entregas-pdf", abrirReporteImpresoEntregas);
-safeClick("btn-reporte-entregas-texto", abrirResumenTextoEntregas);
