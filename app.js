@@ -56,7 +56,7 @@ let colFiltroItemLlegada = "";
 let colFiltroNombreLlegada = "";
 let colFiltroSemanaLlegada = "";
 
-// Memoria Tarjetas
+// Memoria para imágenes de Tarjeta
 let croquisTarjetaBase64 = null;
 let plantillaCorteTarjetaBase64 = null;
 
@@ -177,7 +177,7 @@ const safeClick = (id, fn) => {
   if (el) el.onclick = fn;
 };
 
-// ==================== APERTURA DE MODALES GLOBALES ====================
+// ==================== APERTURA DE MODALES GLOBALES (ROBUSTO) ====================
 window.abrirModalCambio = () => {
   document.getElementById("modal-new-change")?.classList.remove("hidden");
 };
@@ -366,11 +366,6 @@ safeClick("close-nueva-llegada", () => modalNuevaLlegada?.classList.add("hidden"
 safeClick("cancel-nueva-llegada", () => modalNuevaLlegada?.classList.add("hidden"));
 safeClick("close-modal-llegadas-print", () => modalReporteLlegadasPrint?.classList.add("hidden"));
 safeClick("close-modal-tarjetas", () => modalImpresionTarjetas?.classList.add("hidden"));
-safeClick("btn-open-new-change", window.abrirModalCambio);
-safeClick("btn-open-minuta-header", window.abrirModalMinuta);
-safeClick("btn-open-nueva-entrega", window.abrirModalEntrega);
-safeClick("btn-open-nuevo-bloqueo", window.abrirModalBloqueo);
-safeClick("btn-open-nueva-llegada", window.abrirModalLlegada);
 safeClick("modal-btn-close", () => modalNewChange?.classList.add("hidden"));
 safeClick("modal-btn-cancel", () => modalNewChange?.classList.add("hidden"));
 
@@ -1062,7 +1057,7 @@ if (formMinuta) {
         esMinuta: true,
         solicitanteNombre: (userData && userData.nombre) || "Jefe Desarrollo",
         solicitanteRol: (userData && userData.rol) || "Desarrollo de producto - Jefe",
-        solicitanteId: currentUser.uid,
+        solicitanteId: currentUser ? currentUser.uid : null,
         estado: "En proceso",
         fechaRealizado: null,
         validadoCostos: false,
@@ -1130,65 +1125,6 @@ if (formNewChange) {
 }
 
 // Nueva Entrega
-const selEntTipo = document.getElementById("ent-tipo");
-if (selEntTipo) selEntTipo.onchange = actualizarCamposSegunTipoEntrega;
-
-function actualizarCamposSegunTipoEntrega() {
-  const tipo = document.getElementById("ent-tipo")?.value;
-  const selectDestino = document.getElementById("ent-destino");
-  const boxArticulo = document.getElementById("box-field-articulo");
-  const labelProy = document.getElementById("label-field-proyecto");
-  const inputProy = document.getElementById("ent-proyecto");
-  const boxFoto = document.getElementById("box-field-foto");
-  const boxCopias = document.getElementById("box-field-copias");
-  const containerSingle = document.getElementById("container-destino-single");
-  const containerMultiple = document.getElementById("container-destino-multiple");
-
-  if (!selectDestino) return;
-  selectDestino.innerHTML = "";
-  boxCopias?.classList.add("hidden");
-  containerMultiple?.classList.add("hidden");
-  containerSingle?.classList.remove("hidden");
-  boxFoto?.classList.add("hidden");
-
-  if (tipo === "MATERIALES") {
-    if (labelProy) labelProy.textContent = "Nombre del Material / Insumo";
-    if (inputProy) inputProy.placeholder = "Ej: Badana Beige 1.2mm";
-    boxArticulo?.classList.add("hidden");
-    selectDestino.innerHTML += `<option value="Desarrollo de producto">Desarrollo de producto</option>`;
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-    return;
-  }
-
-  boxArticulo?.classList.remove("hidden");
-  if (labelProy) labelProy.textContent = "Nombre del Proyecto";
-  if (inputProy) inputProy.placeholder = "Ej: SKATER";
-
-  if (tipo === "GUÍA DE PRODUCCIÓN") {
-    boxFoto?.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
-  }
-  else if (tipo === "CORTE") {
-    boxFoto?.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-  }
-  else if (tipo === "MUESTRA DEFINITIVA") {
-    boxFoto?.classList.remove("hidden");
-    containerSingle?.classList.add("hidden");
-    containerMultiple?.classList.remove("hidden");
-  }
-  else if (tipo === "HOJA DE DESBASTE") {
-    boxFoto?.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-  }
-  else if (tipo === "TIZADORES") {
-    boxCopias?.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-  }
-}
-
 const formEntrega = document.getElementById("form-nueva-entrega");
 if (formEntrega) {
   formEntrega.onsubmit = async (e) => {
@@ -1330,7 +1266,7 @@ function initModuloTarjetas() {
     }
   });
 
-  // Inputs numéricos de tarjetas
+  // Escuchar inputs numéricos
   ["count-card-corte", "count-card-prod", "count-card-verde", "count-card-amarilla", "count-card-rosada"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.oninput = renderTarjetasPreview;
@@ -1352,7 +1288,6 @@ function initModuloTarjetas() {
     modalImpresionTarjetas?.classList.remove("hidden");
   });
 
-  // Impresión en ventana emergente aislada
   safeClick("btn-ejecutar-print-tarjetas", () => {
     const contenidoHTML = document.getElementById("contenedor-tarjetas-preview")?.innerHTML || "";
     if (!contenidoHTML) return;
