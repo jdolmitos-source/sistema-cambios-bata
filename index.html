@@ -44,7 +44,8 @@
       }
       #modal-reporte-entregas-print:not(.hidden), #modal-reporte-entregas-print:not(.hidden) *,
       #modal-resumen-reporte:not(.hidden), #modal-resumen-reporte:not(.hidden) *,
-      #modal-reporte-llegadas-print:not(.hidden), #modal-reporte-llegadas-print:not(.hidden) * {
+      #modal-reporte-llegadas-print:not(.hidden), #modal-reporte-llegadas-print:not(.hidden) *,
+      #contenedor-tarjetas-print-area, #contenedor-tarjetas-print-area * {
         visibility: visible !important;
       }
       #modal-reporte-entregas-print:not(.hidden), 
@@ -57,6 +58,15 @@
         margin: 0 !important;
         padding: 5mm !important;
         background: white !important;
+      }
+      #contenedor-tarjetas-print-area {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 200mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
       }
       .no-print {
         display: none !important;
@@ -372,11 +382,11 @@
               <p class="text-xs text-gray-400">Filtra directamente en los encabezados de la tabla como en Excel.</p>
             </div>
             <div class="flex items-center space-x-2">
-              <button type="button" id="btn-generar-texto-wsp" class="bg-green-600 hover:bg-green-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
+              <button type="button" id="btn-generar-texto-wsp" onclick="window.generarTextoNotificacionBata()" class="bg-green-600 hover:bg-green-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
                 <i class="fa-brands fa-whatsapp text-sm"></i>
                 <span>Generar Notificación</span>
               </button>
-              <button type="button" id="btn-generar-informe-resumen" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
+              <button type="button" id="btn-generar-informe-resumen" onclick="window.generarModalInformeResumen()" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
                 <i class="fa-solid fa-file-pdf"></i>
                 <span>Generar Informe PDF</span>
               </button>
@@ -456,11 +466,11 @@
               <p id="entregas-vista-subtitulo" class="text-xs text-gray-400">Entrega de Guías de Producción, Cortes, Muestras, Tizadores y Materiales.</p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-              <button type="button" id="btn-reporte-entregas-texto" class="bg-slate-700 hover:bg-slate-800 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow flex items-center space-x-1.5 transition cursor-pointer">
+              <button type="button" id="btn-reporte-entregas-texto" onclick="window.abrirResumenTextoEntregas()" class="bg-slate-700 hover:bg-slate-800 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow flex items-center space-x-1.5 transition cursor-pointer">
                 <i class="fa-solid fa-envelope text-xs"></i>
                 <span>Resumen para Correo / WhatsApp</span>
               </button>
-              <button type="button" id="btn-reporte-entregas-pdf" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow flex items-center space-x-1.5 transition cursor-pointer">
+              <button type="button" id="btn-reporte-entregas-pdf" onclick="window.abrirReporteImpresoEntregas()" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow flex items-center space-x-1.5 transition cursor-pointer">
                 <i class="fa-solid fa-print text-xs"></i>
                 <span>Reporte Impreso / PDF</span>
               </button>
@@ -836,7 +846,7 @@
     </div>
   </div>
 
-  <!-- MODAL: NUEVA ENTREGA (CAMPOS CONDICIONALES SIN REQUIRED INVISIBLE) -->
+  <!-- MODAL: NUEVA ENTREGA (CAMPOS CONDICIONALES SIN ATRIBUTOS REQUIRED OCULTOS) -->
   <div id="modal-nueva-entrega" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden text-xs">
       <div class="bg-[#D61B28] px-6 py-4 flex justify-between items-center text-white">
