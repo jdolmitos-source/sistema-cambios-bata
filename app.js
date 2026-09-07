@@ -1378,16 +1378,17 @@ function renderTarjetasPreview() {
   const materialCorte = (document.getElementById("card-material-corte")?.value || "IMITACION").toUpperCase();
   const forro = (document.getElementById("card-forro")?.value || "PIQUE NEGRO").toUpperCase();
   const plantInt = (document.getElementById("card-plant-int")?.value || "PIQUE NEGRO / CRETONE").toUpperCase();
-  const tecnico = (document.getElementById("card-tecnico")?.value || "CARLOS ARCE").toUpperCase();
-  const hormaSuela = (document.getElementById("card-horma-suela")?.value || "QUIQUE").toUpperCase();
+  const modelista = (document.getElementById("card-tecnico")?.value || "CARLOS ARCE").toUpperCase();
+  const construccion = (document.getElementById("card-construccion")?.value || "TRUE MOC").toUpperCase();
+  const suela = (document.getElementById("card-horma-suela")?.value || "QUIQUE").toUpperCase();
   const observaciones = document.getElementById("card-observaciones")?.value || "";
 
   const siluetaCalzadoHTML = croquisTarjetaBase64 
-    ? `<img src="${croquisTarjetaBase64}" style="width:100%; height:36px; object-fit:contain; margin:auto;">`
-    : `<div style="height:36px; display:flex; align-items:center; justify-content:center; font-size:9px; color:#999; border:1px dashed #ccc; border-radius:4px;">Croquis</div>`;
+    ? `<img src="${croquisTarjetaBase64}" style="width:100%; height:32px; object-fit:contain; margin:auto;">`
+    : `<div style="height:32px; display:flex; align-items:center; justify-content:center; font-size:9px; color:#999; border:1px dashed #ccc; border-radius:4px;">Croquis</div>`;
 
   const siluetaPlantillaHTML = plantillaCorteTarjetaBase64 
-    ? `<img src="${plantillaCorteTarjetaBase64}" style="width:100%; height:36px; object-fit:contain; margin:auto;">`
+    ? `<img src="${plantillaCorteTarjetaBase64}" style="width:100%; height:32px; object-fit:contain; margin:auto;">`
     : siluetaCalzadoHTML;
 
   const listaAImprimir = [];
@@ -1498,7 +1499,7 @@ function renderTarjetasPreview() {
 
     tarjetasHTML += `
       <div class="shoe-card-container" style="background:#fff; display:flex; font-size:7.5px; line-height:1.1; color:#000;">
-        <!-- PANEL 1: ESPECIFICACIONES CON 5 CAMPOS INFERIORES -->
+        <!-- PANEL 1: ESPECIFICACIONES COMPACTAS CON LOS 6 CAMPOS INFERIORES -->
         <div class="shoe-panel" style="display:flex; border-right:1px dashed #555; overflow:hidden;">
           <div class="lateral-tab" style="width:16px; border-right:1px solid #000; display:flex; align-items:center; justify-content:center; font-weight:900; letter-spacing:0.1em; font-size:9px; writing-mode:vertical-rl; transform:rotate(180deg); background-color:${tarj.color} !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;">
             ${linea}
@@ -1515,43 +1516,45 @@ function renderTarjetasPreview() {
                 <span style="font-size:5px; font-weight:bold; text-align:center; overflow:hidden; white-space:nowrap;">${fecha}</span>
               </div>
 
+              <!-- FILAS ADELGAZADAS -->
               <div style="flex:1;">
-                <table style="width:100%; height:100%; border-collapse:collapse; font-size:7px; font-weight:900;">
-                  <tr style="border-bottom:1px solid #000;">
-                    <td style="border-right:1px solid #000; width:38%; text-align:center; padding:0.5px;">ART:</td>
-                    <td style="text-align:center; padding:0.5px; font-size:8px; font-family:monospace;">${articulo}</td>
+                <table style="width:100%; height:100%; border-collapse:collapse; font-size:6.5px; font-weight:900;">
+                  <tr style="border-bottom:1px solid #000; height:3.8mm;">
+                    <td style="border-right:1px solid #000; width:38%; text-align:center; padding:0;">ART:</td>
+                    <td style="text-align:center; padding:0; font-size:7.5px; font-family:monospace;">${articulo}</td>
                   </tr>
-                  <tr style="border-bottom:1px solid #000;">
-                    <td style="border-right:1px solid #000; text-align:center; padding:0.5px;">MARCA:</td>
-                    <td style="text-align:center; padding:0.5px;">${marca}</td>
+                  <tr style="border-bottom:1px solid #000; height:3.8mm;">
+                    <td style="border-right:1px solid #000; text-align:center; padding:0;">MARCA:</td>
+                    <td style="text-align:center; padding:0;">${marca}</td>
                   </tr>
-                  <tr style="border-bottom:1px solid #000;">
-                    <td style="border-right:1px solid #000; text-align:center; padding:0.5px;">SERIE:</td>
-                    <td style="text-align:center; padding:0.5px;">${serie}</td>
+                  <tr style="border-bottom:1px solid #000; height:3.8mm;">
+                    <td style="border-right:1px solid #000; text-align:center; padding:0;">SERIE:</td>
+                    <td style="text-align:center; padding:0;">${serie}</td>
                   </tr>
-                  <tr style="border-bottom:1px solid #000;">
-                    <td style="border-right:1px solid #000; width:38%; text-align:center; padding:0.5px;">CORTE:</td>
-                    <td style="text-align:center; padding:0.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${materialCorte}</td>
+                  <tr style="border-bottom:1px solid #000; height:3.8mm;">
+                    <td style="border-right:1px solid #000; width:38%; text-align:center; padding:0;">CORTE:</td>
+                    <td style="text-align:center; padding:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${materialCorte}</td>
                   </tr>
-                  <tr style="border-bottom:1px solid #000;">
-                    <td style="border-right:1px solid #000; width:38%; text-align:center; padding:0.5px;">FORRO:</td>
-                    <td style="text-align:center; padding:0.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${forro}</td>
+                  <tr style="border-bottom:1px solid #000; height:3.8mm;">
+                    <td style="border-right:1px solid #000; width:38%; text-align:center; padding:0;">FORRO:</td>
+                    <td style="text-align:center; padding:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${forro}</td>
                   </tr>
-                  <tr>
-                    <td style="border-right:1px solid #000; width:38%; text-align:center; padding:0.5px;">PLANT:</td>
-                    <td style="text-align:center; padding:0.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${plantInt}</td>
+                  <tr style="height:3.8mm;">
+                    <td style="border-right:1px solid #000; width:38%; text-align:center; padding:0;">PLANT:</td>
+                    <td style="text-align:center; padding:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${plantInt}</td>
                   </tr>
                 </table>
               </div>
             </div>
 
-            <!-- LOS 5 ELEMENTOS INFERIORES EN LA BASE: TEC, SUELA, PRECIO, MRG, MRG BUD -->
-            <div style="display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); gap:1px; border-top:1px solid #000; font-size:5.5px; font-weight:800; padding-top:1px; text-align:center;">
-              <div>TEC: ${tecnico}</div>
-              <div>SUELA: ${hormaSuela}</div>
-              <div>PRECIO: <b>${precio}</b></div>
-              <div>MRG: <b>${margen}</b></div>
-              <div>BUD: <b>${budRet}</b></div>
+            <!-- 6 CAMPOS INFERIORES: IZQUIERDA (MODELISTA, CONTR, SUELA) | DERECHA (PRECIO, BUD, MRG) -->
+            <div style="display:grid; grid-template-columns:repeat(6, minmax(0, 1fr)); gap:0.5px; border-top:1px solid #000; font-size:5px; font-weight:800; padding-top:1px; text-align:center;">
+              <div title="Modelista">TEC: ${tecnico}</div>
+              <div title="Construcción">CONTR: ${construccion}</div>
+              <div title="Suela">SUELA: ${suela}</div>
+              <div title="Precio Venta">PRECIO: <b>${precio}</b></div>
+              <div title="Margen Budget">BUD: <b>${budRet}</b></div>
+              <div title="Margen Actual">MRG: <b>${margen}</b></div>
             </div>
           </div>
         </div>
