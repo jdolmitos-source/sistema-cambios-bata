@@ -177,7 +177,43 @@ const safeClick = (id, fn) => {
   if (el) el.onclick = fn;
 };
 
-// ==================== REPORTES DE ENTREGAS (GLOBALES) ====================
+// ==================== APERTURA DE MODALES EXPUESTA GLOBALMENTE ====================
+window.abrirModalCambio = () => {
+  document.getElementById("modal-new-change")?.classList.remove("hidden");
+};
+
+window.abrirModalMinuta = () => {
+  document.getElementById("modal-minuta")?.classList.remove("hidden");
+};
+
+window.abrirModalEntrega = () => {
+  const selectTipo = document.getElementById("ent-tipo");
+  if (selectTipo) {
+    selectTipo.innerHTML = "";
+    if (categoriaEntregaActiva !== "todas") {
+      selectTipo.innerHTML += `<option value="${categoriaEntregaActiva}">${categoriaEntregaActiva}</option>`;
+    } else {
+      selectTipo.innerHTML += `<option value="GUÍA DE PRODUCCIÓN">GUÍA DE PRODUCCIÓN</option>`;
+      selectTipo.innerHTML += `<option value="CORTE">CORTE</option>`;
+      selectTipo.innerHTML += `<option value="MUESTRA DEFINITIVA">MUESTRA DEFINITIVA</option>`;
+      selectTipo.innerHTML += `<option value="MATERIALES">MATERIALES</option>`;
+      selectTipo.innerHTML += `<option value="HOJA DE DESBASTE">HOJA DE DESBASTE</option>`;
+      selectTipo.innerHTML += `<option value="TIZADORES">TIZADORES</option>`;
+    }
+    actualizarCamposSegunTipoEntrega();
+  }
+  document.getElementById("modal-nueva-entrega")?.classList.remove("hidden");
+};
+
+window.abrirModalBloqueo = () => {
+  document.getElementById("modal-nuevo-bloqueo")?.classList.remove("hidden");
+};
+
+window.abrirModalLlegada = () => {
+  document.getElementById("modal-nueva-llegada")?.classList.remove("hidden");
+};
+
+// ==================== REPORTES DE ENTREGAS ====================
 window.abrirReporteImpresoEntregas = () => {
   const items = entregas.filter(item => (categoriaEntregaActiva === "todas") || 
     ((item.tipo || "").toUpperCase().trim() === categoriaEntregaActiva.toUpperCase().trim()));
@@ -293,7 +329,7 @@ window.abrirResumenTextoEntregas = () => {
   if (modalTxt) modalTxt.classList.remove("hidden");
 };
 
-// Modales y Controles
+// Controles y Modales
 const welcomeContainer = document.getElementById("welcome-container");
 const appContainer = document.getElementById("app-container");
 const modalLogin = document.getElementById("modal-login");
@@ -332,12 +368,8 @@ safeClick("close-nueva-llegada", () => modalNuevaLlegada?.classList.add("hidden"
 safeClick("cancel-nueva-llegada", () => modalNuevaLlegada?.classList.add("hidden"));
 safeClick("close-modal-llegadas-print", () => modalReporteLlegadasPrint?.classList.add("hidden"));
 safeClick("close-modal-tarjetas", () => modalImpresionTarjetas?.classList.add("hidden"));
-safeClick("btn-open-new-change", () => modalNewChange?.classList.remove("hidden"));
 safeClick("modal-btn-close", () => modalNewChange?.classList.add("hidden"));
 safeClick("modal-btn-cancel", () => modalNewChange?.classList.add("hidden"));
-
-safeClick("btn-reporte-entregas-pdf", window.abrirReporteImpresoEntregas);
-safeClick("btn-reporte-entregas-texto", window.abrirResumenTextoEntregas);
 
 window.verFotoGrande = (src, titulo) => {
   if (!src) return;
@@ -538,7 +570,7 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// Navegación Principal
+// Navegación
 const viewCambios = document.getElementById("view-cambios");
 const viewInforme = document.getElementById("view-informe");
 const viewEntregas = document.getElementById("view-entregas");
@@ -714,249 +746,509 @@ window.cambiarSubmenuEntrega = (categoria) => {
   renderTablaEntregas();
 };
 
-// ==================== INFORMES ====================
-function renderInformeView() {
-  actualizarInformePorSemana();
-
-  const colSem = document.getElementById("col-filter-semana-informe");
-  const colProy = document.getElementById("col-filter-proyecto-informe");
-
-  if (colSem) {
-    colSem.oninput = (e) => {
-      colFiltroSemanaInforme = e.target.value.trim().toLowerCase();
-      actualizarInformePorSemana();
-    };
-  }
-
-  if (colProy) {
-    colProy.oninput = (e) => {
-      colFiltroProyectoInforme = e.target.value.trim().toLowerCase();
-      actualizarInformePorSemana();
-    };
-  }
-
-  const chkAll = document.getElementById("chk-toggle-all-semana");
-  if (chkAll) {
-    chkAll.onchange = (e) => {
-      const chks = document.querySelectorAll(".chk-articulo-informe");
-      chks.forEach(c => c.checked = e.target.checked);
-      actualizarConteoSeleccionados();
-    };
-  }
+// ==================== TABLA GENERAL DE ENTREGAS ====================
+function escucharEntregas() {
+  const q = query(collection(db, "entregas_departamentos"));
+  onSnapshot(q, (snapshot) => {
+    entregas = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    entregas.sort((a, b) => (b.fechaEntrega || "").localeCompare(a.fechaEntrega || ""));
+    renderTablaEntregas();
+  }, (err) => console.error("Error al escuchar entregas:", err));
 }
 
-function actualizarInformePorSemana() {
-  let articulosFiltrados = solicitudes.filter(item => {
-    const semStr = (item.semana || "").toString().toLowerCase().trim();
-    const proyStr = (item.proyecto || "").toString().toLowerCase().trim();
-    const coincideSem = !colFiltroSemanaInforme || semStr.includes(colFiltroSemanaInforme);
-    const coincideProy = !colFiltroProyectoInforme || proyStr.includes(colFiltroProyectoInforme);
-    return coincideSem && coincideProy;
-  });
-
-  articulosFiltrados.sort((a, b) => (a.semana || "").localeCompare(b.semana || "", undefined, { numeric: true }));
-
-  const total = articulosFiltrados.length;
-  const retrasados = articulosFiltrados.filter(s => s.estado === "Retrasado").length;
-  const enProceso = articulosFiltrados.filter(s => s.estado === "En proceso").length;
-  const realizados = articulosFiltrados.filter(s => s.estado === "Realizado").length;
-  const validadosCostos = articulosFiltrados.filter(s => s.validadoCostos).length;
-
-  const kTotal = document.getElementById("kpi-sem-total");
-  const kRet = document.getElementById("kpi-sem-retrasados");
-  const kProc = document.getElementById("kpi-sem-proceso");
-  const kReal = document.getElementById("kpi-sem-realizados");
-  const kCost = document.getElementById("kpi-sem-costos");
-
-  if (kTotal) kTotal.textContent = total;
-  if (kRet) kRet.textContent = retrasados;
-  if (kProc) kProc.textContent = enProceso;
-  if (kReal) kReal.textContent = realizados;
-  if (kCost) kCost.textContent = `${validadosCostos} de ${total}`;
-
-  const badgeContainer = document.getElementById("badge-congelamiento-container");
-  if (badgeContainer) {
-    if (total === 0) {
-      badgeContainer.innerHTML = `<span class="bg-gray-100 text-gray-500 font-bold text-[11px] px-3 py-1 rounded-full border border-gray-200">Sin artículos coincidentes</span>`;
-    } else if (realizados === total && validadosCostos === total) {
-      badgeContainer.innerHTML = `
-        <span class="bg-green-100 text-green-800 font-bold text-[11px] px-3.5 py-1.5 rounded-full border border-green-300 inline-flex items-center space-x-1.5 shadow-sm">
-          <i class="fa-solid fa-circle-check text-green-600"></i>
-          <span>Listo para Congelamiento (100% Realizado y Validado en Costos)</span>
-        </span>
-      `;
-    } else {
-      const pendientes = total - validadosCostos;
-      badgeContainer.innerHTML = `
-        <span class="bg-amber-50 text-amber-800 font-bold text-[11px] px-3.5 py-1.5 rounded-full border border-amber-200 inline-flex items-center space-x-1.5">
-          <i class="fa-solid fa-clock text-amber-600"></i>
-          <span>${pendientes} artículo(s) pendientes por validar en Costos</span>
-        </span>
-      `;
-    }
-  }
-
-  const tbody = document.getElementById("table-informe-articulos-body");
+function renderTablaEntregas() {
+  const tbody = document.getElementById("table-entregas-body");
+  const empty = document.getElementById("entregas-empty-state");
   if (!tbody) return;
   tbody.innerHTML = "";
 
-  if (total === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400 italic">No hay artículos que coincidan con la búsqueda.</td></tr>`;
-    actualizarConteoSeleccionados();
+  let entregasFiltradas = entregas.filter(item => {
+    const coincideCategoria = (categoriaEntregaActiva === "todas") || 
+      ((item.tipo || "").toUpperCase().trim() === categoriaEntregaActiva.toUpperCase().trim());
+    const semStr = (item.semana || "").toString().toLowerCase().trim();
+    const proyStr = (item.proyecto || "").toString().toLowerCase().trim();
+    const coincideSem = !colFiltroSemanaEntregas || semStr.includes(colFiltroSemanaEntregas);
+    const coincideProy = !colFiltroProyectoEntregas || proyStr.includes(colFiltroProyectoEntregas);
+    return coincideCategoria && coincideSem && coincideProy;
+  });
+
+  if (entregasFiltradas.length === 0) {
+    empty?.classList.remove("hidden");
     return;
   }
+  empty?.classList.add("hidden");
 
-  articulosFiltrados.forEach(item => {
+  const esAdmin = esSuperAdmin();
+
+  entregasFiltradas.forEach(ent => {
+    const tr = document.createElement("tr");
+    tr.className = "hover:bg-gray-50/80 transition border-b border-gray-100";
+
+    const puedeConfirmar = (userData && userData.rol === ent.destino) || esAdmin;
+
+    let recepcionHTML = "";
+    if (ent.recibido) {
+      recepcionHTML = `
+        <span class="text-green-700 font-bold flex items-center justify-center space-x-1">
+          <i class="fa-solid fa-circle-check text-green-600"></i>
+          <span>Recibido</span>
+        </span>
+      `;
+    } else {
+      if (puedeConfirmar) {
+        recepcionHTML = `
+          <button onclick="window.confirmarRecepcionEntrega('${ent.id}', '${ent.tipo}', '${ent.proyecto}')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-2.5 py-1 rounded-lg border border-blue-200 transition cursor-pointer">
+            Confirmar Recepción
+          </button>
+        `;
+      } else {
+        recepcionHTML = `<span class="text-amber-600 font-semibold italic text-[11px]">En tránsito a ${ent.destino}</span>`;
+      }
+    }
+
+    const fotoHTML = ent.foto 
+      ? `<img src="${ent.foto}" onclick="window.verFotoGrande('${ent.foto}', '${ent.proyecto} - ${ent.articulo || ent.tipo}')" class="w-10 h-7 object-cover rounded border border-gray-200 shadow-xs cursor-pointer hover:opacity-80 transition mx-auto" title="Click para ampliar">`
+      : `<div class="w-10 h-7 rounded border border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-[10px] mx-auto"><i class="fa-regular fa-image"></i></div>`;
+
+    const tdFotoHTML = (categoriaEntregaActiva !== "MATERIALES" && categoriaEntregaActiva !== "TIZADORES") ? `<td class="p-2 border-r border-gray-100 text-center">${fotoHTML}</td>` : '';
+    const tdArticuloHTML = categoriaEntregaActiva !== "MATERIALES" ? `<td class="p-3 font-mono text-gray-700 border-r border-gray-100">${ent.articulo || '—'}</td>` : '';
+
+    let detalleExtra = "";
+    if (ent.copias) detalleExtra += `<span class="bg-rose-100 text-rose-800 font-bold text-[9px] px-1.5 py-0.2 rounded ml-1">${ent.copias} copias</span>`;
+    if (ent.notas) detalleExtra += `<p class="text-[10px] text-gray-400 mt-0.5">${ent.notas}</p>`;
+
+    tr.innerHTML = `
+      ${tdFotoHTML}
+      <td class="p-3 font-bold text-gray-700 border-r border-gray-100 font-mono">${ent.semana || '—'}</td>
+      <td class="p-3 text-gray-600 border-r border-gray-100 whitespace-nowrap">${formatearFecha(ent.fechaEntrega)}</td>
+      <td class="p-3 font-bold text-gray-800 border-r border-gray-100">${ent.proyecto || '—'}</td>
+      ${tdArticuloHTML}
+      <td class="p-3 border-r border-gray-100">
+        <span class="bg-red-50 text-[#D61B28] px-2 py-0.5 rounded font-bold text-[10px] border border-red-100">${ent.tipo}</span>
+        ${detalleExtra}
+      </td>
+      <td class="p-3 border-r border-gray-100 whitespace-nowrap">
+        <span class="font-bold text-gray-800 block">${ent.entregadoPorNombre}</span>
+        <span class="text-[10px] text-gray-400">${ent.entregadoPorRol}</span>
+      </td>
+      <td class="p-3 border-r border-gray-100 font-bold text-gray-700">${ent.destino}</td>
+      <td class="p-3 text-center whitespace-nowrap">${recepcionHTML}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+window.confirmarRecepcionEntrega = async (id, tipo, proyecto) => {
+  if (confirm(`¿Confirmar que has recibido físicamente "${tipo}" (${proyecto})?`)) {
+    await updateDoc(doc(db, "entregas_departamentos", id), {
+      recibido: true,
+      fechaRecepcion: new Date().toISOString(),
+      recibidoPorNombre: (userData && userData.nombre) || "Usuario"
+    });
+  }
+};
+
+// Escucha en tiempo real de Solicitudes
+function escucharCambios() {
+  const q = query(collection(db, "solicitudes_cambios"));
+  onSnapshot(q, (snapshot) => {
+    const ahora = new Date();
+    solicitudes = snapshot.docs.map(docSnap => {
+      const data = docSnap.data();
+      const id = docSnap.id;
+
+      if (data.estado === "En proceso" && data.fechaCreacion) {
+        const fechaCrea = new Date(data.fechaCreacion);
+        const diferenciaDias = (ahora - fechaCrea) / (1000 * 60 * 60 * 24);
+        if (diferenciaDias >= 7) {
+          data.estado = "Retrasado";
+          updateDoc(doc(db, "solicitudes_cambios", id), { estado: "Retrasado" });
+        }
+      }
+
+      return { id, ...data };
+    });
+    solicitudes.sort((a, b) => (b.fechaCreacion || "").localeCompare(a.fechaCreacion || ""));
+    renderTabla();
+    if (!viewInforme?.classList.contains("hidden")) {
+      actualizarInformePorSemana();
+    }
+  });
+}
+
+function formatearFecha(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return d.toLocaleDateString("es-BO", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+// Render Tabla de Cambios Pública
+function renderTabla() {
+  const tbody = document.getElementById("table-cambios-body");
+  const empty = document.getElementById("table-empty-state");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  if (solicitudes.length === 0) {
+    empty?.classList.remove("hidden");
+    return;
+  }
+  empty?.classList.add("hidden");
+
+  const esAdmin = esSuperAdmin();
+  const esDesarrolloUsuario = esDesarrollo() || esAdmin;
+  const esCostos = (userData && userData.rol === "Costos") || esAdmin;
+
+  solicitudes.forEach((item) => {
     const tr = document.createElement("tr");
     tr.className = item.esMinuta 
-      ? "bg-amber-50/70 hover:bg-amber-100/70 border-b border-amber-200" 
-      : "hover:bg-gray-50/70 border-b border-gray-100";
+      ? "bg-amber-50/70 hover:bg-amber-100/70 transition border-b border-amber-200" 
+      : "hover:bg-gray-50/80 transition border-b border-gray-100";
 
-    const badgeMinuta = item.esMinuta ? `<span class="bg-amber-500 text-white font-bold text-[9px] px-1.5 py-0.2 rounded mr-1">PILOTO</span>` : '';
+    let badgeMinuta = item.esMinuta 
+      ? `<span class="bg-amber-500 text-white font-black text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider block mb-1 w-fit shadow-xs">PLAN PILOTO</span>` 
+      : '';
+
+    let estadoHTML = "";
+    if (esDesarrolloUsuario) {
+      estadoHTML = `
+        <div class="flex items-center space-x-1.5">
+          <select id="sel-estado-${item.id}" class="border border-orange-200 text-orange-600 bg-orange-50 font-semibold rounded-lg px-2 py-1 text-xs focus:ring-1 focus:ring-[#D61B28]">
+            <option value="En proceso" ${item.estado === "En proceso" ? "selected" : ""}>En proceso</option>
+            <option value="Realizado" ${item.estado === "Realizado" ? "selected" : ""}>Realizado</option>
+            <option value="Retrasado" ${item.estado === "Retrasado" ? "selected" : ""}>Retrasado</option>
+          </select>
+          <button onclick="window.guardarCambioEstado('${item.id}', '${item.proyecto}', '${item.articulo}', '${item.semana || ''}')" title="Guardar y Notificar a Costos" class="bg-gray-100 hover:bg-[#D61B28] hover:text-white text-gray-600 p-1.5 rounded-lg text-xs transition cursor-pointer">
+            <i class="fa-solid fa-floppy-disk"></i>
+          </button>
+        </div>
+      `;
+    } else {
+      const estilo = item.estado === "Realizado" ? "border-green-200 text-green-700 bg-green-50" : (item.estado === "Retrasado" ? "border-red-200 text-red-700 bg-red-50" : "border-orange-200 text-orange-600 bg-orange-50");
+      estadoHTML = `<span class="border ${estilo} px-3 py-1 rounded-lg font-bold text-xs">${item.estado}</span>`;
+    }
+
+    const fechaRealizadoHTML = item.fechaRealizado 
+      ? `<span class="font-bold text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200">${formatearFecha(item.fechaRealizado)}</span>`
+      : `<span class="text-gray-300 text-[11px]">—</span>`;
+
+    let costosHTML = "";
+    if (item.estado === "Realizado") {
+      if (item.validadoCostos) {
+        costosHTML = `
+          <div class="flex items-center justify-center space-x-1 text-green-700 font-bold text-xs">
+            <i class="fa-solid fa-circle-check text-green-600"></i>
+            <span>Validado</span>
+            ${esAdmin ? `<button onclick="window.desbloquearValidacionCostos('${item.id}')" class="text-red-500 hover:text-red-700 text-[10px] ml-1 cursor-pointer" title="Desbloquear como Super Admin"><i class="fa-solid fa-unlock"></i></button>` : ''}
+          </div>
+        `;
+      } else {
+        costosHTML = `
+          <div class="flex items-center justify-center space-x-1">
+            <input type="checkbox" ${!esCostos ? "disabled title='Solo el usuario de Costos puede validar'" : ""} 
+                   onchange="window.confirmarValidacionCostos('${item.id}', '${item.proyecto}', '${item.articulo}', this)"
+                   class="h-4 w-4 accent-[#D61B28] rounded border-gray-300 cursor-${esCostos ? 'pointer' : 'not-allowed'}">
+            <span class="text-[11px] ${esCostos ? 'text-gray-600 font-semibold' : 'text-gray-300'}">Confirmar</span>
+          </div>
+        `;
+      }
+    } else {
+      costosHTML = `<input type="checkbox" disabled class="h-4 w-4 text-gray-300 rounded border-gray-200 opacity-40">`;
+    }
 
     const fotoHTML = item.foto 
       ? `<img src="${item.foto}" onclick="window.verFotoGrande('${item.foto}', '${item.proyecto} - ${item.articulo}')" class="w-10 h-7 object-cover rounded border border-gray-200 shadow-xs cursor-pointer hover:opacity-80 transition mx-auto" title="Click para ampliar">`
       : `<div class="w-10 h-7 rounded border border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-[10px] mx-auto"><i class="fa-regular fa-image"></i></div>`;
 
     tr.innerHTML = `
-      <td class="p-2.5 text-center">
-        <input type="checkbox" value="${item.id}" checked class="chk-articulo-informe h-4 w-4 accent-[#D61B28] cursor-pointer">
-      </td>
       <td class="p-2 border-r border-gray-100 text-center">${fotoHTML}</td>
-      <td class="p-2.5 font-bold text-gray-700 font-mono">${item.semana}</td>
-      <td class="p-2.5 font-bold text-gray-800">${badgeMinuta}${item.proyecto}</td>
-      <td class="p-2.5 font-mono text-gray-700">${item.articulo}</td>
-      <td class="p-2.5 text-gray-600 max-w-xs truncate leading-relaxed" title="${item.boxCambio}">${item.boxCambio}</td>
-      <td class="p-2.5 text-center">
-        <span class="px-2 py-0.5 rounded font-bold text-[10px] ${item.estado === 'Realizado' ? 'bg-green-50 text-green-700 border border-green-200' : (item.estado === 'Retrasado' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-orange-50 text-orange-700 border border-orange-200')}">${item.estado}</span>
+      <td class="p-3 font-bold text-gray-700 border-r border-gray-100 font-mono">${item.semana || '—'}</td>
+      <td class="p-3 text-gray-600 border-r border-gray-100 whitespace-nowrap">${formatearFecha(item.fechaCreacion)}</td>
+      <td class="p-3 border-r border-gray-100 whitespace-nowrap">
+        <span class="font-bold text-gray-800 block">${item.solicitanteNombre || '—'}</span>
+        <span class="text-[10px] text-gray-400">${item.solicitanteRol || ''}</span>
       </td>
-      <td class="p-2.5 text-center font-bold text-[11px]">
-        ${item.validadoCostos ? '<span class="text-green-600"><i class="fa-solid fa-check"></i> Validado</span>' : '<span class="text-gray-300">Pendiente</span>'}
-      </td>
+      <td class="p-3.5 font-bold text-gray-800 border-r border-gray-100">${badgeMinuta}${item.proyecto}</td>
+      <td class="p-3.5 font-mono text-gray-700 border-r border-gray-100">${item.articulo}</td>
+      <td class="p-3.5 text-gray-700 border-r border-gray-100 leading-relaxed">${item.boxCambio}</td>
+      <td class="p-3.5 text-center border-r border-gray-100 whitespace-nowrap">${estadoHTML}</td>
+      <td class="p-3.5 text-center border-r border-gray-100 whitespace-nowrap">${fechaRealizadoHTML}</td>
+      <td class="p-3.5 text-center whitespace-nowrap">${costosHTML}</td>
     `;
     tbody.appendChild(tr);
   });
-
-  document.querySelectorAll(".chk-articulo-informe").forEach(chk => {
-    chk.onchange = actualizarConteoSeleccionados;
-  });
-
-  actualizarConteoSeleccionados();
 }
 
-function actualizarConteoSeleccionados() {
-  const total = document.querySelectorAll(".chk-articulo-informe").length;
-  const marcados = document.querySelectorAll(".chk-articulo-informe:checked").length;
-  const label = document.getElementById("label-conteo-seleccionados");
-  if (label) label.textContent = `${marcados} de ${total} seleccionados`;
-}
+// Guardar Estado
+window.guardarCambioEstado = async (id, proyecto, articulo, semana) => {
+  const select = document.getElementById(`sel-estado-${id}`);
+  if (!select) return;
+  const nuevoEstado = select.value;
 
-window.generarTextoNotificacionBata = () => {
-  const seleccionadosIds = Array.from(document.querySelectorAll(".chk-articulo-informe:checked")).map(c => c.value);
-  if (seleccionadosIds.length === 0) {
-    alert("Selecciona al menos un artículo para generar la notificación.");
+  const updatePayload = { estado: nuevoEstado };
+  if (nuevoEstado === "Realizado") {
+    updatePayload.fechaRealizado = new Date().toISOString();
+  } else {
+    updatePayload.fechaRealizado = null;
+  }
+
+  await updateDoc(doc(db, "solicitudes_cambios", id), updatePayload);
+
+  if (nuevoEstado === "Realizado") {
+    abrirModalWhatsApp({
+      titulo: "Proyecto Realizado",
+      subtitulo: "Enviar alerta a los usuarios de Costos para su validación:",
+      mensajeTexto: `👟 *PROYECTO REALIZADO - REQUERIMIENTO DE COSTOS*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n✅ *Estado:* Realizado por Desarrollo de Producto (${(userData && userData.nombre) || 'Usuario'})\n\n_Por favor ingresar al sistema para validar los costos asociados._`,
+      rolFiltro: "Costos"
+    });
+  } else {
+    alert("Estado guardado correctamente.");
+  }
+};
+
+window.confirmarValidacionCostos = async (id, proyecto, articulo, checkboxElem) => {
+  const confirma = confirm(`¿Estás seguro de validar los costos del proyecto "${proyecto}"? Una vez confirmado quedará bloqueado.`);
+  if (!confirma) {
+    checkboxElem.checked = false;
     return;
   }
 
-  const items = solicitudes.filter(s => seleccionadosIds.includes(s.id));
-  const semanaTitulo = colFiltroSemanaInforme ? colFiltroSemanaInforme : (items[0]?.semana || "GENERAL");
-
-  let texto = `CAMBIOS REALIZADOS PARA SEM: ${semanaTitulo}\n\n`;
-  texto += `Saludos Estimados, Todos los cambios en guías para el congelamiento de la semana mencionada filas arriba han sido realizados y se puede continuar con el proceso.\n\n`;
-  texto += `Detalle de Artículos Afectados:\n`;
-
-  items.forEach(it => {
-    texto += `Proyecto: ${it.proyecto.toUpperCase()}, Artículo: ${it.articulo}\n`;
+  await updateDoc(doc(db, "solicitudes_cambios", id), {
+    validadoCostos: true,
+    fechaValidacionCostos: new Date().toISOString(),
+    validadorCostosNombre: (userData && userData.nombre) || "Costos"
   });
 
-  const textarea = document.getElementById("texto-wsp-output");
-  if (textarea) textarea.value = texto;
+  abrirModalWhatsApp({
+    titulo: "Costos Validados",
+    subtitulo: "Enviar notificación al equipo de Calidad:",
+    mensajeTexto: `📋 *VALIDACIÓN DE COSTOS COMPLETADA - ALERTA CALIDAD*\n\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n💰 *Costos:* Validados por ${(userData && userData.nombre) || 'Costos'} (Costos)\n\n_El proyecto cuenta con validación técnica y económica lista para producción._`,
+    rolFiltro: "Calidad"
+  });
+};
 
-  safeClick("btn-copiar-texto-wsp", () => {
-    if (textarea) {
-      textarea.select();
-      navigator.clipboard.writeText(texto);
-      alert("Texto copiado al portapapeles.");
+window.desbloquearValidacionCostos = async (id) => {
+  if (confirm("¿Desbloquear validación de costos? (Acción de Super Admin)")) {
+    await updateDoc(doc(db, "solicitudes_cambios", id), { validadoCostos: false });
+  }
+};
+
+// Solicitudes y Minutas
+if (document.getElementById("form-minuta")) {
+  document.getElementById("form-minuta").onsubmit = async (e) => {
+    e.preventDefault();
+    const semana = document.getElementById("minuta-semana").value.trim();
+    const proyecto = document.getElementById("minuta-proyecto").value.trim();
+    const articulo = document.getElementById("minuta-articulo").value.trim();
+    const detalle = document.getElementById("minuta-box").value.trim();
+    const photoFile = document.getElementById("minuta-photo").files[0];
+
+    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
+
+    try {
+      await addDoc(collection(db, "solicitudes_cambios"), {
+        semana,
+        proyecto,
+        articulo,
+        foto: fotoBase64,
+        boxCambio: detalle,
+        esMinuta: true,
+        solicitanteNombre: (userData && userData.nombre) || "Jefe Desarrollo",
+        solicitanteRol: (userData && userData.rol) || "Desarrollo de producto - Jefe",
+        solicitanteId: currentUser.uid,
+        estado: "En proceso",
+        fechaRealizado: null,
+        validadoCostos: false,
+        fechaCreacion: new Date().toISOString(),
+        timestamp: serverTimestamp()
+      });
+
+      modalMinuta.classList.add("hidden");
+      document.getElementById("form-minuta").reset();
+
+      abrirModalWhatsApp({
+        titulo: "Minuta de Cambios Registrada",
+        subtitulo: "Enviar minuta a los Técnicos de Desarrollo:",
+        mensajeTexto: `📋 *MINUTA DE CAMBIOS - PLAN PILOTO*\n*Bata Bolivia / Desarrollo de Producto*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n👤 *Emitido por:* ${(userData && userData.nombre) || 'Jefe Desarrollo'}\n\n📝 *DETALLE DE CAMBIOS TÉCNICOS:*\n${detalle}\n\n_Registrado en el sistema para control de avance y realización._`,
+        rolFiltro: "Desarrollo de producto - Técnico"
+      });
+    } catch (err) {
+      alert("Error al guardar minuta: " + err.message);
     }
-  });
+  };
+}
 
-  safeClick("btn-enviar-correo-informe", () => {
-    const asunto = encodeURIComponent(`Bata Bolivia - Cambios Realizados para Semana ${semanaTitulo}`);
-    const cuerpo = encodeURIComponent(texto);
-    window.location.href = `mailto:?subject=${asunto}&body=${cuerpo}`;
-  });
+if (document.getElementById("form-new-change")) {
+  document.getElementById("form-new-change").onsubmit = async (e) => {
+    e.preventDefault();
+    const semana = document.getElementById("change-semana").value.trim();
+    const proyecto = document.getElementById("change-project").value.trim();
+    const articulo = document.getElementById("change-article").value.trim();
+    const boxCambio = document.getElementById("change-box").value.trim();
+    const photoFile = document.getElementById("change-photo").files[0];
 
-  safeClick("btn-enviar-wsp-directo", () => {
-    const encoded = encodeURIComponent(texto);
-    window.open(`https://wa.me/?text=${encoded}`, "_blank");
-  });
+    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
 
-  modalTextoWsp?.classList.remove("hidden");
-};
+    try {
+      await addDoc(collection(db, "solicitudes_cambios"), {
+        semana,
+        proyecto,
+        articulo,
+        foto: fotoBase64,
+        boxCambio,
+        esMinuta: false,
+        solicitanteNombre: (userData && userData.nombre) || (currentUser && currentUser.email) || "Usuario",
+        solicitanteRol: (userData && userData.rol) || "Usuario",
+        solicitanteId: currentUser ? currentUser.uid : null,
+        estado: "En proceso",
+        fechaRealizado: null,
+        validadoCostos: false,
+        fechaCreacion: new Date().toISOString(),
+        timestamp: serverTimestamp()
+      });
 
-window.generarModalInformeResumen = () => {
-  const seleccionadosIds = Array.from(document.querySelectorAll(".chk-articulo-informe:checked")).map(c => c.value);
-  if (seleccionadosIds.length === 0) {
-    alert("Selecciona al menos un artículo para generar el informe PDF.");
+      document.getElementById("form-new-change").reset();
+      modalNewChange?.classList.add("hidden");
+
+      abrirModalWhatsApp({
+        titulo: "Solicitud Registrada",
+        subtitulo: "Notificar solicitud creada al equipo:",
+        mensajeTexto: `👞 *NUEVA SOLICITUD DE CAMBIO - BATA BOLIVIA*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n👤 *Solicitado por:* ${(userData && userData.nombre) || 'Usuario'} (${(userData && userData.rol) || ''})\n📝 *Cambio:* ${boxCambio}\n\n_Revisar en el Sistema de Gestión de Cambios Bata_`
+      });
+    } catch (err) {
+      alert("Error: " + err.message);
+    }
+  };
+}
+
+// Nueva Entrega
+const selEntTipo = document.getElementById("ent-tipo");
+if (selEntTipo) selEntTipo.onchange = actualizarCamposSegunTipoEntrega;
+
+function actualizarCamposSegunTipoEntrega() {
+  const tipo = document.getElementById("ent-tipo")?.value;
+  const selectDestino = document.getElementById("ent-destino");
+  const boxArticulo = document.getElementById("box-field-articulo");
+  const labelProy = document.getElementById("label-field-proyecto");
+  const inputProy = document.getElementById("ent-proyecto");
+  const boxFoto = document.getElementById("box-field-foto");
+  const boxCopias = document.getElementById("box-field-copias");
+  const containerSingle = document.getElementById("container-destino-single");
+  const containerMultiple = document.getElementById("container-destino-multiple");
+
+  if (!selectDestino) return;
+  selectDestino.innerHTML = "";
+  boxCopias?.classList.add("hidden");
+  containerMultiple?.classList.add("hidden");
+  containerSingle?.classList.remove("hidden");
+  boxFoto?.classList.add("hidden");
+
+  if (tipo === "MATERIALES") {
+    if (labelProy) labelProy.textContent = "Nombre del Material / Insumo";
+    if (inputProy) inputProy.placeholder = "Ej: Badana Beige 1.2mm";
+    boxArticulo?.classList.add("hidden");
+    selectDestino.innerHTML += `<option value="Desarrollo de producto">Desarrollo de producto</option>`;
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
     return;
   }
 
-  const items = solicitudes.filter(s => seleccionadosIds.includes(s.id));
-  const contenedor = document.getElementById("reporte-resumen-contenido");
-  if (!contenedor) return;
+  boxArticulo?.classList.remove("hidden");
+  if (labelProy) labelProy.textContent = "Nombre del Proyecto";
+  if (inputProy) inputProy.placeholder = "Ej: SKATER";
 
-  let html = `
-    <div class="overflow-x-auto">
-      <table class="w-full text-left border-collapse border border-gray-200 text-xs">
-        <thead class="bg-gray-100 font-bold">
-          <tr>
-            <th class="p-2 border text-center w-12">Foto</th>
-            <th class="p-2 border">Semana</th>
-            <th class="p-2 border">Fecha Solicitud</th>
-            <th class="p-2 border">Solicitante</th>
-            <th class="p-2 border">Proyecto</th>
-            <th class="p-2 border">Artículo</th>
-            <th class="p-2 border">Descripción de Cambios</th>
-            <th class="p-2 border text-center">Estado</th>
-            <th class="p-2 border text-center">Fecha Realizado</th>
-            <th class="p-2 border text-center">Validación Costos</th>
-          </tr>
-        </thead>
-        <tbody>
-  `;
+  if (tipo === "GUÍA DE PRODUCCIÓN") {
+    boxFoto?.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
+  }
+  else if (tipo === "CORTE") {
+    boxFoto?.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+  }
+  else if (tipo === "MUESTRA DEFINITIVA") {
+    boxFoto?.classList.remove("hidden");
+    containerSingle?.classList.add("hidden");
+    containerMultiple?.classList.remove("hidden");
+  }
+  else if (tipo === "HOJA DE DESBASTE") {
+    boxFoto?.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+  }
+  else if (tipo === "TIZADORES") {
+    boxCopias?.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+  }
+}
 
-  items.forEach(it => {
-    const fotoPrint = it.foto 
-      ? `<img src="${it.foto}" style="width: 44px; height: 30px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; margin: auto;">`
-      : `<span style="color: #bbb;">—</span>`;
+const formEntrega = document.getElementById("form-nueva-entrega");
+if (formEntrega) {
+  formEntrega.onsubmit = async (e) => {
+    e.preventDefault();
+    const semana = document.getElementById("ent-semana").value.trim();
+    const proyecto = document.getElementById("ent-proyecto").value.trim();
+    const articulo = document.getElementById("ent-articulo").value.trim();
+    const tipo = document.getElementById("ent-tipo").value;
+    const notas = document.getElementById("ent-notas").value.trim();
+    const copias = document.getElementById("ent-copias").value.trim();
+    const photoFile = document.getElementById("ent-photo").files[0];
 
-    html += `
-      <tr class="border-b">
-        <td class="p-1 border text-center">${fotoPrint}</td>
-        <td class="p-2 border font-bold font-mono">${it.semana || '—'}</td>
-        <td class="p-2 border whitespace-nowrap">${formatearFecha(it.fechaCreacion)}</td>
-        <td class="p-2 border whitespace-nowrap font-medium">${it.solicitanteNombre} <span class="text-[10px] text-gray-400">(${it.solicitanteRol})</span></td>
-        <td class="p-2 border font-bold text-gray-800">${it.proyecto}</td>
-        <td class="p-2 border font-mono">${it.articulo}</td>
-        <td class="p-2 border text-gray-700">${it.boxCambio}</td>
-        <td class="p-2 border text-center font-bold ${it.estado === 'Realizado' ? 'text-green-600' : (it.estado === 'Retrasado' ? 'text-red-600' : 'text-orange-600')}">${it.estado}</td>
-        <td class="p-2 border text-center whitespace-nowrap">${formatearFecha(it.fechaRealizado)}</td>
-        <td class="p-2 border text-center font-bold ${it.validadoCostos ? 'text-green-600' : 'text-gray-400'}">${it.validadoCostos ? 'Validado' : 'Pendiente'}</td>
-      </tr>
-    `;
-  });
+    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
 
-  html += `
-        </tbody>
-      </table>
-    </div>
-  `;
+    try {
+      let destinosAEntregar = [];
 
-  contenedor.innerHTML = html;
-  modalResumen?.classList.remove("hidden");
-};
+      if (tipo === "MUESTRA DEFINITIVA") {
+        destinosAEntregar = Array.from(document.querySelectorAll(".chk-muestras-dest:checked")).map(c => c.value);
+        if (destinosAEntregar.length === 0) {
+          alert("Selecciona al menos un departamento para la muestra definitiva.");
+          return;
+        }
+      } else {
+        destinosAEntregar = [document.getElementById("ent-destino").value];
+      }
 
-// ==================== MÓDULO TARJETAS (PD) CON CASILLAS POR COLOR ====================
+      const nombreUsuario = (userData && userData.nombre) || (currentUser && currentUser.email) || "Usuario";
+      const rolUsuario = (userData && userData.rol) || (esSuperAdmin() ? "Super Admin" : "Desarrollo de producto");
+
+      for (const destino of destinosAEntregar) {
+        await addDoc(collection(db, "entregas_departamentos"), {
+          semana,
+          proyecto,
+          articulo: tipo === "MATERIALES" ? "" : articulo,
+          tipo,
+          destino,
+          copias: tipo === "TIZADORES" ? (copias || "1") : null,
+          foto: fotoBase64,
+          notas,
+          entregadoPorNombre: nombreUsuario,
+          entregadoPorRol: rolUsuario,
+          entregadoPorId: currentUser ? currentUser.uid : null,
+          recibido: false,
+          fechaEntrega: new Date().toISOString(),
+          timestamp: serverTimestamp()
+        });
+      }
+
+      formEntrega.reset();
+      modalNuevaEntrega?.classList.add("hidden");
+
+      const destinosTexto = destinosAEntregar.join(", ");
+      let detalleCopias = (tipo === "TIZADORES" && copias) ? `📑 *Copias:* ${copias}\n` : '';
+
+      abrirModalWhatsApp({
+        titulo: "Entrega Registrada",
+        subtitulo: `Notificar recepción a los encargados de ${destinosTexto}:`,
+        mensajeTexto: `📦 ENTREGA REALIZADA - PD BOLIVIA\n\n📅 *Semana:* ${semana}\n📌 *Elemento:* ${tipo}\n🏷️ *Detalle/Proyecto:* ${proyecto}\n${articulo ? '🔢 *Artículo:* ' + articulo + '\n' : ''}${detalleCopias}👤 *Entregado por:* ${nombreUsuario} (${rolUsuario})\n🏢 *Destino:* ${destinosTexto}\n📝 *Notas:* ${notas || 'Sin notas adicionales'}\n\n_Favor de confirmar la recepción física en el sistema._`,
+        rolFiltro: destinosAEntregar.length === 1 ? destinosAEntregar[0] : null
+      });
+    } catch (err) {
+      alert("Error al registrar entrega: " + err.message);
+    }
+  };
+}
+
+// ==================== MÓDULO TARJETAS (PD) ====================
 function initModuloTarjetas() {
   const inputFecha = document.getElementById("card-fecha");
   if (inputFecha && !inputFecha.value) {
@@ -986,7 +1278,6 @@ function initModuloTarjetas() {
     };
   }
 
-  // Pegado Inteligente
   safeClick("btn-quick-distribute", () => {
     const raw = document.getElementById("input-quick-paste-row")?.value.trim() || "";
     if (!raw) {
@@ -1031,7 +1322,6 @@ function initModuloTarjetas() {
     }
   });
 
-  // Escucha de casillas numéricas de tarjetas
   ["count-card-blanca", "count-card-verde", "count-card-amarilla", "count-card-rosada"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.oninput = renderTarjetasPreview;
@@ -1133,7 +1423,6 @@ function renderTarjetasPreview() {
   const container = document.getElementById("contenedor-tarjetas-preview");
   if (!container) return;
 
-  // Lectura de contadores por color
   const cBlancas = parseInt(document.getElementById("count-card-blanca")?.value) || 0;
   const cVerdes = parseInt(document.getElementById("count-card-verde")?.value) || 0;
   const cAmarillas = parseInt(document.getElementById("count-card-amarilla")?.value) || 0;
@@ -1166,46 +1455,50 @@ function renderTarjetasPreview() {
     ? `<img src="${plantillaCorteTarjetaBase64}" style="width:100%; height:36px; object-fit:contain; margin:auto;">`
     : siluetaCalzadoHTML;
 
-  // Lista estructurada de tarjetas a construir según casillas numéricas
   const listaAImprimir = [];
 
+  // TODAS LAS TARJETAS BLANCAS SON DE CORTE / PRODUCCIÓN E INVERTIDAS
   for (let i = 1; i <= cBlancas; i++) {
     listaAImprimir.push({
       color: "#FFFFFF",
-      etiqueta: i === 1 ? "CORTE (PRODUCCIÓN)" : `PRODUCCIÓN #${i - 1}`,
-      esCorte: i === 1 // Solo la primera blanca recibe la plantilla de corte
+      etiqueta: cBlancas === 1 ? "CORTE (PRODUCCIÓN)" : `CORTE #${i} (PRODUCCIÓN)`,
+      esInvertida: true,
+      recibePlantilla: i === 1
     });
   }
   for (let i = 1; i <= cVerdes; i++) {
     listaAImprimir.push({
       color: "#80C342", // Verde Retail
       etiqueta: `RETAIL ${cVerdes > 1 ? '#' + i : ''}`,
-      esCorte: false
+      esInvertida: false,
+      recibePlantilla: false
     });
   }
   for (let i = 1; i <= cAmarillas; i++) {
     listaAImprimir.push({
       color: "#FFF200", // Amarillo Planeamiento
       etiqueta: `PLANEAMIENTO ${cAmarillas > 1 ? '#' + i : ''}`,
-      esCorte: false
+      esInvertida: false,
+      recibePlantilla: false
     });
   }
   for (let i = 1; i <= cRosadas; i++) {
     listaAImprimir.push({
       color: "#E06D8A", // Rosado Exportación
       etiqueta: `EXPORTACIÓN ${cRosadas > 1 ? '#' + i : ''}`,
-      esCorte: false
+      esInvertida: false,
+      recibePlantilla: false
     });
   }
 
   let tarjetasHTML = "";
 
   listaAImprimir.forEach((tarj) => {
-    const imagenIzquierdaHTML = tarj.esCorte ? siluetaPlantillaHTML : siluetaCalzadoHTML;
+    const imagenIzquierdaHTML = tarj.recibePlantilla ? siluetaPlantillaHTML : siluetaCalzadoHTML;
 
     // PANEL DE FIRMAS
     const bloqueFirmasHTML = `
-      <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:3px 5px; ${tarj.esCorte ? '' : 'border-right:1px dashed #555;'} font-size:6.5px;">
+      <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:3px 5px; ${tarj.esInvertida ? '' : 'border-right:1px dashed #555;'} font-size:6.5px;">
         <div style="font-size:7px; font-weight:900; text-align:center; color:#1f2937; text-transform:uppercase; border-bottom:1px solid #d1d5db; padding-bottom:1px;">
           APROBACIONES (${tarj.etiqueta})
         </div>
@@ -1246,7 +1539,7 @@ function renderTarjetasPreview() {
 
     // PANEL DE OBSERVACIONES
     const bloqueObservacionesHTML = `
-      <div class="shoe-panel" style="padding:4px; display:flex; flex-direction:column; justify-content:space-between; font-size:7px; ${tarj.esCorte ? 'border-right:1px dashed #555;' : ''}">
+      <div class="shoe-panel" style="padding:4px; display:flex; flex-direction:column; justify-content:space-between; font-size:7px; ${tarj.esInvertida ? 'border-right:1px dashed #555;' : ''}">
         <div>
           <span style="font-weight:900; color:#1f2937; text-transform:uppercase; display:block; margin-bottom:1px;">OBSERVACIONES:</span>
           <p style="font-size:6.5px; color:#374151; font-style:italic; line-height:1.2;">${observaciones || 'Sin observaciones adicionales'}</p>
@@ -1260,12 +1553,13 @@ function renderTarjetasPreview() {
       </div>
     `;
 
-    const centroHTML = tarj.esCorte ? bloqueObservacionesHTML : bloqueFirmasHTML;
-    const derechaHTML = tarj.esCorte ? bloqueFirmasHTML : bloqueObservacionesHTML;
+    // Si es Invertida (Todas las Blancas): Panel 2 Observaciones, Panel 3 Firmas
+    const centroHTML = tarj.esInvertida ? bloqueObservacionesHTML : bloqueFirmasHTML;
+    const derechaHTML = tarj.esInvertida ? bloqueFirmasHTML : bloqueObservacionesHTML;
 
     tarjetasHTML += `
       <div class="shoe-card-container" style="background:#fff; display:flex; font-size:7.5px; line-height:1.1; color:#000;">
-        <!-- PANEL 1: ESPECIFICACIONES CON CUADRÍCULA COMPLETA -->
+        <!-- PANEL 1: INFORMACIÓN TÉCNICA CON CUADRÍCULA COMPLETA -->
         <div class="shoe-panel" style="display:flex; border-right:1px dashed #555; overflow:hidden;">
           <div class="lateral-tab" style="width:16px; border-right:1px solid #000; display:flex; align-items:center; justify-content:center; font-weight:900; letter-spacing:0.1em; font-size:9px; writing-mode:vertical-rl; transform:rotate(180deg); background-color:${tarj.color} !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;">
             ${linea}
@@ -1282,7 +1576,6 @@ function renderTarjetasPreview() {
                 <span style="font-size:5.5px; font-weight:bold; text-align:center;">FECHA: ${fecha}</span>
               </div>
 
-              <!-- CUADRÍCULA PROFESIONAL CON BORDES COMPLETOS Y TEXTO CENTRADO -->
               <div style="flex:1;">
                 <table style="width:100%; height:100%; border-collapse:collapse; font-size:7px; font-weight:900;">
                   <tr style="border-bottom:1px solid #000;">
@@ -1313,7 +1606,6 @@ function renderTarjetasPreview() {
               </div>
             </div>
 
-            <!-- Precios y Márgenes Centrados -->
             <div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:1px; border-top:1px solid #000; font-size:6px; font-weight:800; padding-top:1px; text-align:center;">
               <div>TEC: ${tecnico}</div>
               <div>SUELA: ${hormaSuela}</div>
@@ -1335,7 +1627,7 @@ function renderTarjetasPreview() {
   container.innerHTML = tarjetasHTML;
 }
 
-// Panel Super Admin
+// ==================== SUPER ADMIN ====================
 async function cargarPanelSuperAdmin() {
   if (!esSuperAdmin()) return;
 
