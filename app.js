@@ -43,6 +43,7 @@ let solicitudes = [];
 let entregas = [];
 let bloqueosMateriales = [];
 let llegadasMateriales = [];
+let lotesProduccion = [];
 
 let categoriaEntregaActiva = "todas";
 
@@ -125,6 +126,11 @@ function esDesarrollo() {
   return userData && (userData.rol || "").includes("Desarrollo");
 }
 
+function esJefeProduccion() {
+  if (esSuperAdmin()) return true;
+  return userData && (userData.rol === "Jefe de Producción");
+}
+
 // Modal WhatsApp
 async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro = null }) {
   const modalWA = document.getElementById("modal-whatsapp");
@@ -176,7 +182,7 @@ async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro =
   }
 }
 
-// ==================== FUNCIONES GLOBALES DE APERTURA (100% OPERATIVAS) ====================
+// ==================== FUNCIONES GLOBALES DE APERTURA ====================
 window.abrirModalCambio = () => {
   document.getElementById("modal-new-change")?.classList.remove("hidden");
 };
@@ -185,7 +191,6 @@ window.abrirModalMinuta = () => {
   document.getElementById("modal-minuta")?.classList.remove("hidden");
 };
 
-// BOTÓN VERDE REGISTRAR ENTREGA (REPARADO Y BLINDADO)
 window.abrirModalEntrega = () => {
   const selectTipo = document.getElementById("ent-tipo");
   if (selectTipo) {
@@ -211,6 +216,10 @@ window.abrirModalBloqueo = () => {
 
 window.abrirModalLlegada = () => {
   document.getElementById("modal-nueva-llegada")?.classList.remove("hidden");
+};
+
+window.abrirModalLoteProduccion = () => {
+  document.getElementById("modal-nuevo-lote-prod")?.classList.remove("hidden");
 };
 
 // ==================== REPORTES DE ENTREGAS ====================
@@ -345,6 +354,7 @@ const modalNuevaLlegada = document.getElementById("modal-nueva-llegada");
 const modalReporteLlegadasPrint = document.getElementById("modal-reporte-llegadas-print");
 const modalImpresionTarjetas = document.getElementById("modal-impresion-tarjetas");
 const modalNewChange = document.getElementById("modal-new-change");
+const modalNuevoLoteProd = document.getElementById("modal-nuevo-lote-prod");
 
 safeClick("btn-close-whatsapp-modal", () => document.getElementById("modal-whatsapp")?.classList.add("hidden"));
 safeClick("btn-show-login", () => modalLogin?.classList.remove("hidden"));
@@ -366,6 +376,8 @@ safeClick("close-nueva-llegada", () => modalNuevaLlegada?.classList.add("hidden"
 safeClick("cancel-nueva-llegada", () => modalNuevaLlegada?.classList.add("hidden"));
 safeClick("close-modal-llegadas-print", () => modalReporteLlegadasPrint?.classList.add("hidden"));
 safeClick("close-modal-tarjetas", () => modalImpresionTarjetas?.classList.add("hidden"));
+safeClick("close-nuevo-lote-prod", () => modalNuevoLoteProd?.classList.add("hidden"));
+safeClick("cancel-nuevo-lote-prod", () => modalNuevoLoteProd?.classList.add("hidden"));
 safeClick("modal-btn-close", () => modalNewChange?.classList.add("hidden"));
 safeClick("modal-btn-cancel", () => modalNewChange?.classList.add("hidden"));
 
@@ -563,6 +575,7 @@ onAuthStateChanged(auth, async (user) => {
     escucharCambios();
     escucharEntregas();
     escucharProcurement();
+    escucharProduccion();
   } else {
     currentUser = null;
     userData = null;
@@ -575,6 +588,7 @@ onAuthStateChanged(auth, async (user) => {
 const viewCambios = document.getElementById("view-cambios");
 const viewInforme = document.getElementById("view-informe");
 const viewEntregas = document.getElementById("view-entregas");
+const viewProduccionDash = document.getElementById("view-produccion-dash");
 const viewProcurement = document.getElementById("view-procurement");
 const viewTarjetas = document.getElementById("view-tarjetas");
 const viewUsuarios = document.getElementById("view-usuarios");
@@ -582,6 +596,7 @@ const viewUsuarios = document.getElementById("view-usuarios");
 const menuBtnCambios = document.getElementById("menu-btn-cambios");
 const menuBtnInforme = document.getElementById("menu-btn-informe");
 const menuBtnEntregasTodas = document.getElementById("menu-btn-entregas-todas");
+const menuBtnProduccionDash = document.getElementById("menu-btn-produccion-dash");
 const menuBtnProcurement = document.getElementById("menu-btn-procurement");
 const menuBtnTarjetas = document.getElementById("menu-btn-tarjetas");
 const menuBtnUsuarios = document.getElementById("menu-btn-usuarios");
@@ -592,7 +607,7 @@ const CLASE_ACTIVO_PASTILLA = "sidebar-btn w-full flex items-center space-x-3 px
 const CLASE_ACTIVO_SUB_PASTILLA = "sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-black bg-white text-[#D61B28] shadow-md transition cursor-pointer pl-5 scale-[1.02]";
 
 function resetMenuStyles() {
-  [menuBtnCambios, menuBtnInforme, menuBtnEntregasTodas, menuBtnProcurement, menuBtnTarjetas, menuBtnUsuarios].forEach(b => {
+  [menuBtnCambios, menuBtnInforme, menuBtnEntregasTodas, menuBtnProduccionDash, menuBtnProcurement, menuBtnTarjetas, menuBtnUsuarios].forEach(b => {
     if (b) b.className = CLASE_INACTIVO_PRINCIPAL;
   });
 
@@ -603,6 +618,7 @@ function resetMenuStyles() {
   viewCambios?.classList.add("hidden");
   viewInforme?.classList.add("hidden");
   viewEntregas?.classList.add("hidden");
+  viewProduccionDash?.classList.add("hidden");
   viewProcurement?.classList.add("hidden");
   viewTarjetas?.classList.add("hidden");
   viewUsuarios?.classList.add("hidden");
@@ -633,6 +649,13 @@ safeClick("menu-btn-informe", () => {
 
 safeClick("menu-btn-entregas-todas", () => {
   window.cambiarSubmenuEntrega("todas");
+});
+
+safeClick("menu-btn-produccion-dash", () => {
+  resetMenuStyles();
+  viewProduccionDash?.classList.remove("hidden");
+  if (menuBtnProduccionDash) menuBtnProduccionDash.className = CLASE_ACTIVO_PASTILLA;
+  renderProduccionView();
 });
 
 safeClick("menu-btn-procurement", () => {
@@ -1256,6 +1279,173 @@ if (formEntrega) {
   };
 }
 
+// ==================== MÓDULO PRODUCCIÓN (DASHBOARD) ====================
+function escucharProduccion() {
+  const q = collection(db, "produccion_lotes");
+  onSnapshot(q, (snapshot) => {
+    lotesProduccion = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    lotesProduccion.sort((a, b) => (b.fechaRegistro || "").localeCompare(a.fechaRegistro || ""));
+    renderProduccionView();
+  }, (err) => console.log("Aviso Firestore Producción:", err.message));
+}
+
+function renderProduccionView() {
+  const tbody = document.getElementById("table-produccion-body");
+  const empty = document.getElementById("produccion-empty-state");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  let paresCortado = 0;
+  let paresAparado = 0;
+  let paresArmado = 0;
+  let paresInyeccion = 0;
+
+  lotesProduccion.forEach(lote => {
+    const pares = parseInt(lote.pares) || 0;
+    if (lote.estado === "CORTADO") paresCortado += pares;
+    else if (lote.estado === "APARADO") paresAparado += pares;
+    else if (lote.estado === "ARMADO") paresArmado += pares;
+    else if (lote.estado === "INYECCIÓN") paresInyeccion += pares;
+  });
+
+  const totalPares = paresCortado + paresAparado + paresArmado + paresInyeccion;
+
+  const pctCortado = totalPares > 0 ? Math.round((paresCortado / totalPares) * 100) : 0;
+  const pctAparado = totalPares > 0 ? Math.round((paresAparado / totalPares) * 100) : 0;
+  const pctArmado = totalPares > 0 ? Math.round((paresArmado / totalPares) * 100) : 0;
+  const pctInyeccion = totalPares > 0 ? Math.round((paresInyeccion / totalPares) * 100) : 0;
+
+  const elTot = document.getElementById("prod-total-pares-kpi");
+  if (elTot) elTot.textContent = `${totalPares.toLocaleString()} Pares Totales`;
+
+  const setKpiBar = (idKpi, idPct, idBar, valPares, valPct) => {
+    const k = document.getElementById(idKpi);
+    const p = document.getElementById(idPct);
+    const b = document.getElementById(idBar);
+    if (k) k.textContent = `${valPares.toLocaleString()} pares`;
+    if (p) p.textContent = `${valPct}%`;
+    if (b) b.style.width = `${valPct}%`;
+  };
+
+  setKpiBar("kpi-pares-cortado", "pct-pares-cortado", "bar-pares-cortado", paresCortado, pctCortado);
+  setKpiBar("kpi-pares-aparado", "pct-pares-aparado", "bar-pares-aparado", paresAparado, pctAparado);
+  setKpiBar("kpi-pares-armado", "pct-pares-armado", "bar-pares-armado", paresArmado, pctArmado);
+  setKpiBar("kpi-pares-inyeccion", "pct-pares-inyeccion", "bar-pares-inyeccion", paresInyeccion, pctInyeccion);
+
+  if (lotesProduccion.length === 0) {
+    empty?.classList.remove("hidden");
+    return;
+  }
+  empty?.classList.add("hidden");
+
+  const puedeAsignarMaquina = esJefeProduccion();
+  const puedeEliminar = esSuperAdmin() || puedeAsignarMaquina;
+
+  lotesProduccion.forEach(lote => {
+    const tr = document.createElement("tr");
+    tr.className = "hover:bg-gray-50/80 transition border-b border-gray-100";
+
+    let badgeColor = "bg-amber-100 text-amber-800 border-amber-300";
+    if (lote.estado === "APARADO") badgeColor = "bg-blue-100 text-blue-800 border-blue-300";
+    if (lote.estado === "ARMADO") badgeColor = "bg-purple-100 text-purple-800 border-purple-300";
+    if (lote.estado === "INYECCIÓN") badgeColor = "bg-emerald-100 text-emerald-800 border-emerald-300";
+
+    let celdaMaquinaHTML = "";
+    if (puedeAsignarMaquina) {
+      celdaMaquinaHTML = `
+        <div class="flex items-center space-x-1">
+          <input type="text" id="in-maquina-${lote.id}" value="${lote.maquina || ''}" placeholder="Asignar máquina..." class="px-2 py-1 border border-cyan-300 rounded font-semibold text-cyan-900 w-36">
+          <button onclick="window.guardarMaquinaLote('${lote.id}')" title="Guardar máquina" class="bg-cyan-600 hover:bg-cyan-700 text-white p-1 rounded cursor-pointer">
+            <i class="fa-solid fa-floppy-disk text-[10px]"></i>
+          </button>
+        </div>
+      `;
+    } else {
+      celdaMaquinaHTML = `<span class="font-bold text-gray-700">${lote.maquina || '<span class="text-gray-300 italic font-normal">Sin asignar</span>'}</span>`;
+    }
+
+    let accionesHTML = `
+      <div class="flex items-center justify-center space-x-2">
+        <select onchange="window.actualizarEstadoLote('${lote.id}', this.value)" class="px-1.5 py-0.5 border border-gray-300 rounded text-[11px] font-bold">
+          <option value="CORTADO" ${lote.estado === 'CORTADO' ? 'selected' : ''}>CORTADO</option>
+          <option value="APARADO" ${lote.estado === 'APARADO' ? 'selected' : ''}>APARADO</option>
+          <option value="ARMADO" ${lote.estado === 'ARMADO' ? 'selected' : ''}>ARMADO</option>
+          <option value="INYECCIÓN" ${lote.estado === 'INYECCIÓN' ? 'selected' : ''}>INYECCIÓN</option>
+        </select>
+        ${puedeEliminar ? `<button onclick="window.eliminarLoteProduccion('${lote.id}')" class="text-red-500 hover:text-red-700 text-xs p-1"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+      </div>
+    `;
+
+    tr.innerHTML = `
+      <td class="p-3 font-bold text-gray-800 border-r border-gray-100">${lote.proyecto}</td>
+      <td class="p-3 font-mono text-gray-700 border-r border-gray-100">${lote.articulo}</td>
+      <td class="p-3 font-black text-center text-cyan-900 border-r border-gray-100">${(parseInt(lote.pares) || 0).toLocaleString()}</td>
+      <td class="p-3 text-center border-r border-gray-100">
+        <span class="px-2 py-0.5 rounded border font-black text-[10px] ${badgeColor}">${lote.estado}</span>
+      </td>
+      <td class="p-3 text-center text-gray-600 border-r border-gray-100 whitespace-nowrap">${formatearFecha(lote.fechaRegistro)}</td>
+      <td class="p-3 text-gray-700 border-r border-gray-100 font-semibold">${lote.taller || '—'}</td>
+      <td class="p-3 border-r border-gray-100">${celdaMaquinaHTML}</td>
+      <td class="p-3 text-center">${accionesHTML}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+const formLoteProd = document.getElementById("form-nuevo-lote-prod");
+if (formLoteProd) {
+  formLoteProd.onsubmit = async (e) => {
+    e.preventDefault();
+    const proyecto = document.getElementById("lote-proyecto").value.trim().toUpperCase();
+    const articulo = document.getElementById("lote-articulo").value.trim();
+    const pares = parseInt(document.getElementById("lote-pares").value) || 0;
+    const estado = document.getElementById("lote-estado").value;
+    const taller = document.getElementById("lote-taller").value.trim();
+    const maquina = document.getElementById("lote-maquina").value.trim();
+
+    try {
+      await addDoc(collection(db, "produccion_lotes"), {
+        proyecto,
+        articulo,
+        pares,
+        estado,
+        taller,
+        maquina: esJefeProduccion() ? maquina : "",
+        fechaRegistro: new Date().toISOString(),
+        registradoPor: (userData && userData.nombre) || (currentUser && currentUser.email) || "Usuario",
+        timestamp: serverTimestamp()
+      });
+
+      formLoteProd.reset();
+      modalNuevoLoteProd?.classList.add("hidden");
+    } catch (err) {
+      alert("Error al registrar lote: " + err.message);
+    }
+  };
+}
+
+window.actualizarEstadoLote = async (id, nuevoEstado) => {
+  await updateDoc(doc(db, "produccion_lotes", id), {
+    estado: nuevoEstado,
+    fechaActualizacion: new Date().toISOString()
+  });
+};
+
+window.guardarMaquinaLote = async (id) => {
+  const input = document.getElementById(`in-maquina-${id}`);
+  if (!input) return;
+  await updateDoc(doc(db, "produccion_lotes", id), {
+    maquina: input.value.trim()
+  });
+  alert("Máquina asignada correctamente por Jefe de Producción.");
+};
+
+window.eliminarLoteProduccion = async (id) => {
+  if (confirm("¿Eliminar este lote de producción?")) {
+    await deleteDoc(doc(db, "produccion_lotes", id));
+  }
+};
+
 // ==================== MÓDULO TARJETAS (PD) ====================
 function initModuloTarjetas() {
   const inputFecha = document.getElementById("card-fecha");
@@ -1340,6 +1530,7 @@ function initModuloTarjetas() {
     modalImpresionTarjetas?.classList.remove("hidden");
   });
 
+  // Impresión aislada por ventana emergente
   safeClick("btn-ejecutar-print-tarjetas", () => {
     const contenidoHTML = document.getElementById("contenedor-tarjetas-preview")?.innerHTML || "";
     if (!contenidoHTML) return;
@@ -1676,6 +1867,7 @@ async function cargarPanelSuperAdmin() {
               <option value="Compras Admin" ${u.rol === 'Compras Admin' ? 'selected' : ''}>Compras Admin</option>
               <option value="Almacén" ${u.rol === 'Almacén' ? 'selected' : ''}>Almacén</option>
               <option value="Producción" ${u.rol === 'Producción' ? 'selected' : ''}>Producción</option>
+              <option value="Jefe de Producción" ${u.rol === 'Jefe de Producción' ? 'selected' : ''}>Jefe de Producción</option>
               <option value="Planeamiento" ${u.rol === 'Planeamiento' ? 'selected' : ''}>Planeamiento</option>
               <option value="Retail" ${u.rol === 'Retail' ? 'selected' : ''}>Retail</option>
               <option value="Desarrollo de producto" ${u.rol === 'Desarrollo de producto' ? 'selected' : ''}>Desarrollo (General)</option>
