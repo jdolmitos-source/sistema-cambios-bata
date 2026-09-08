@@ -43,7 +43,6 @@ let solicitudes = [];
 let entregas = [];
 let bloqueosMateriales = [];
 let llegadasMateriales = [];
-let lotesProduccion = [];
 
 let categoriaEntregaActiva = "todas";
 
@@ -126,11 +125,6 @@ function esDesarrollo() {
   return userData && (userData.rol || "").includes("Desarrollo");
 }
 
-function esJefeProduccion() {
-  if (esSuperAdmin()) return true;
-  return userData && (userData.rol === "Jefe de Producción");
-}
-
 // Modal WhatsApp
 async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro = null }) {
   const modalWA = document.getElementById("modal-whatsapp");
@@ -182,7 +176,7 @@ async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro =
   }
 }
 
-// ==================== FUNCIONES GLOBALES DE APERTURA ====================
+// ==================== FUNCIONES GLOBALES DE APERTURA (100% OPERATIVAS) ====================
 window.abrirModalCambio = () => {
   document.getElementById("modal-new-change")?.classList.remove("hidden");
 };
@@ -191,6 +185,7 @@ window.abrirModalMinuta = () => {
   document.getElementById("modal-minuta")?.classList.remove("hidden");
 };
 
+// BOTÓN VERDE REGISTRAR ENTREGA (REPARADO Y BLINDADO)
 window.abrirModalEntrega = () => {
   const selectTipo = document.getElementById("ent-tipo");
   if (selectTipo) {
@@ -216,10 +211,6 @@ window.abrirModalBloqueo = () => {
 
 window.abrirModalLlegada = () => {
   document.getElementById("modal-nueva-llegada")?.classList.remove("hidden");
-};
-
-window.abrirModalLoteProduccion = () => {
-  document.getElementById("modal-nuevo-lote-prod")?.classList.remove("hidden");
 };
 
 // ==================== REPORTES DE ENTREGAS ====================
@@ -354,7 +345,6 @@ const modalNuevaLlegada = document.getElementById("modal-nueva-llegada");
 const modalReporteLlegadasPrint = document.getElementById("modal-reporte-llegadas-print");
 const modalImpresionTarjetas = document.getElementById("modal-impresion-tarjetas");
 const modalNewChange = document.getElementById("modal-new-change");
-const modalNuevoLoteProd = document.getElementById("modal-nuevo-lote-prod");
 
 safeClick("btn-close-whatsapp-modal", () => document.getElementById("modal-whatsapp")?.classList.add("hidden"));
 safeClick("btn-show-login", () => modalLogin?.classList.remove("hidden"));
@@ -376,8 +366,6 @@ safeClick("close-nueva-llegada", () => modalNuevaLlegada?.classList.add("hidden"
 safeClick("cancel-nueva-llegada", () => modalNuevaLlegada?.classList.add("hidden"));
 safeClick("close-modal-llegadas-print", () => modalReporteLlegadasPrint?.classList.add("hidden"));
 safeClick("close-modal-tarjetas", () => modalImpresionTarjetas?.classList.add("hidden"));
-safeClick("close-nuevo-lote-prod", () => modalNuevoLoteProd?.classList.add("hidden"));
-safeClick("cancel-nuevo-lote-prod", () => modalNuevoLoteProd?.classList.add("hidden"));
 safeClick("modal-btn-close", () => modalNewChange?.classList.add("hidden"));
 safeClick("modal-btn-cancel", () => modalNewChange?.classList.add("hidden"));
 
@@ -524,7 +512,7 @@ function actualizarHeaderUsuario() {
     }
   }
 
-  const esJefe = userData && (userData.rol === "Desarrollo de producto - Jefe" || userData.rol === "Jefe de Producción");
+  const esJefe = userData && userData.rol === "Desarrollo de producto - Jefe";
   const btnMinutaHeader = document.getElementById("btn-open-minuta-header");
   if (btnMinutaHeader) {
     if (esJefe || esAdmin) {
@@ -575,7 +563,6 @@ onAuthStateChanged(auth, async (user) => {
     escucharCambios();
     escucharEntregas();
     escucharProcurement();
-    escucharProduccion();
   } else {
     currentUser = null;
     userData = null;
@@ -588,7 +575,6 @@ onAuthStateChanged(auth, async (user) => {
 const viewCambios = document.getElementById("view-cambios");
 const viewInforme = document.getElementById("view-informe");
 const viewEntregas = document.getElementById("view-entregas");
-const viewProduccionDash = document.getElementById("view-produccion-dash");
 const viewProcurement = document.getElementById("view-procurement");
 const viewTarjetas = document.getElementById("view-tarjetas");
 const viewUsuarios = document.getElementById("view-usuarios");
@@ -596,7 +582,6 @@ const viewUsuarios = document.getElementById("view-usuarios");
 const menuBtnCambios = document.getElementById("menu-btn-cambios");
 const menuBtnInforme = document.getElementById("menu-btn-informe");
 const menuBtnEntregasTodas = document.getElementById("menu-btn-entregas-todas");
-const menuBtnProduccionDash = document.getElementById("menu-btn-produccion-dash");
 const menuBtnProcurement = document.getElementById("menu-btn-procurement");
 const menuBtnTarjetas = document.getElementById("menu-btn-tarjetas");
 const menuBtnUsuarios = document.getElementById("menu-btn-usuarios");
@@ -607,7 +592,7 @@ const CLASE_ACTIVO_PASTILLA = "sidebar-btn w-full flex items-center space-x-3 px
 const CLASE_ACTIVO_SUB_PASTILLA = "sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-black bg-white text-[#D61B28] shadow-md transition cursor-pointer pl-5 scale-[1.02]";
 
 function resetMenuStyles() {
-  [menuBtnCambios, menuBtnInforme, menuBtnEntregasTodas, menuBtnProduccionDash, menuBtnProcurement, menuBtnTarjetas, menuBtnUsuarios].forEach(b => {
+  [menuBtnCambios, menuBtnInforme, menuBtnEntregasTodas, menuBtnProcurement, menuBtnTarjetas, menuBtnUsuarios].forEach(b => {
     if (b) b.className = CLASE_INACTIVO_PRINCIPAL;
   });
 
@@ -618,7 +603,6 @@ function resetMenuStyles() {
   viewCambios?.classList.add("hidden");
   viewInforme?.classList.add("hidden");
   viewEntregas?.classList.add("hidden");
-  viewProduccionDash?.classList.add("hidden");
   viewProcurement?.classList.add("hidden");
   viewTarjetas?.classList.add("hidden");
   viewUsuarios?.classList.add("hidden");
@@ -649,13 +633,6 @@ safeClick("menu-btn-informe", () => {
 
 safeClick("menu-btn-entregas-todas", () => {
   window.cambiarSubmenuEntrega("todas");
-});
-
-safeClick("menu-btn-produccion-dash", () => {
-  resetMenuStyles();
-  viewProduccionDash?.classList.remove("hidden");
-  if (menuBtnProduccionDash) menuBtnProduccionDash.className = CLASE_ACTIVO_PASTILLA;
-  renderProduccionView();
 });
 
 safeClick("menu-btn-procurement", () => {
@@ -894,7 +871,9 @@ function escucharCambios() {
     });
     solicitudes.sort((a, b) => (b.fechaCreacion || "").localeCompare(a.fechaCreacion || ""));
     renderTabla();
-    actualizarInformePorSemana();
+    if (!viewInforme?.classList.contains("hidden")) {
+      actualizarInformePorSemana();
+    }
   });
 }
 
@@ -1277,749 +1256,6 @@ if (formEntrega) {
   };
 }
 
-// ==================== MÓDULO PRODUCCIÓN (DASHBOARD REAL-TIME) ====================
-function escucharProduccion() {
-  const q = collection(db, "produccion_lotes");
-  onSnapshot(q, (snapshot) => {
-    lotesProduccion = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    lotesProduccion.sort((a, b) => (b.fechaRegistro || "").localeCompare(a.fechaRegistro || ""));
-    renderProduccionView();
-  }, (err) => console.log("Aviso Firestore Producción:", err.message));
-}
-
-function renderProduccionView() {
-  const tbody = document.getElementById("table-produccion-body");
-  const empty = document.getElementById("produccion-empty-state");
-  if (!tbody) return;
-  tbody.innerHTML = "";
-
-  let paresCortado = 0;
-  let paresAparado = 0;
-  let paresArmado = 0;
-  let paresInyeccion = 0;
-
-  lotesProduccion.forEach(lote => {
-    const pares = parseInt(lote.pares) || 0;
-    if (lote.estado === "CORTADO") paresCortado += pares;
-    else if (lote.estado === "APARADO") paresAparado += pares;
-    else if (lote.estado === "ARMADO") paresArmado += pares;
-    else if (lote.estado === "INYECCIÓN") paresInyeccion += pares;
-  });
-
-  const totalPares = paresCortado + paresAparado + paresArmado + paresInyeccion;
-
-  const pctCortado = totalPares > 0 ? Math.round((paresCortado / totalPares) * 100) : 0;
-  const pctAparado = totalPares > 0 ? Math.round((paresAparado / totalPares) * 100) : 0;
-  const pctArmado = totalPares > 0 ? Math.round((paresArmado / totalPares) * 100) : 0;
-  const pctInyeccion = totalPares > 0 ? Math.round((paresInyeccion / totalPares) * 100) : 0;
-
-  const elTot = document.getElementById("prod-total-pares-kpi");
-  if (elTot) elTot.textContent = `${totalPares.toLocaleString()} Pares Totales`;
-
-  const setKpiBar = (idKpi, idPct, idBar, valPares, valPct) => {
-    const k = document.getElementById(idKpi);
-    const p = document.getElementById(idPct);
-    const b = document.getElementById(idBar);
-    if (k) k.textContent = `${valPares.toLocaleString()} pares`;
-    if (p) p.textContent = `${valPct}%`;
-    if (b) b.style.width = `${valPct}%`;
-  };
-
-  setKpiBar("kpi-pares-cortado", "pct-pares-cortado", "bar-pares-cortado", paresCortado, pctCortado);
-  setKpiBar("kpi-pares-aparado", "pct-pares-aparado", "bar-pares-aparado", paresAparado, pctAparado);
-  setKpiBar("kpi-pares-armado", "pct-pares-armado", "bar-pares-armado", paresArmado, pctArmado);
-  setKpiBar("kpi-pares-inyeccion", "pct-pares-inyeccion", "bar-pares-inyeccion", paresInyeccion, pctInyeccion);
-
-  if (lotesProduccion.length === 0) {
-    empty?.classList.remove("hidden");
-    return;
-  }
-  empty?.classList.add("hidden");
-
-  const esJefe = esJefeProduccion();
-  const puedeEliminar = esSuperAdmin() || esJefe;
-
-  lotesProduccion.forEach(lote => {
-    const tr = document.createElement("tr");
-    tr.className = "hover:bg-gray-50/80 transition border-b border-gray-100";
-
-    let badgeColor = "bg-amber-100 text-amber-800 border-amber-300";
-    if (lote.estado === "APARADO") badgeColor = "bg-blue-100 text-blue-800 border-blue-300";
-    if (lote.estado === "ARMADO") badgeColor = "bg-purple-100 text-purple-800 border-purple-300";
-    if (lote.estado === "INYECCIÓN") badgeColor = "bg-emerald-100 text-emerald-800 border-emerald-300";
-
-    // Pares Editables por Jefe de Producción
-    let celdaParesHTML = "";
-    if (esJefe) {
-      celdaParesHTML = `
-        <div class="flex items-center justify-center space-x-1">
-          <input type="number" min="1" id="in-pares-${lote.id}" value="${lote.pares}" class="w-20 px-1.5 py-0.5 border border-cyan-300 rounded font-bold text-center text-cyan-900">
-          <button onclick="window.guardarParesLote('${lote.id}')" title="Actualizar pares" class="bg-cyan-600 hover:bg-cyan-700 text-white p-1 rounded cursor-pointer">
-            <i class="fa-solid fa-floppy-disk text-[10px]"></i>
-          </button>
-        </div>
-      `;
-    } else {
-      celdaParesHTML = `<span class="font-black text-cyan-900">${(parseInt(lote.pares) || 0).toLocaleString()}</span>`;
-    }
-
-    // Estado Editable por Jefe de Producción
-    let celdaEstadoHTML = "";
-    if (esJefe) {
-      celdaEstadoHTML = `
-        <select onchange="window.actualizarEstadoLote('${lote.id}', this.value)" class="px-2 py-1 border border-gray-300 rounded text-xs font-bold bg-white text-gray-800">
-          <option value="CORTADO" ${lote.estado === 'CORTADO' ? 'selected' : ''}>CORTADO</option>
-          <option value="APARADO" ${lote.estado === 'APARADO' ? 'selected' : ''}>APARADO</option>
-          <option value="ARMADO" ${lote.estado === 'ARMADO' ? 'selected' : ''}>ARMADO</option>
-          <option value="INYECCIÓN" ${lote.estado === 'INYECCIÓN' ? 'selected' : ''}>INYECCIÓN</option>
-        </select>
-      `;
-    } else {
-      celdaEstadoHTML = `<span class="px-2 py-0.5 rounded border font-black text-[10px] ${badgeColor}">${lote.estado}</span>`;
-    }
-
-    // Máquina Editable por Jefe de Producción
-    let celdaMaquinaHTML = "";
-    if (esJefe) {
-      celdaMaquinaHTML = `
-        <div class="flex items-center space-x-1">
-          <input type="text" id="in-maquina-${lote.id}" value="${lote.maquina || ''}" placeholder="Asignar máquina..." class="px-2 py-1 border border-cyan-300 rounded font-semibold text-cyan-900 w-36">
-          <button onclick="window.guardarMaquinaLote('${lote.id}')" title="Guardar máquina" class="bg-cyan-600 hover:bg-cyan-700 text-white p-1 rounded cursor-pointer">
-            <i class="fa-solid fa-floppy-disk text-[10px]"></i>
-          </button>
-        </div>
-      `;
-    } else {
-      celdaMaquinaHTML = `<span class="font-bold text-gray-700">${lote.maquina || '<span class="text-gray-300 italic font-normal">Sin asignar</span>'}</span>`;
-    }
-
-    let accionesHTML = puedeEliminar 
-      ? `<button onclick="window.eliminarLoteProduccion('${lote.id}')" class="text-red-500 hover:text-red-700 text-xs p-1" title="Eliminar Lote"><i class="fa-solid fa-trash-can"></i></button>` 
-      : `<span class="text-gray-300">—</span>`;
-
-    tr.innerHTML = `
-      <td class="p-3 font-bold text-gray-800 border-r border-gray-100">${lote.proyecto}</td>
-      <td class="p-3 font-mono text-gray-700 border-r border-gray-100">${lote.articulo}</td>
-      <td class="p-3 text-center border-r border-gray-100">${celdaParesHTML}</td>
-      <td class="p-3 text-center border-r border-gray-100">${celdaEstadoHTML}</td>
-      <td class="p-3 text-center text-gray-600 border-r border-gray-100 whitespace-nowrap">${formatearFecha(lote.fechaRegistro)}</td>
-      <td class="p-3 text-gray-700 border-r border-gray-100 font-semibold">${lote.taller || '—'}</td>
-      <td class="p-3 border-r border-gray-100">${celdaMaquinaHTML}</td>
-      <td class="p-3 text-center">${accionesHTML}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-const formLoteProd = document.getElementById("form-nuevo-lote-prod");
-if (formLoteProd) {
-  formLoteProd.onsubmit = async (e) => {
-    e.preventDefault();
-    const proyecto = document.getElementById("lote-proyecto").value.trim().toUpperCase();
-    const articulo = document.getElementById("lote-articulo").value.trim();
-    const pares = parseInt(document.getElementById("lote-pares").value) || 0;
-    const estado = document.getElementById("lote-estado").value;
-    const taller = document.getElementById("lote-taller").value.trim();
-    const maquina = document.getElementById("lote-maquina").value.trim();
-
-    try {
-      await addDoc(collection(db, "produccion_lotes"), {
-        proyecto,
-        articulo,
-        pares,
-        estado,
-        taller,
-        maquina: esJefeProduccion() ? maquina : "",
-        fechaRegistro: new Date().toISOString(),
-        registradoPor: (userData && userData.nombre) || (currentUser && currentUser.email) || "Usuario",
-        timestamp: serverTimestamp()
-      });
-
-      formLoteProd.reset();
-      modalNuevoLoteProd?.classList.add("hidden");
-    } catch (err) {
-      alert("Error al registrar lote: " + err.message);
-    }
-  };
-}
-
-window.actualizarEstadoLote = async (id, nuevoEstado) => {
-  await updateDoc(doc(db, "produccion_lotes", id), {
-    estado: nuevoEstado,
-    fechaActualizacion: new Date().toISOString()
-  });
-};
-
-window.guardarParesLote = async (id) => {
-  const input = document.getElementById(`in-pares-${id}`);
-  if (!input) return;
-  const nuevosPares = parseInt(input.value) || 0;
-  await updateDoc(doc(db, "produccion_lotes", id), {
-    pares: nuevosPares
-  });
-  alert("Cantidad de pares actualizada correctamente.");
-};
-
-window.guardarMaquinaLote = async (id) => {
-  const input = document.getElementById(`in-maquina-${id}`);
-  if (!input) return;
-  await updateDoc(doc(db, "produccion_lotes", id), {
-    maquina: input.value.trim()
-  });
-  alert("Máquina inyectora asignada.");
-};
-
-window.eliminarLoteProduccion = async (id) => {
-  if (confirm("¿Eliminar este lote de producción?")) {
-    await deleteDoc(doc(db, "produccion_lotes", id));
-  }
-};
-
-// ==================== INFORMES (BLINDADO REACTIVO) ====================
-function renderInformeView() {
-  actualizarInformePorSemana();
-
-  const colSem = document.getElementById("col-filter-semana-informe");
-  const colProy = document.getElementById("col-filter-proyecto-informe");
-
-  if (colSem) {
-    colSem.oninput = (e) => {
-      colFiltroSemanaInforme = e.target.value.trim().toLowerCase();
-      actualizarInformePorSemana();
-    };
-  }
-
-  if (colProy) {
-    colProy.oninput = (e) => {
-      colFiltroProyectoInforme = e.target.value.trim().toLowerCase();
-      actualizarInformePorSemana();
-    };
-  }
-
-  const chkAll = document.getElementById("chk-toggle-all-semana");
-  if (chkAll) {
-    chkAll.onchange = (e) => {
-      const chks = document.querySelectorAll(".chk-articulo-informe");
-      chks.forEach(c => c.checked = e.target.checked);
-      actualizarConteoSeleccionados();
-    };
-  }
-}
-
-function actualizarInformePorSemana() {
-  const inSem = document.getElementById("col-filter-semana-informe");
-  const inProy = document.getElementById("col-filter-proyecto-informe");
-  const fSem = inSem ? inSem.value.trim().toLowerCase() : "";
-  const fProy = inProy ? inProy.value.trim().toLowerCase() : "";
-
-  let articulosFiltrados = solicitudes.filter(item => {
-    const semStr = (item.semana !== undefined && item.semana !== null) ? String(item.semana).toLowerCase().trim() : "";
-    const proyStr = (item.proyecto !== undefined && item.proyecto !== null) ? String(item.proyecto).toLowerCase().trim() : "";
-    const coincideSem = !fSem || semStr.includes(fSem);
-    const coincideProy = !fProy || proyStr.includes(fProy);
-    return coincideSem && coincideProy;
-  });
-
-  articulosFiltrados.sort((a, b) => String(a.semana || "").localeCompare(String(b.semana || ""), undefined, { numeric: true }));
-
-  const total = articulosFiltrados.length;
-  const retrasados = articulosFiltrados.filter(s => s.estado === "Retrasado").length;
-  const enProceso = articulosFiltrados.filter(s => s.estado === "En proceso").length;
-  const realizados = articulosFiltrados.filter(s => s.estado === "Realizado").length;
-  const validadosCostos = articulosFiltrados.filter(s => s.validadoCostos).length;
-
-  const kTotal = document.getElementById("kpi-sem-total");
-  const kRet = document.getElementById("kpi-sem-retrasados");
-  const kProc = document.getElementById("kpi-sem-proceso");
-  const kReal = document.getElementById("kpi-sem-realizados");
-  const kCost = document.getElementById("kpi-sem-costos");
-
-  if (kTotal) kTotal.textContent = total;
-  if (kRet) kRet.textContent = retrasados;
-  if (kProc) kProc.textContent = enProceso;
-  if (kReal) kReal.textContent = realizados;
-  if (kCost) kCost.textContent = `${validadosCostos} de ${total}`;
-
-  const badgeContainer = document.getElementById("badge-congelamiento-container");
-  if (badgeContainer) {
-    if (total === 0) {
-      badgeContainer.innerHTML = `<span class="bg-gray-100 text-gray-500 font-bold text-[11px] px-3 py-1 rounded-full border border-gray-200">Sin artículos coincidentes</span>`;
-    } else if (realizados === total && validadosCostos === total) {
-      badgeContainer.innerHTML = `
-        <span class="bg-green-100 text-green-800 font-bold text-[11px] px-3.5 py-1.5 rounded-full border border-green-300 inline-flex items-center space-x-1.5 shadow-sm">
-          <i class="fa-solid fa-circle-check text-green-600"></i>
-          <span>Listo para Congelamiento (100% Realizado y Validado en Costos)</span>
-        </span>
-      `;
-    } else {
-      const pendientes = total - validadosCostos;
-      badgeContainer.innerHTML = `
-        <span class="bg-amber-50 text-amber-800 font-bold text-[11px] px-3.5 py-1.5 rounded-full border border-amber-200 inline-flex items-center space-x-1.5">
-          <i class="fa-solid fa-clock text-amber-600"></i>
-          <span>${pendientes} artículo(s) pendientes por validar en Costos</span>
-        </span>
-      `;
-    }
-  }
-
-  const tbody = document.getElementById("table-informe-articulos-body");
-  if (!tbody) return;
-  tbody.innerHTML = "";
-
-  if (total === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400 italic">No hay artículos que coincidan con la búsqueda.</td></tr>`;
-    actualizarConteoSeleccionados();
-    return;
-  }
-
-  articulosFiltrados.forEach(item => {
-    const tr = document.createElement("tr");
-    tr.className = item.esMinuta 
-      ? "bg-amber-50/70 hover:bg-amber-100/70 border-b border-amber-200" 
-      : "hover:bg-gray-50/70 border-b border-gray-100";
-
-    const badgeMinuta = item.esMinuta ? `<span class="bg-amber-500 text-white font-bold text-[9px] px-1.5 py-0.2 rounded mr-1">PILOTO</span>` : '';
-
-    const fotoHTML = item.foto 
-      ? `<img src="${item.foto}" onclick="window.verFotoGrande('${item.foto}', '${item.proyecto} - ${item.articulo}')" class="w-10 h-7 object-cover rounded border border-gray-200 shadow-xs cursor-pointer hover:opacity-80 transition mx-auto" title="Click para ampliar">`
-      : `<div class="w-10 h-7 rounded border border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-[10px] mx-auto"><i class="fa-regular fa-image"></i></div>`;
-
-    tr.innerHTML = `
-      <td class="p-2.5 text-center">
-        <input type="checkbox" value="${item.id}" checked class="chk-articulo-informe h-4 w-4 accent-[#D61B28] cursor-pointer">
-      </td>
-      <td class="p-2 border-r border-gray-100 text-center">${fotoHTML}</td>
-      <td class="p-2.5 font-bold text-gray-700 font-mono">${item.semana}</td>
-      <td class="p-2.5 font-bold text-gray-800">${badgeMinuta}${item.proyecto}</td>
-      <td class="p-2.5 font-mono text-gray-700">${item.articulo}</td>
-      <td class="p-2.5 text-gray-600 max-w-xs truncate leading-relaxed" title="${item.boxCambio}">${item.boxCambio}</td>
-      <td class="p-2.5 text-center">
-        <span class="px-2 py-0.5 rounded font-bold text-[10px] ${item.estado === 'Realizado' ? 'bg-green-50 text-green-700 border border-green-200' : (item.estado === 'Retrasado' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-orange-50 text-orange-700 border border-orange-200')}">${item.estado}</span>
-      </td>
-      <td class="p-2.5 text-center font-bold text-[11px]">
-        ${item.validadoCostos ? '<span class="text-green-600"><i class="fa-solid fa-check"></i> Validado</span>' : '<span class="text-gray-300">Pendiente</span>'}
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  document.querySelectorAll(".chk-articulo-informe").forEach(chk => {
-    chk.onchange = actualizarConteoSeleccionados;
-  });
-
-  actualizarConteoSeleccionados();
-}
-
-function actualizarConteoSeleccionados() {
-  const total = document.querySelectorAll(".chk-articulo-informe").length;
-  const marcados = document.querySelectorAll(".chk-articulo-informe:checked").length;
-  const label = document.getElementById("label-conteo-seleccionados");
-  if (label) label.textContent = `${marcados} de ${total} seleccionados`;
-}
-
-window.generarTextoNotificacionBata = () => {
-  const seleccionadosIds = Array.from(document.querySelectorAll(".chk-articulo-informe:checked")).map(c => c.value);
-  if (seleccionadosIds.length === 0) {
-    alert("Selecciona al menos un artículo para generar la notificación.");
-    return;
-  }
-
-  const items = solicitudes.filter(s => seleccionadosIds.includes(s.id));
-  const semanaTitulo = colFiltroSemanaInforme ? colFiltroSemanaInforme : (items[0]?.semana || "GENERAL");
-
-  let texto = `CAMBIOS REALIZADOS PARA SEM: ${semanaTitulo}\n\n`;
-  texto += `Saludos Estimados, Todos los cambios en guías para el congelamiento de la semana mencionada filas arriba han sido realizados y se puede continuar con el proceso.\n\n`;
-  texto += `Detalle de Artículos Afectados:\n`;
-
-  items.forEach(it => {
-    texto += `Proyecto: ${it.proyecto.toUpperCase()}, Artículo: ${it.articulo}\n`;
-  });
-
-  const textarea = document.getElementById("texto-wsp-output");
-  if (textarea) textarea.value = texto;
-
-  safeClick("btn-copiar-texto-wsp", () => {
-    if (textarea) {
-      textarea.select();
-      navigator.clipboard.writeText(texto);
-      alert("Texto copiado al portapapeles.");
-    }
-  });
-
-  safeClick("btn-enviar-correo-informe", () => {
-    const asunto = encodeURIComponent(`Bata Bolivia - Cambios Realizados para Semana ${semanaTitulo}`);
-    const cuerpo = encodeURIComponent(texto);
-    window.location.href = `mailto:?subject=${asunto}&body=${cuerpo}`;
-  });
-
-  safeClick("btn-enviar-wsp-directo", () => {
-    const encoded = encodeURIComponent(texto);
-    window.open(`https://wa.me/?text=${encoded}`, "_blank");
-  });
-
-  modalTextoWsp?.classList.remove("hidden");
-};
-
-window.generarModalInformeResumen = () => {
-  const seleccionadosIds = Array.from(document.querySelectorAll(".chk-articulo-informe:checked")).map(c => c.value);
-  if (seleccionadosIds.length === 0) {
-    alert("Selecciona al menos un artículo para generar el informe PDF.");
-    return;
-  }
-
-  const items = solicitudes.filter(s => seleccionadosIds.includes(s.id));
-  const contenedor = document.getElementById("reporte-resumen-contenido");
-  if (!contenedor) return;
-
-  let html = `
-    <div class="overflow-x-auto">
-      <table class="w-full text-left border-collapse border border-gray-200 text-xs">
-        <thead class="bg-gray-100 font-bold">
-          <tr>
-            <th class="p-2 border text-center w-12">Foto</th>
-            <th class="p-2 border">Semana</th>
-            <th class="p-2 border">Fecha Solicitud</th>
-            <th class="p-2 border">Solicitante</th>
-            <th class="p-2 border">Proyecto</th>
-            <th class="p-2 border">Artículo</th>
-            <th class="p-2 border">Descripción de Cambios</th>
-            <th class="p-2 border text-center">Estado</th>
-            <th class="p-2 border text-center">Fecha Realizado</th>
-            <th class="p-2 border text-center">Validación Costos</th>
-          </tr>
-        </thead>
-        <tbody>
-  `;
-
-  items.forEach(it => {
-    const fotoPrint = it.foto 
-      ? `<img src="${it.foto}" style="width: 44px; height: 30px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; margin: auto;">`
-      : `<span style="color: #bbb;">—</span>`;
-
-    html += `
-      <tr class="border-b">
-        <td class="p-1 border text-center">${fotoPrint}</td>
-        <td class="p-2 border font-bold font-mono">${it.semana || '—'}</td>
-        <td class="p-2 border whitespace-nowrap">${formatearFecha(it.fechaCreacion)}</td>
-        <td class="p-2 border whitespace-nowrap font-medium">${it.solicitanteNombre} <span class="text-[10px] text-gray-400">(${it.solicitanteRol})</span></td>
-        <td class="p-2 border font-bold text-gray-800">${it.proyecto}</td>
-        <td class="p-2 border font-mono">${it.articulo}</td>
-        <td class="p-2 border text-gray-700">${it.boxCambio}</td>
-        <td class="p-2 border text-center font-bold ${it.estado === 'Realizado' ? 'text-green-600' : (it.estado === 'Retrasado' ? 'text-red-600' : 'text-orange-600')}">${it.estado}</td>
-        <td class="p-2 border text-center whitespace-nowrap">${formatearFecha(it.fechaRealizado)}</td>
-        <td class="p-2 border text-center font-bold ${it.validadoCostos ? 'text-green-600' : 'text-gray-400'}">${it.validadoCostos ? 'Validado' : 'Pendiente'}</td>
-      </tr>
-    `;
-  });
-
-  html += `
-        </tbody>
-      </table>
-    </div>
-  `;
-
-  contenedor.innerHTML = html;
-  modalResumen?.classList.remove("hidden");
-};
-
-// ==================== PROCUREMENT & STORAGE ====================
-function escucharProcurement() {
-  const qBloqueos = collection(db, "procurement_bloqueos");
-  onSnapshot(qBloqueos, (snapshot) => {
-    bloqueosMateriales = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderTablaBloqueos();
-  }, (err) => console.log("Aviso Firestore Bloqueos:", err.message));
-
-  const qLlegadas = collection(db, "procurement_llegadas");
-  onSnapshot(qLlegadas, (snapshot) => {
-    llegadasMateriales = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderTablaLlegadas();
-  }, (err) => console.log("Aviso Firestore Llegadas:", err.message));
-}
-
-function renderProcurementView() {
-  renderTablaBloqueos();
-  renderTablaLlegadas();
-
-  safeClick("btn-open-nuevo-bloqueo", () => modalNuevoBloqueo?.classList.remove("hidden"));
-  safeClick("btn-open-nueva-llegada", () => modalNuevaLlegada?.classList.remove("hidden"));
-
-  const fItem = document.getElementById("col-filter-item-llegada");
-  const fNom = document.getElementById("col-filter-nombre-llegada");
-  const fSem = document.getElementById("col-filter-semana-llegada");
-
-  if (fItem) fItem.oninput = (e) => { colFiltroItemLlegada = e.target.value.trim().toLowerCase(); renderTablaLlegadas(); };
-  if (fNom) fNom.oninput = (e) => { colFiltroNombreLlegada = e.target.value.trim().toLowerCase(); renderTablaLlegadas(); };
-  if (fSem) fSem.oninput = (e) => { colFiltroSemanaLlegada = e.target.value.trim().toLowerCase(); renderTablaLlegadas(); };
-
-  safeClick("btn-reporte-llegadas-pdf", abrirReporteImpresoLlegadas);
-}
-
-const formBloqueo = document.getElementById("form-nuevo-bloqueo");
-if (formBloqueo) {
-  formBloqueo.onsubmit = async (e) => {
-    e.preventDefault();
-    const item = document.getElementById("bloq-item").value.trim();
-    const semana = document.getElementById("bloq-semana").value.trim();
-    const nombre = document.getElementById("bloq-nombre").value.trim();
-    const cantidad = parseFloat(document.getElementById("bloq-cantidad").value) || 0;
-    const unidad = document.getElementById("bloq-unidad").value;
-    const estado = document.getElementById("bloq-estado").value;
-    const notas = document.getElementById("bloq-notas").value.trim();
-
-    try {
-      const nombreUsuario = (userData && userData.nombre) || (currentUser && currentUser.email) || "Compras";
-      const rolUsuario = (userData && userData.rol) || "Compras";
-
-      await addDoc(collection(db, "procurement_bloqueos"), {
-        item,
-        semana,
-        nombre,
-        cantidad,
-        unidad,
-        estado,
-        notas,
-        notificadoAlmacen: false,
-        registradoPorNombre: nombreUsuario,
-        registradoPorRol: rolUsuario,
-        registradoPorId: currentUser ? currentUser.uid : null,
-        fechaCreacion: new Date().toISOString(),
-        timestamp: serverTimestamp()
-      });
-
-      formBloqueo.reset();
-      modalNuevoBloqueo?.classList.add("hidden");
-
-      abrirModalWhatsApp({
-        titulo: "Alerta de Disponibilidad Emitida",
-        subtitulo: "Enviar alerta inmediata al personal de Almacén:",
-        mensajeTexto: `📦 *ALERTA DE DISPONIBILIDAD DE MATERIAL - BATA BOLIVIA*\n*Compras a Almacén*\n\n📅 *Semana de Bloqueo:* ${semana}\n🔢 *Item:* ${item}\n🧵 *Material:* ${nombre}\n📏 *Cant. Permitida:* ${cantidad} ${unidad}\n⚠️ *Disposición:* ${estado}\n📝 *Notas:* ${notas || 'Sin notas'}\n👤 *Emitido por:* ${nombreUsuario} (${rolUsuario})\n\n_Favor ajustar las entregas físicas en almacén conforme a esta disposición._`,
-        rolFiltro: "Almacén"
-      });
-    } catch (err) {
-      alert("Error al guardar bloqueo: " + err.message);
-    }
-  };
-}
-
-function renderTablaBloqueos() {
-  const tbody = document.getElementById("table-bloqueos-body");
-  if (!tbody) return;
-  tbody.innerHTML = "";
-
-  if (bloqueosMateriales.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400 italic">No hay restricciones de materiales registradas.</td></tr>`;
-    return;
-  }
-
-  const esAlmacen = (userData && userData.rol === "Almacén") || esSuperAdmin();
-  const puedeBorrar = esComprasAdmin();
-
-  bloqueosMateriales.forEach(b => {
-    const tr = document.createElement("tr");
-    tr.className = "hover:bg-gray-50/70 border-b border-gray-100";
-
-    let estiloBadge = "bg-amber-100 text-amber-800";
-    if (b.estado === "Bloqueado para Producción") estiloBadge = "bg-red-100 text-red-800";
-    if (b.estado === "Disponible Libre") estiloBadge = "bg-green-100 text-green-800";
-
-    let accionAlmacen = b.notificadoAlmacen 
-      ? `<span class="text-green-600 font-bold text-[11px]"><i class="fa-solid fa-check"></i> Almacén Enterado</span>`
-      : (esAlmacen 
-          ? `<button onclick="window.confirmarEnteradoAlmacen('${b.id}')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-2 py-1 rounded border border-blue-200">Confirmar Enterado</button>`
-          : `<span class="text-gray-400 text-[11px] italic">Pendiente confirmación</span>`);
-
-    let eliminarHTML = puedeBorrar
-      ? `<button onclick="window.eliminarBloqueoMaterial('${b.id}', '${b.nombre}')" class="text-red-500 hover:text-red-700 font-bold text-xs cursor-pointer"><i class="fa-solid fa-trash-can"></i></button>`
-      : `<span class="text-gray-300">—</span>`;
-
-    tr.innerHTML = `
-      <td class="p-2.5 font-mono font-bold text-gray-700">${b.item}</td>
-      <td class="p-2.5 font-bold text-gray-800">${b.nombre} ${b.notas ? '<p class="text-[10px] text-gray-400 font-normal">' + b.notas + '</p>' : ''}</td>
-      <td class="p-2.5 font-mono font-bold text-amber-700">${b.semana}</td>
-      <td class="p-2.5 font-black text-gray-800">${b.cantidad} ${b.unidad || 'Mts'}</td>
-      <td class="p-2.5 text-center"><span class="px-2 py-0.5 rounded font-bold text-[10px] ${estiloBadge}">${b.estado}</span></td>
-      <td class="p-2.5 text-gray-600">${b.registradoPorNombre}</td>
-      <td class="p-2.5 text-center">${accionAlmacen}</td>
-      <td class="p-2.5 text-center">${eliminarHTML}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-window.confirmarEnteradoAlmacen = async (id) => {
-  await updateDoc(doc(db, "procurement_bloqueos", id), {
-    notificadoAlmacen: true,
-    fechaEnterado: new Date().toISOString(),
-    usuarioAlmacen: (userData && userData.nombre) || "Almacén"
-  });
-};
-
-window.eliminarBloqueoMaterial = async (id, nombre) => {
-  if (!esComprasAdmin()) {
-    alert("Solo Compras Admin o Super Admin pueden borrar bloqueos.");
-    return;
-  }
-  if (confirm(`¿Eliminar la restricción del material "${nombre}"?`)) {
-    await deleteDoc(doc(db, "procurement_bloqueos", id));
-  }
-};
-
-const formLlegada = document.getElementById("form-nueva-llegada");
-if (formLlegada) {
-  formLlegada.onsubmit = async (e) => {
-    e.preventDefault();
-    const item = document.getElementById("lleg-item").value.trim();
-    const semana = document.getElementById("lleg-semana").value.trim();
-    const nombre = document.getElementById("lleg-nombre").value.trim();
-    const cantidad = document.getElementById("lleg-cantidad").value.trim();
-    const fechaEst = document.getElementById("lleg-fecha-est").value;
-    const fechaReal = document.getElementById("lleg-fecha-real").value;
-
-    try {
-      const nombreUsuario = (userData && userData.nombre) || (currentUser && currentUser.email) || "Usuario";
-
-      await addDoc(collection(db, "procurement_llegadas"), {
-        item,
-        semana,
-        nombre,
-        cantidad,
-        fechaEstimada: fechaEst,
-        fechaReal: fechaReal || null,
-        validadoCompras: false,
-        registradoPor: nombreUsuario,
-        registradoPorId: currentUser ? currentUser.uid : null,
-        fechaCreacion: new Date().toISOString(),
-        timestamp: serverTimestamp()
-      });
-
-      formLlegada.reset();
-      modalNuevaLlegada?.classList.add("hidden");
-    } catch (err) {
-      alert("Error al guardar llegada: " + err.message);
-    }
-  };
-}
-
-function renderTablaLlegadas() {
-  const tbody = document.getElementById("table-llegadas-body");
-  if (!tbody) return;
-  tbody.innerHTML = "";
-
-  let filtradas = llegadasMateriales.filter(l => {
-    const cItem = !colFiltroItemLlegada || (l.item || "").toLowerCase().includes(colFiltroItemLlegada);
-    const cNom = !colFiltroNombreLlegada || (l.nombre || "").toLowerCase().includes(colFiltroNombreLlegada);
-    const cSem = !colFiltroSemanaLlegada || (l.semana || "").toString().includes(colFiltroSemanaLlegada);
-    return cItem && cNom && cSem;
-  });
-
-  if (filtradas.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400 italic">No hay registros de llegadas.</td></tr>`;
-    return;
-  }
-
-  const esCompras = esComprasAdmin();
-
-  filtradas.forEach(l => {
-    const tr = document.createElement("tr");
-    tr.className = "hover:bg-gray-50/70 border-b border-gray-100";
-
-    let validacionHTML = l.validadoCompras 
-      ? `<span class="text-green-700 font-bold text-xs"><i class="fa-solid fa-circle-check"></i> Validado</span>`
-      : (esCompras 
-          ? `<button onclick="window.validarLlegadaCompras('${l.id}')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-2.5 py-1 rounded border border-emerald-200">Validar</button>`
-          : `<span class="text-gray-300 text-[11px]">Pendiente</span>`);
-
-    let eliminarHTML = esCompras
-      ? `<button onclick="window.eliminarLlegadaMaterial('${l.id}', '${l.nombre}')" class="text-red-500 hover:text-red-700 font-bold text-xs cursor-pointer"><i class="fa-solid fa-trash-can"></i></button>`
-      : `<span class="text-gray-300">—</span>`;
-
-    tr.innerHTML = `
-      <td class="p-2.5 font-mono font-bold text-gray-700">${l.item}</td>
-      <td class="p-2.5 font-bold text-gray-800">${l.nombre}</td>
-      <td class="p-2.5 font-mono font-bold text-gray-600">${l.semana}</td>
-      <td class="p-2.5 font-black text-gray-700">${l.cantidad}</td>
-      <td class="p-2.5 text-gray-600">${l.fechaEstimada || '—'}</td>
-      <td class="p-2.5 font-bold ${l.fechaReal ? 'text-green-700' : 'text-amber-600'}">${l.fechaReal || 'En tránsito'}</td>
-      <td class="p-2.5 text-center">${validacionHTML}</td>
-      <td class="p-2.5 text-center">${eliminarHTML}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-window.validarLlegadaCompras = async (id) => {
-  if (confirm("¿Confirmar y validar la llegada física de este material a fábrica?")) {
-    await updateDoc(doc(db, "procurement_llegadas", id), {
-      validadoCompras: true,
-      fechaValidacion: new Date().toISOString(),
-      validadorCompras: (userData && userData.nombre) || "Compras"
-    });
-  }
-};
-
-window.eliminarLlegadaMaterial = async (id, nombre) => {
-  if (!esComprasAdmin()) {
-    alert("Solo Compras Admin o Super Admin pueden borrar llegadas.");
-    return;
-  }
-  if (confirm(`¿Eliminar el registro de llegada de "${nombre}"?`)) {
-    await deleteDoc(doc(db, "procurement_llegadas", id));
-  }
-};
-
-window.abrirReporteImpresoLlegadas = () => {
-  if (llegadasMateriales.length === 0) {
-    alert("No hay registros de llegadas para generar el informe.");
-    return;
-  }
-
-  const contenedor = document.getElementById("contenido-impresion-llegadas");
-  if (!contenedor) return;
-
-  let html = `
-    <div class="overflow-x-auto">
-      <table class="w-full text-left border-collapse border border-gray-200 text-xs">
-        <thead class="bg-gray-100 font-bold">
-          <tr>
-            <th class="p-2 border">Item</th>
-            <th class="p-2 border">Nombre del Material</th>
-            <th class="p-2 border">Sem. Solicitud</th>
-            <th class="p-2 border">Cantidad</th>
-            <th class="p-2 border">Llegada Estimada</th>
-            <th class="p-2 border">Llegada Real</th>
-            <th class="p-2 border text-center">Estado / Validación</th>
-          </tr>
-        </thead>
-        <tbody>
-  `;
-
-  llegadasMateriales.forEach(it => {
-    html += `
-      <tr class="border-b">
-        <td class="p-2 border font-mono font-bold">${it.item}</td>
-        <td class="p-2 border font-bold">${it.nombre}</td>
-        <td class="p-2 border font-mono">${it.semana}</td>
-        <td class="p-2 border font-black">${it.cantidad}</td>
-        <td class="p-2 border">${it.fechaEstimada || '—'}</td>
-        <td class="p-2 border font-bold ${it.fechaReal ? 'text-green-700' : 'text-amber-600'}">${it.fechaReal || 'En Tránsito'}</td>
-        <td class="p-2 border text-center font-bold ${it.validadoCompras ? 'text-green-600' : 'text-gray-400'}">
-          ${it.validadoCompras ? 'Validado Compras' : 'Pendiente'}
-        </td>
-      </tr>
-    `;
-  });
-
-  html += `
-        </tbody>
-      </table>
-    </div>
-  `;
-
-  contenedor.innerHTML = html;
-  document.getElementById("modal-reporte-llegadas-print")?.classList.remove("hidden");
-};
-
 // ==================== MÓDULO TARJETAS (PD) ====================
 function initModuloTarjetas() {
   const inputFecha = document.getElementById("card-fecha");
@@ -2104,7 +1340,6 @@ function initModuloTarjetas() {
     modalImpresionTarjetas?.classList.remove("hidden");
   });
 
-  // Impresión aislada por ventana emergente
   safeClick("btn-ejecutar-print-tarjetas", () => {
     const contenidoHTML = document.getElementById("contenedor-tarjetas-preview")?.innerHTML || "";
     if (!contenidoHTML) return;
@@ -2344,30 +1579,30 @@ function renderTarjetasPreview() {
                 <span style="font-size:5px; font-weight:bold; text-align:center; overflow:hidden; white-space:nowrap;">${fecha}</span>
               </div>
 
-              <!-- FILAS TÉCNICAS ADELGAZADAS A 2.8mm -->
+              <!-- FILAS TÉCNICAS ADELGAZADAS A 3.2mm -->
               <div style="flex:1;">
                 <table style="width:100%; height:100%; border-collapse:collapse; font-size:6.5px; font-weight:900;">
-                  <tr style="border-bottom:1px solid #000; height:2.8mm;">
+                  <tr style="border-bottom:1px solid #000; height:3.2mm;">
                     <td style="border-right:1px solid #000; width:38%; text-align:center; padding:0;">ART:</td>
                     <td style="text-align:center; padding:0; font-size:7.5px; font-family:monospace;">${articulo}</td>
                   </tr>
-                  <tr style="border-bottom:1px solid #000; height:2.8mm;">
+                  <tr style="border-bottom:1px solid #000; height:3.2mm;">
                     <td style="border-right:1px solid #000; text-align:center; padding:0;">MARCA:</td>
                     <td style="text-align:center; padding:0;">${marca}</td>
                   </tr>
-                  <tr style="border-bottom:1px solid #000; height:2.8mm;">
+                  <tr style="border-bottom:1px solid #000; height:3.2mm;">
                     <td style="border-right:1px solid #000; text-align:center; padding:0;">SERIE:</td>
                     <td style="text-align:center; padding:0;">${serie}</td>
                   </tr>
-                  <tr style="border-bottom:1px solid #000; height:2.8mm;">
+                  <tr style="border-bottom:1px solid #000; height:3.2mm;">
                     <td style="border-right:1px solid #000; width:38%; text-align:center; padding:0;">CORTE:</td>
                     <td style="text-align:center; padding:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${materialCorte}</td>
                   </tr>
-                  <tr style="border-bottom:1px solid #000; height:2.8mm;">
+                  <tr style="border-bottom:1px solid #000; height:3.2mm;">
                     <td style="border-right:1px solid #000; width:38%; text-align:center; padding:0;">FORRO:</td>
                     <td style="text-align:center; padding:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${forro}</td>
                   </tr>
-                  <tr style="height:2.8mm;">
+                  <tr style="height:3.2mm;">
                     <td style="border-right:1px solid #000; width:38%; text-align:center; padding:0;">PLANT:</td>
                     <td style="text-align:center; padding:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${plantInt}</td>
                   </tr>
@@ -2441,7 +1676,6 @@ async function cargarPanelSuperAdmin() {
               <option value="Compras Admin" ${u.rol === 'Compras Admin' ? 'selected' : ''}>Compras Admin</option>
               <option value="Almacén" ${u.rol === 'Almacén' ? 'selected' : ''}>Almacén</option>
               <option value="Producción" ${u.rol === 'Producción' ? 'selected' : ''}>Producción</option>
-              <option value="Jefe de Producción" ${u.rol === 'Jefe de Producción' ? 'selected' : ''}>Jefe de Producción</option>
               <option value="Planeamiento" ${u.rol === 'Planeamiento' ? 'selected' : ''}>Planeamiento</option>
               <option value="Retail" ${u.rol === 'Retail' ? 'selected' : ''}>Retail</option>
               <option value="Desarrollo de producto" ${u.rol === 'Desarrollo de producto' ? 'selected' : ''}>Desarrollo (General)</option>
