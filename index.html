@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistema de Gestión de Cambios y Entregas - Bata Bolivia</title>
+  <title>Sistema de Gestión de Cambios, Entregas y Producción - Bata Bolivia</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="style.css">
@@ -32,16 +32,12 @@
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
     }
-
     @page {
       size: letter portrait;
       margin: 8mm;
     }
-
     @media print {
-      body * {
-        visibility: hidden !important;
-      }
+      body * { visibility: hidden !important; }
       #modal-reporte-entregas-print:not(.hidden), #modal-reporte-entregas-print:not(.hidden) *,
       #modal-resumen-reporte:not(.hidden), #modal-resumen-reporte:not(.hidden) *,
       #modal-reporte-llegadas-print:not(.hidden), #modal-reporte-llegadas-print:not(.hidden) * {
@@ -58,9 +54,7 @@
         padding: 5mm !important;
         background: white !important;
       }
-      .no-print {
-        display: none !important;
-      }
+      .no-print { display: none !important; }
     }
   </style>
 </head>
@@ -77,7 +71,7 @@
       <div class="relative z-10">
         <div class="flex items-center space-x-2 text-white border-t border-white/20 pt-4 text-xs font-semibold drop-shadow select-none">
           <i class="fa-solid fa-chart-line text-sm"></i>
-          <span>Seguimiento de Cambios, Entregas y Materiales</span>
+          <span>Seguimiento de Cambios, Entregas y Producción</span>
         </div>
       </div>
     </div>
@@ -132,7 +126,7 @@
         <div>
           <div class="flex justify-between items-center mb-1">
             <label class="font-semibold text-gray-600">Contraseña</label>
-            <button type="button" id="btn-forgot-pass" class="text-[10px] text-[#D61B28] hover:underline font-semibold flex items-center space-x-1" title="Solicitar reseteo por WhatsApp">
+            <button type="button" id="btn-forgot-pass" class="text-[10px] text-[#D61B28] hover:underline font-semibold flex items-center space-x-1">
               <i class="fa-brands fa-whatsapp text-green-600 text-xs"></i>
               <span>¿Resetear por WhatsApp?</span>
             </button>
@@ -285,6 +279,15 @@
           </button>
         </div>
 
+        <!-- MÓDULO PRODUCCIÓN -->
+        <div class="pt-3 border-t border-white/20 space-y-1">
+          <div class="px-3 text-[10px] font-black text-white/70 uppercase tracking-widest mb-1.5">Planta de Fabricación</div>
+          <button type="button" id="menu-btn-produccion-dash" class="sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white transition cursor-pointer">
+            <i class="fa-solid fa-industry text-sm text-cyan-300"></i>
+            <span>Producción (Dashboard)</span>
+          </button>
+        </div>
+
         <!-- CADENA DE SUMINISTRO -->
         <div class="pt-3 border-t border-white/20 space-y-1">
           <div class="px-3 text-[10px] font-black text-white/70 uppercase tracking-widest mb-1.5">Cadena de Suministro</div>
@@ -361,7 +364,7 @@
           </div>
         </section>
 
-        <!-- VISTA 2: INFORME EJECUTIVO CON 5 MINI-KPIS -->
+        <!-- VISTA 2: INFORME EJECUTIVO -->
         <section id="view-informe" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -369,7 +372,7 @@
                 <i class="fa-regular fa-file-lines"></i>
                 <span>Informe Ejecutivo y Congelamiento de Producción</span>
               </h2>
-              <p class="text-xs text-gray-400">Filtra directamente en los encabezados de la tabla como en Excel.</p>
+              <p class="text-xs text-gray-400">Control visual de artículos listos y avance por semana.</p>
             </div>
             <div class="flex items-center space-x-2">
               <button type="button" id="btn-generar-texto-wsp" onclick="window.generarTextoNotificacionBata()" class="bg-green-600 hover:bg-green-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
@@ -507,7 +510,109 @@
           </div>
         </section>
 
-        <!-- VISTA 4: PROCUREMENT & STORAGE -->
+        <!-- VISTA 4: MÓDULO DASHBOARD DE PRODUCCIÓN -->
+        <section id="view-produccion-dash" class="hidden space-y-6">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h2 class="text-lg font-bold text-[#D61B28] flex items-center space-x-2">
+                <i class="fa-solid fa-industry text-cyan-600"></i>
+                <span>Dashboard de Control de Fabricación en Planta</span>
+              </h2>
+              <p class="text-xs text-gray-400">Seguimiento de lotes por estación, pares totales, talleres y asignación de máquinas inyectoras.</p>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button type="button" id="btn-open-nuevo-lote" onclick="window.abrirModalLoteProduccion()" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-1.5 transition cursor-pointer">
+                <i class="fa-solid fa-plus"></i>
+                <span>Registrar Lote de Producción</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- BARRAS DE PROGRESO NATIVAS DE TAILWIND Y MINI-KPIS DE PARES -->
+          <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4">
+            <div class="flex justify-between items-center border-b border-gray-100 pb-2">
+              <span class="font-bold text-xs text-gray-700 uppercase tracking-wider">Avance Consolidado de Pares por Estación</span>
+              <span id="prod-total-pares-kpi" class="text-xs font-black text-[#D61B28]">0 Pares Totales</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <!-- CORTADO -->
+              <div class="bg-amber-50/70 p-3.5 rounded-xl border border-amber-200 space-y-2">
+                <div class="flex justify-between text-xs font-bold text-amber-900">
+                  <span>CORTADO</span>
+                  <span id="kpi-pares-cortado">0 pares</span>
+                </div>
+                <div class="w-full bg-amber-200/60 rounded-full h-2.5 overflow-hidden">
+                  <div id="bar-pares-cortado" class="bg-amber-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <span id="pct-pares-cortado" class="text-[10px] text-amber-700 font-semibold block text-right">0%</span>
+              </div>
+
+              <!-- APARADO -->
+              <div class="bg-blue-50/70 p-3.5 rounded-xl border border-blue-200 space-y-2">
+                <div class="flex justify-between text-xs font-bold text-blue-900">
+                  <span>APARADO</span>
+                  <span id="kpi-pares-aparado">0 pares</span>
+                </div>
+                <div class="w-full bg-blue-200/60 rounded-full h-2.5 overflow-hidden">
+                  <div id="bar-pares-aparado" class="bg-blue-600 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <span id="pct-pares-aparado" class="text-[10px] text-blue-700 font-semibold block text-right">0%</span>
+              </div>
+
+              <!-- ARMADO -->
+              <div class="bg-purple-50/70 p-3.5 rounded-xl border border-purple-200 space-y-2">
+                <div class="flex justify-between text-xs font-bold text-purple-900">
+                  <span>ARMADO</span>
+                  <span id="kpi-pares-armado">0 pares</span>
+                </div>
+                <div class="w-full bg-purple-200/60 rounded-full h-2.5 overflow-hidden">
+                  <div id="bar-pares-armado" class="bg-purple-600 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <span id="pct-pares-armado" class="text-[10px] text-purple-700 font-semibold block text-right">0%</span>
+              </div>
+
+              <!-- INYECCIÓN -->
+              <div class="bg-emerald-50/70 p-3.5 rounded-xl border border-emerald-200 space-y-2">
+                <div class="flex justify-between text-xs font-bold text-emerald-900">
+                  <span>INYECCIÓN</span>
+                  <span id="kpi-pares-inyeccion">0 pares</span>
+                </div>
+                <div class="w-full bg-emerald-200/60 rounded-full h-2.5 overflow-hidden">
+                  <div id="bar-pares-inyeccion" class="bg-emerald-600 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <span id="pct-pares-inyeccion" class="text-[10px] text-emerald-700 font-semibold block text-right">0%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- TABLA DE CONTROL DE LOTES -->
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="bg-gray-100/80 border-b border-gray-200 text-gray-700 font-bold">
+                    <th class="p-3 border-r border-gray-200">Proyecto</th>
+                    <th class="p-3 border-r border-gray-200">Artículo</th>
+                    <th class="p-3 border-r border-gray-200 text-center">Cant. Pares</th>
+                    <th class="p-3 border-r border-gray-200 text-center">Estado del Lote</th>
+                    <th class="p-3 border-r border-gray-200 text-center">Fecha Registro</th>
+                    <th class="p-3 border-r border-gray-200">Taller Encargado</th>
+                    <th class="p-3 border-r border-gray-200">Máquina Inyectora (Jefe Prod.)</th>
+                    <th class="p-3 text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="table-produccion-body" class="divide-y divide-gray-200"></tbody>
+              </table>
+            </div>
+            <div id="produccion-empty-state" class="hidden p-8 text-center text-gray-400 text-xs">
+              <i class="fa-solid fa-industry text-3xl mb-2 text-gray-300"></i>
+              <p>No hay lotes de producción registrados.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- VISTA 5: PROCUREMENT & STORAGE -->
         <section id="view-procurement" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -594,7 +699,7 @@
           </div>
         </section>
 
-        <!-- VISTA 5: TARJETAS DE MUESTRA (PD) -->
+        <!-- VISTA 6: TARJETAS DE MUESTRA (PD) -->
         <section id="view-tarjetas" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -761,7 +866,7 @@
           </div>
         </section>
 
-        <!-- VISTA 6: SUPER ADMIN -->
+        <!-- VISTA 7: SUPER ADMIN -->
         <section id="view-usuarios" class="hidden space-y-6">
           <h2 class="text-lg font-bold text-[#D61B28] flex items-center space-x-2">
             <i class="fa-solid fa-user-shield"></i>
@@ -839,7 +944,7 @@
     </div>
   </div>
 
-  <!-- MODAL: IMPRESIÓN DE TARJETAS (VISTA PREVIA DIALOG) -->
+  <!-- MODAL: IMPRESIÓN DE TARJETAS -->
   <div id="modal-impresion-tarjetas" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-5xl rounded-3xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
       <div class="border-b border-gray-200 pb-3 mb-4 flex justify-between items-center no-print">
@@ -924,6 +1029,61 @@
           <button type="submit" class="px-5 py-2 bg-[#25D366] hover:bg-green-600 text-white rounded-lg font-bold flex items-center space-x-2 shadow cursor-pointer">
             <i class="fa-brands fa-whatsapp text-sm"></i>
             <span>Confirmar y Notificar</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: REGISTRAR LOTE DE PRODUCCIÓN -->
+  <div id="modal-nuevo-lote-prod" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden text-xs">
+      <div class="bg-cyan-700 px-6 py-4 flex justify-between items-center text-white">
+        <h3 class="font-bold text-sm flex items-center space-x-2">
+          <i class="fa-solid fa-industry"></i>
+          <span>Registrar Lote de Fabricación</span>
+        </h3>
+        <button type="button" id="close-nuevo-lote-prod" class="text-white hover:text-gray-200 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="form-nuevo-lote-prod" class="p-6 space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-gray-700 mb-1">Nombre del Proyecto</label>
+            <input type="text" id="lote-proyecto" required placeholder="Ej: QUIQUE" class="w-full px-3 py-2 border border-gray-300 rounded-lg font-bold">
+          </div>
+          <div>
+            <label class="block font-bold text-gray-700 mb-1">Artículo</label>
+            <input type="text" id="lote-articulo" required placeholder="Ej: 34461836" class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-gray-700 mb-1">Cantidad de Pares</label>
+            <input type="number" min="1" id="lote-pares" required placeholder="Ej: 1200" class="w-full px-3 py-2 border border-gray-300 rounded-lg font-bold text-cyan-800">
+          </div>
+          <div>
+            <label class="block font-bold text-gray-700 mb-1">Estado de Fabricación</label>
+            <select id="lote-estado" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white font-bold text-gray-800">
+              <option value="CORTADO">CORTADO</option>
+              <option value="APARADO">APARADO</option>
+              <option value="ARMADO">ARMADO</option>
+              <option value="INYECCIÓN">INYECCIÓN</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block font-bold text-gray-700 mb-1">Taller Encargado (Texto Libre)</label>
+          <input type="text" id="lote-taller" placeholder="Ej: 331, Taller Central, Taller Externo B" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+        </div>
+        <div>
+          <label class="block font-bold text-gray-700 mb-1">Sección / Máquina Inyectora</label>
+          <input type="text" id="lote-maquina" placeholder="Ej: Desma 2, Main Group 1 (Solo Jefe Prod.)" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+          <span class="text-[10px] text-gray-400 block mt-0.5">Nota: Este campo solo puede ser confirmado/modificado por el Jefe de Producción.</span>
+        </div>
+        <div class="pt-2 flex justify-end space-x-2">
+          <button type="button" id="cancel-nuevo-lote-prod" class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg font-bold cursor-pointer">Cancelar</button>
+          <button type="submit" class="px-5 py-2 bg-cyan-700 hover:bg-cyan-800 text-white rounded-lg font-bold shadow cursor-pointer">
+            Guardar Lote
           </button>
         </div>
       </form>
