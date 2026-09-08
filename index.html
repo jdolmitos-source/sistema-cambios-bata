@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistema de Gestión de Cambios y Entregas - Bata Bolivia</title>
+  <title>Sistema de Gestión de Cambios, Entregas y Producción - Bata Bolivia</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="style.css">
@@ -32,16 +32,12 @@
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
     }
-
     @page {
       size: letter portrait;
       margin: 8mm;
     }
-
     @media print {
-      body * {
-        visibility: hidden !important;
-      }
+      body * { visibility: hidden !important; }
       #modal-reporte-entregas-print:not(.hidden), #modal-reporte-entregas-print:not(.hidden) *,
       #modal-resumen-reporte:not(.hidden), #modal-resumen-reporte:not(.hidden) *,
       #modal-reporte-llegadas-print:not(.hidden), #modal-reporte-llegadas-print:not(.hidden) * {
@@ -58,9 +54,7 @@
         padding: 5mm !important;
         background: white !important;
       }
-      .no-print {
-        display: none !important;
-      }
+      .no-print { display: none !important; }
     }
   </style>
 </head>
@@ -77,7 +71,7 @@
       <div class="relative z-10">
         <div class="flex items-center space-x-2 text-white border-t border-white/20 pt-4 text-xs font-semibold drop-shadow select-none">
           <i class="fa-solid fa-chart-line text-sm"></i>
-          <span>Seguimiento de Cambios, Entregas y Materiales</span>
+          <span>Seguimiento de Cambios, Entregas y Producción</span>
         </div>
       </div>
     </div>
@@ -182,6 +176,7 @@
             <option value="Compras Admin">Compras Admin</option>
             <option value="Almacén">Almacén</option>
             <option value="Producción">Producción</option>
+            <option value="Jefe de Producción">Jefe de Producción</option>
             <option value="Planeamiento">Planeamiento</option>
             <option value="Retail">Retail</option>
             <option value="Desarrollo de producto">Desarrollo de producto</option>
@@ -285,6 +280,15 @@
           </button>
         </div>
 
+        <!-- MÓDULO PRODUCCIÓN -->
+        <div class="pt-3 border-t border-white/20 space-y-1">
+          <div class="px-3 text-[10px] font-black text-white/70 uppercase tracking-widest mb-1.5">Planta de Fabricación</div>
+          <button type="button" id="menu-btn-produccion-dash" class="sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white transition cursor-pointer">
+            <i class="fa-solid fa-industry text-sm text-cyan-300"></i>
+            <span>Producción (Dashboard)</span>
+          </button>
+        </div>
+
         <!-- CADENA DE SUMINISTRO -->
         <div class="pt-3 border-t border-white/20 space-y-1">
           <div class="px-3 text-[10px] font-black text-white/70 uppercase tracking-widest mb-1.5">Cadena de Suministro</div>
@@ -361,7 +365,7 @@
           </div>
         </section>
 
-        <!-- VISTA 2: INFORME EJECUTIVO CON 5 MINI-KPIS -->
+        <!-- VISTA 2: INFORME EJECUTIVO -->
         <section id="view-informe" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -369,7 +373,7 @@
                 <i class="fa-regular fa-file-lines"></i>
                 <span>Informe Ejecutivo y Congelamiento de Producción</span>
               </h2>
-              <p class="text-xs text-gray-400">Filtra directamente en los encabezados de la tabla como en Excel.</p>
+              <p class="text-xs text-gray-400">Control visual de artículos listos y avance por semana.</p>
             </div>
             <div class="flex items-center space-x-2">
               <button type="button" id="btn-generar-texto-wsp" onclick="window.generarTextoNotificacionBata()" class="bg-green-600 hover:bg-green-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
@@ -507,7 +511,119 @@
           </div>
         </section>
 
-        <!-- VISTA 4: PROCUREMENT & STORAGE -->
+        <!-- VISTA 4: MÓDULO PRODUCCIÓN CON PROGRAMACIÓN SEMANAL POR DÍAS Y LÍNEAS -->
+        <section id="view-produccion-dash" class="hidden space-y-6">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h2 class="text-lg font-bold text-[#D61B28] flex items-center space-x-2">
+                <i class="fa-solid fa-industry text-cyan-600"></i>
+                <span>Programación de Planta - Departamento 330</span>
+              </h2>
+              <p class="text-xs text-gray-400">Control por días (Lunes a Viernes), líneas de inyección (251 a 332) y alertas de suela.</p>
+            </div>
+            <div class="flex items-center space-x-2">
+              <select id="prod-filter-semana" class="px-3 py-2 border border-gray-300 rounded-xl text-xs font-bold bg-white text-gray-700 shadow-xs">
+                <option value="SEM-37">Semana 37 (Actual)</option>
+                <option value="SEM-36">Semana 36</option>
+                <option value="SEM-35">Semana 35</option>
+                <option value="SEM-34">Semana 34</option>
+              </select>
+              <button type="button" id="btn-open-nuevo-lote" onclick="window.abrirModalLoteProduccion()" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-1.5 transition cursor-pointer">
+                <i class="fa-solid fa-plus"></i>
+                <span>Registrar Lote Diario</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- BARRAS DE PROGRESO NATIVAS -->
+          <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4">
+            <div class="flex justify-between items-center border-b border-gray-100 pb-2">
+              <span class="font-bold text-xs text-gray-700 uppercase tracking-wider">Avance Consolidado de Pares por Estación</span>
+              <span id="prod-total-pares-kpi" class="text-xs font-black text-[#D61B28]">0 Pares Totales</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <!-- CORTADO -->
+              <div class="bg-amber-50/70 p-3.5 rounded-xl border border-amber-200 space-y-2">
+                <div class="flex justify-between text-xs font-bold text-amber-900">
+                  <span>CORTADO</span>
+                  <span id="kpi-pares-cortado">0 pares</span>
+                </div>
+                <div class="w-full bg-amber-200/60 rounded-full h-2.5 overflow-hidden">
+                  <div id="bar-pares-cortado" class="bg-amber-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <span id="pct-pares-cortado" class="text-[10px] text-amber-700 font-semibold block text-right">0%</span>
+              </div>
+
+              <!-- APARADO -->
+              <div class="bg-blue-50/70 p-3.5 rounded-xl border border-blue-200 space-y-2">
+                <div class="flex justify-between text-xs font-bold text-blue-900">
+                  <span>APARADO</span>
+                  <span id="kpi-pares-aparado">0 pares</span>
+                </div>
+                <div class="w-full bg-blue-200/60 rounded-full h-2.5 overflow-hidden">
+                  <div id="bar-pares-aparado" class="bg-blue-600 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <span id="pct-pares-aparado" class="text-[10px] text-blue-700 font-semibold block text-right">0%</span>
+              </div>
+
+              <!-- ARMADO -->
+              <div class="bg-purple-50/70 p-3.5 rounded-xl border border-purple-200 space-y-2">
+                <div class="flex justify-between text-xs font-bold text-purple-900">
+                  <span>ARMADO</span>
+                  <span id="kpi-pares-armado">0 pares</span>
+                </div>
+                <div class="w-full bg-purple-200/60 rounded-full h-2.5 overflow-hidden">
+                  <div id="bar-pares-armado" class="bg-purple-600 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <span id="pct-pares-armado" class="text-[10px] text-purple-700 font-semibold block text-right">0%</span>
+              </div>
+
+              <!-- INYECCIÓN -->
+              <div class="bg-emerald-50/70 p-3.5 rounded-xl border border-emerald-200 space-y-2">
+                <div class="flex justify-between text-xs font-bold text-emerald-900">
+                  <span>INYECCIÓN</span>
+                  <span id="kpi-pares-inyeccion">0 pares</span>
+                </div>
+                <div class="w-full bg-emerald-200/60 rounded-full h-2.5 overflow-hidden">
+                  <div id="bar-pares-inyeccion" class="bg-emerald-600 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <span id="pct-pares-inyeccion" class="text-[10px] text-emerald-700 font-semibold block text-right">0%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- TABLA TIPO GRILLA DIARIA (LUNES A VIERNES POR LÍNEAS) -->
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="bg-gray-50 p-3 border-b border-gray-200 flex justify-between items-center text-xs font-bold text-gray-700">
+              <span>Programación de Lotes y Alertas de Planta (Líneas 251, 252, 254, 330, 331, 332)</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="bg-gray-100/90 border-b border-gray-300 text-gray-700 font-bold text-center">
+                    <th class="p-3 border-r border-gray-300 w-20">Línea</th>
+                    <th class="p-3 border-r border-gray-300">Día / Turno</th>
+                    <th class="p-3 border-r border-gray-300">Plan / Orden</th>
+                    <th class="p-3 border-r border-gray-300">Artículo</th>
+                    <th class="p-3 border-r border-gray-300">Proyecto / Modelo</th>
+                    <th class="p-3 border-r border-gray-300">Pares</th>
+                    <th class="p-3 border-r border-gray-300">Estado Estación</th>
+                    <th class="p-3 border-r border-gray-300">Alerta / Nota</th>
+                    <th class="p-3 text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="table-produccion-body" class="divide-y divide-gray-200"></tbody>
+              </table>
+            </div>
+            <div id="produccion-empty-state" class="hidden p-8 text-center text-gray-400 text-xs">
+              <i class="fa-solid fa-industry text-3xl mb-2 text-gray-300"></i>
+              <p>No hay lotes programados para esta semana.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- VISTA 5: PROCUREMENT & STORAGE -->
         <section id="view-procurement" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -572,15 +688,9 @@
               <table class="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr class="bg-gray-100/70 border-b border-gray-200 text-gray-600 font-bold">
-                    <th class="p-2.5 w-24">
-                      <input type="text" id="col-filter-item-llegada" placeholder="Item..." class="w-full px-2 py-1 bg-white border border-gray-300 rounded font-normal font-mono text-[11px] focus:outline-none">
-                    </th>
-                    <th class="p-2.5">
-                      <input type="text" id="col-filter-nombre-llegada" placeholder="Nombre Material..." class="w-full px-2 py-1 bg-white border border-gray-300 rounded font-normal text-[11px] focus:outline-none">
-                    </th>
-                    <th class="p-2.5 w-28">
-                      <input type="text" id="col-filter-semana-llegada" placeholder="Sem. Solicitud..." class="w-full px-2 py-1 bg-white border border-gray-300 rounded font-normal font-mono text-[11px] focus:outline-none">
-                    </th>
+                    <th class="p-2.5 w-24">Item</th>
+                    <th class="p-2.5">Nombre Material</th>
+                    <th class="p-2.5 w-28">Sem. Solicitud</th>
                     <th class="p-2.5">Cantidad</th>
                     <th class="p-2.5">Llegada Estimada</th>
                     <th class="p-2.5">Llegada Real</th>
@@ -594,7 +704,7 @@
           </div>
         </section>
 
-        <!-- VISTA 5: TARJETAS DE MUESTRA (PD) -->
+        <!-- VISTA 6: TARJETAS DE MUESTRA (PD) -->
         <section id="view-tarjetas" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -663,12 +773,12 @@
                 <span>2. Configuración Numérica de Tarjetas por Destino</span>
               </span>
               <div class="flex flex-wrap items-center gap-3 bg-gray-50 p-2 rounded-xl border border-gray-200">
-                <div class="flex items-center space-x-1.5" title="Blanca - Invierte Observaciones al centro y Firmas al final">
+                <div class="flex items-center space-x-1.5">
                   <span class="w-3.5 h-3.5 rounded-md border border-gray-400 bg-white"></span>
                   <label class="font-bold text-gray-700 text-[11px]">Corte (Invertidas):</label>
                   <input type="number" id="count-card-corte" min="0" max="20" value="1" class="w-12 px-1.5 py-0.5 border border-gray-300 rounded font-bold text-center">
                 </div>
-                <div class="flex items-center space-x-1.5" title="Blanca - Orden normal: Firmas al centro y Observaciones al final">
+                <div class="flex items-center space-x-1.5">
                   <span class="w-3.5 h-3.5 rounded-md border border-gray-400 bg-white"></span>
                   <label class="font-bold text-gray-700 text-[11px]">Producción (Normal):</label>
                   <input type="number" id="count-card-prod" min="0" max="20" value="1" class="w-12 px-1.5 py-0.5 border border-gray-300 rounded font-bold text-center">
@@ -761,7 +871,7 @@
           </div>
         </section>
 
-        <!-- VISTA 6: SUPER ADMIN -->
+        <!-- VISTA 7: SUPER ADMIN -->
         <section id="view-usuarios" class="hidden space-y-6">
           <h2 class="text-lg font-bold text-[#D61B28] flex items-center space-x-2">
             <i class="fa-solid fa-user-shield"></i>
@@ -839,7 +949,7 @@
     </div>
   </div>
 
-  <!-- MODAL: IMPRESIÓN DE TARJETAS (VISTA PREVIA DIALOG) -->
+  <!-- MODAL: IMPRESIÓN DE TARJETAS -->
   <div id="modal-impresion-tarjetas" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-5xl rounded-3xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
       <div class="border-b border-gray-200 pb-3 mb-4 flex justify-between items-center no-print">
@@ -924,6 +1034,94 @@
           <button type="submit" class="px-5 py-2 bg-[#25D366] hover:bg-green-600 text-white rounded-lg font-bold flex items-center space-x-2 shadow cursor-pointer">
             <i class="fa-brands fa-whatsapp text-sm"></i>
             <span>Confirmar y Notificar</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: REGISTRAR LOTE DIARIO DE PRODUCCIÓN -->
+  <div id="modal-nuevo-lote-prod" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden text-xs">
+      <div class="bg-cyan-700 px-6 py-4 flex justify-between items-center text-white">
+        <h3 class="font-bold text-sm flex items-center space-x-2">
+          <i class="fa-solid fa-industry"></i>
+          <span>Registrar Lote Diario (Planta 330)</span>
+        </h3>
+        <button type="button" id="close-nuevo-lote-prod" class="text-white hover:text-gray-200 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="form-nuevo-lote-prod" class="p-6 space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-gray-700 mb-1">Semana</label>
+            <select id="lote-semana" class="w-full px-3 py-2 border border-gray-300 rounded-lg font-bold bg-white">
+              <option value="SEM-37">Semana 37</option>
+              <option value="SEM-36">Semana 36</option>
+              <option value="SEM-35">Semana 35</option>
+              <option value="SEM-34">Semana 34</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-gray-700 mb-1">Día de la Semana</label>
+            <select id="lote-dia" class="w-full px-3 py-2 border border-gray-300 rounded-lg font-bold bg-white text-cyan-900">
+              <option value="LUNES">LUNES</option>
+              <option value="MARTES">MARTES</option>
+              <option value="MIÉRCOLES">MIÉRCOLES</option>
+              <option value="JUEVES">JUEVES</option>
+              <option value="VIERNES">VIERNES</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block font-bold text-gray-700 mb-1">Línea (Dpto)</label>
+            <select id="lote-linea" class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono font-bold bg-white">
+              <option value="330">330</option>
+              <option value="331">331</option>
+              <option value="332">332</option>
+              <option value="251">251</option>
+              <option value="252">252</option>
+              <option value="254">254</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-gray-700 mb-1">Plan / Orden</label>
+            <input type="text" id="lote-plan" required placeholder="6341" class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono font-bold">
+          </div>
+          <div>
+            <label class="block font-bold text-gray-700 mb-1">Artículo</label>
+            <input type="text" id="lote-articulo" required placeholder="3416015U" class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-gray-700 mb-1">Proyecto / Modelo</label>
+            <input type="text" id="lote-proyecto" required placeholder="OCKER" class="w-full px-3 py-2 border border-gray-300 rounded-lg font-bold">
+          </div>
+          <div>
+            <label class="block font-bold text-gray-700 mb-1">Cantidad de Pares (PRS)</label>
+            <input type="number" min="1" id="lote-pares" required placeholder="800" class="w-full px-3 py-2 border border-gray-300 rounded-lg font-black text-cyan-800">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-gray-700 mb-1">Estado de Fabricación</label>
+            <select id="lote-estado" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white font-bold text-gray-800">
+              <option value="CORTADO">CORTADO</option>
+              <option value="APARADO">APARADO</option>
+              <option value="ARMADO">ARMADO</option>
+              <option value="INYECCIÓN">INYECCIÓN</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-gray-700 mb-1">Alerta / Nota (Ej: Cambio Suela)</label>
+            <input type="text" id="lote-alerta" placeholder="CAMBIO COLOR SUELA NEGRO" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-amber-800 font-bold">
+          </div>
+        </div>
+        <div class="pt-2 flex justify-end space-x-2">
+          <button type="button" id="cancel-nuevo-lote-prod" class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg font-bold cursor-pointer">Cancelar</button>
+          <button type="submit" class="px-5 py-2 bg-cyan-700 hover:bg-cyan-800 text-white rounded-lg font-bold shadow cursor-pointer">
+            Registrar Lote
           </button>
         </div>
       </form>
@@ -1062,212 +1260,6 @@
         </button>
       </div>
       <div id="contenido-impresion-llegadas" class="space-y-4"></div>
-    </div>
-  </div>
-
-  <!-- MODAL: NUEVA SOLICITUD DE CAMBIO -->
-  <div id="modal-new-change" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden text-xs">
-      <div class="bg-[#D61B28] px-6 py-4 flex justify-between items-center text-white">
-        <h3 class="font-bold text-sm">Nueva Solicitud de Cambio</h3>
-        <button type="button" id="modal-btn-close" class="text-white hover:text-gray-200 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <form id="form-new-change" class="p-6 space-y-4">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block font-bold text-gray-700 mb-1">Semana (Formato Ej: 636)</label>
-            <input type="text" id="change-semana" maxlength="3" pattern="[0-9]{3}" placeholder="636" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28] font-mono">
-          </div>
-          <div>
-            <label class="block font-bold text-gray-700 mb-1">Nombre del Proyecto</label>
-            <input type="text" id="change-project" placeholder="Ej: SKATER" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]">
-          </div>
-        </div>
-        <div>
-          <label class="block font-bold text-gray-700 mb-1">Artículo</label>
-          <input type="text" id="change-article" placeholder="Ej: 58961/91236" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28] font-mono">
-        </div>
-        <div>
-          <label class="block font-bold text-gray-700 mb-1">Fotografía (Opcional)</label>
-          <input type="file" id="change-photo" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-red-50 file:text-[#D61B28]">
-        </div>
-        <div>
-          <label class="block font-bold text-gray-700 mb-1">Box de Cambios</label>
-          <textarea id="change-box" rows="3" placeholder="Describir cambios..." required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]"></textarea>
-        </div>
-        <div class="pt-2 flex justify-end space-x-2">
-          <button type="button" id="modal-btn-cancel" class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg font-bold cursor-pointer">Cancelar</button>
-          <button type="submit" class="px-5 py-2 bg-[#25D366] hover:bg-green-600 text-white rounded-lg font-bold flex items-center space-x-2 shadow cursor-pointer">
-            <i class="fa-brands fa-whatsapp text-sm"></i>
-            <span>Aceptar y Notificar por WhatsApp</span>
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- MODAL: MINUTA DE CAMBIOS -->
-  <div id="modal-minuta" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl relative text-xs">
-      <button type="button" id="close-minuta" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
-      <div class="flex items-center space-x-2 text-amber-700 font-bold text-sm mb-3">
-        <i class="fa-solid fa-clipboard-list text-lg"></i>
-        <span>Generar Minuta de Cambios (Desarrollo - Jefe)</span>
-      </div>
-      <form id="form-minuta" class="space-y-3">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block font-semibold text-gray-600 mb-1">Semana (Ej: 636)</label>
-            <input type="text" id="minuta-semana" maxlength="3" pattern="[0-9]{3}" required placeholder="636" class="w-full px-3 py-2 border border-gray-300 rounded-xl font-mono">
-          </div>
-          <div>
-            <label class="block font-semibold text-gray-600 mb-1">Nombre del Proyecto</label>
-            <input type="text" id="minuta-proyecto" required placeholder="Ej: SKATER" class="w-full px-3 py-2 border border-gray-300 rounded-xl">
-          </div>
-        </div>
-        <div>
-          <label class="block font-semibold text-gray-600 mb-1">Artículo Afectado</label>
-          <input type="text" id="minuta-articulo" required placeholder="Ej: 58961/91236" class="w-full px-3 py-2 border border-gray-300 rounded-xl font-mono">
-        </div>
-        <div>
-          <label class="block font-semibold text-gray-600 mb-1">Fotografía (Opcional)</label>
-          <input type="file" id="minuta-photo" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-amber-50 file:text-amber-800">
-        </div>
-        <div>
-          <label class="block font-semibold text-gray-600 mb-1">Cambios Técnicos Solicitados (Plan Piloto)</label>
-          <textarea id="minuta-box" rows="4" required placeholder="Describe las modificaciones..." class="w-full px-3 py-2 border border-gray-300 rounded-xl"></textarea>
-        </div>
-        <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl transition shadow flex items-center justify-center space-x-2 cursor-pointer">
-          <i class="fa-brands fa-whatsapp"></i>
-          <span>Publicar Minuta y Notificar</span>
-        </button>
-      </form>
-    </div>
-  </div>
-
-  <!-- MODAL: TEXTO NOTIFICACIÓN INFORME -->
-  <div id="modal-texto-wsp" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-white w-full max-w-xl rounded-3xl p-6 shadow-2xl relative text-xs">
-      <button type="button" id="close-texto-wsp" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
-      <div class="flex items-center space-x-2 text-green-700 font-bold text-sm mb-3">
-        <i class="fa-brands fa-whatsapp text-lg"></i>
-        <span>Texto Oficial para Notificación de Cambios Realizados</span>
-      </div>
-      <div class="bg-gray-50 border border-gray-200 rounded-2xl p-4 mb-4">
-        <textarea id="texto-wsp-output" rows="12" readonly class="w-full bg-transparent font-mono text-xs text-gray-800 focus:outline-none resize-none leading-relaxed"></textarea>
-      </div>
-      <div class="flex justify-end space-x-2">
-        <button type="button" id="btn-copiar-texto-wsp" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center space-x-1.5 cursor-pointer">
-          <i class="fa-regular fa-copy"></i>
-          <span>Copiar Texto</span>
-        </button>
-        <button type="button" id="btn-enviar-correo-informe" class="bg-[#0078D4] hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center space-x-1.5 cursor-pointer" title="Abrir en Outlook (PWA / Escritorio)">
-          <i class="fa-solid fa-envelope"></i>
-          <span>Outlook (PWA)</span>
-        </button>
-        <button type="button" id="btn-enviar-wsp-directo" class="bg-[#25D366] hover:bg-green-600 text-white font-bold px-5 py-2.5 rounded-xl transition shadow flex items-center space-x-1.5 cursor-pointer">
-          <i class="fa-brands fa-whatsapp"></i>
-          <span>Compartir en WhatsApp</span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: INFORME RESUMEN EJECUTIVO -->
-  <div id="modal-resumen-reporte" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-white w-full max-w-4xl rounded-3xl p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto text-xs">
-      <button type="button" id="close-modal-resumen" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
-      <div class="border-b border-gray-200 pb-4 mb-4 flex justify-between items-center">
-        <div class="flex items-center space-x-3">
-          <img src="./logo-bata-rojo.png" alt="Bata" class="w-16 h-auto">
-          <div>
-            <h3 class="font-extrabold text-sm text-[#D61B28]">Informe Ejecutivo de Cambios de Producción</h3>
-            <p class="text-[11px] text-gray-500">Bata Bolivia - Resumen de Proyectos Seleccionados</p>
-          </div>
-        </div>
-        <button type="button" onclick="window.print()" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold px-3.5 py-2 rounded-xl flex items-center space-x-1.5 shadow">
-          <i class="fa-solid fa-print"></i>
-          <span>Imprimir / Guardar PDF</span>
-        </button>
-      </div>
-      <div id="reporte-resumen-contenido" class="space-y-4"></div>
-    </div>
-  </div>
-
-  <!-- MODAL: REPORTE IMPRESO / PDF DE ENTREGAS -->
-  <div id="modal-reporte-entregas-print" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-white w-full max-w-4xl rounded-3xl p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto text-xs">
-      <button type="button" id="close-modal-entregas-print" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
-      <div class="border-b border-gray-200 pb-4 mb-4 flex justify-between items-center">
-        <div class="flex items-center space-x-3">
-          <img src="./logo-bata-rojo.png" alt="Bata" class="w-16 h-auto">
-          <div>
-            <h3 class="font-extrabold text-sm text-[#D61B28]">Control de Entregas a Departamentos</h3>
-            <p class="text-[11px] text-gray-500">Bata Bolivia - Registro de Cadena de Custodia de Materiales</p>
-          </div>
-        </div>
-        <button type="button" onclick="window.print()" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold px-3.5 py-2 rounded-xl flex items-center space-x-1.5 shadow cursor-pointer">
-          <i class="fa-solid fa-print"></i>
-          <span>Imprimir / Guardar PDF</span>
-        </button>
-      </div>
-      <div id="contenido-impresion-entregas" class="space-y-4"></div>
-    </div>
-  </div>
-
-  <!-- MODAL: RESUMEN TEXTO ENTREGAS -->
-  <div id="modal-entregas-texto" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-white w-full max-w-xl rounded-3xl p-6 shadow-2xl relative text-xs">
-      <button type="button" id="close-modal-entregas-texto" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
-      <div class="flex items-center space-x-2 text-slate-800 font-bold text-sm mb-3">
-        <i class="fa-solid fa-envelope-open-text text-[#D61B28] text-base"></i>
-        <span>Resumen de Entregas para Notificación</span>
-      </div>
-      <div class="bg-gray-50 border border-gray-200 rounded-2xl p-4 mb-4">
-        <textarea id="texto-entregas-output" rows="12" readonly class="w-full bg-transparent font-mono text-xs text-gray-800 focus:outline-none resize-none leading-relaxed"></textarea>
-      </div>
-      <div class="flex justify-end space-x-2">
-        <button type="button" id="btn-copiar-texto-entregas" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center space-x-1.5 cursor-pointer">
-          <i class="fa-regular fa-copy"></i>
-          <span>Copiar Texto</span>
-        </button>
-        <button type="button" id="btn-enviar-correo-entregas" class="bg-[#0078D4] hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center space-x-1.5 cursor-pointer" title="Abrir en Outlook (PWA / Escritorio)">
-          <i class="fa-solid fa-envelope"></i>
-          <span>Outlook (PWA)</span>
-        </button>
-        <button type="button" id="btn-enviar-wsp-entregas" class="bg-[#25D366] hover:bg-green-600 text-white font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center space-x-1.5 cursor-pointer">
-          <i class="fa-brands fa-whatsapp"></i>
-          <span>WhatsApp</span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: VISOR FOTO -->
-  <div id="modal-visor-foto" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-white rounded-3xl p-4 shadow-2xl relative max-w-2xl max-h-[90vh] flex flex-col items-center">
-      <button type="button" id="close-visor-foto" class="absolute top-3 right-3 text-gray-500 hover:text-gray-800 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
-      <h4 id="visor-foto-titulo" class="font-bold text-xs text-gray-800 mb-3 text-center"></h4>
-      <div class="overflow-auto max-h-[75vh] flex items-center justify-center bg-gray-50 rounded-2xl p-2 border border-gray-200">
-        <img id="visor-foto-img" src="" alt="Prototipo" class="max-w-full h-auto object-contain rounded-xl">
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: WHATSAPP FLOTANTE -->
-  <div id="modal-whatsapp" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden p-6 text-xs">
-      <div class="text-center mb-4">
-        <div class="w-12 h-12 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-2xl mx-auto mb-2">
-          <i class="fa-brands fa-whatsapp"></i>
-        </div>
-        <h3 id="wa-modal-title" class="font-bold text-sm text-gray-900">Notificación por WhatsApp</h3>
-        <p id="wa-modal-desc" class="text-gray-500 mt-1">Selecciona al integrante para enviar la alerta:</p>
-      </div>
-      <div id="whatsapp-contacts-list" class="space-y-2 max-h-52 overflow-y-auto mb-4"></div>
-      <button type="button" id="btn-close-whatsapp-modal" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 rounded-xl cursor-pointer">
-        Listo / Cerrar
-      </button>
     </div>
   </div>
 
