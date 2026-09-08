@@ -894,7 +894,6 @@ function escucharCambios() {
     });
     solicitudes.sort((a, b) => (b.fechaCreacion || "").localeCompare(a.fechaCreacion || ""));
     renderTabla();
-    // Reactividad en vivo para Informe
     actualizarInformePorSemana();
   });
 }
@@ -1349,7 +1348,7 @@ function renderProduccionView() {
     if (lote.estado === "ARMADO") badgeColor = "bg-purple-100 text-purple-800 border-purple-300";
     if (lote.estado === "INYECCIÓN") badgeColor = "bg-emerald-100 text-emerald-800 border-emerald-300";
 
-    // Campo de Pares Editable por Jefe de Producción
+    // Pares Editables por Jefe de Producción
     let celdaParesHTML = "";
     if (esJefe) {
       celdaParesHTML = `
@@ -1474,6 +1473,253 @@ window.eliminarLoteProduccion = async (id) => {
   if (confirm("¿Eliminar este lote de producción?")) {
     await deleteDoc(doc(db, "produccion_lotes", id));
   }
+};
+
+// ==================== INFORMES (BLINDADO REACTIVO) ====================
+function renderInformeView() {
+  actualizarInformePorSemana();
+
+  const colSem = document.getElementById("col-filter-semana-informe");
+  const colProy = document.getElementById("col-filter-proyecto-informe");
+
+  if (colSem) {
+    colSem.oninput = (e) => {
+      colFiltroSemanaInforme = e.target.value.trim().toLowerCase();
+      actualizarInformePorSemana();
+    };
+  }
+
+  if (colProy) {
+    colProy.oninput = (e) => {
+      colFiltroProyectoInforme = e.target.value.trim().toLowerCase();
+      actualizarInformePorSemana();
+    };
+  }
+
+  const chkAll = document.getElementById("chk-toggle-all-semana");
+  if (chkAll) {
+    chkAll.onchange = (e) => {
+      const chks = document.querySelectorAll(".chk-articulo-informe");
+      chks.forEach(c => c.checked = e.target.checked);
+      actualizarConteoSeleccionados();
+    };
+  }
+}
+
+function actualizarInformePorSemana() {
+  const inSem = document.getElementById("col-filter-semana-informe");
+  const inProy = document.getElementById("col-filter-proyecto-informe");
+  const fSem = inSem ? inSem.value.trim().toLowerCase() : "";
+  const fProy = inProy ? inProy.value.trim().toLowerCase() : "";
+
+  let articulosFiltrados = solicitudes.filter(item => {
+    const semStr = (item.semana !== undefined && item.semana !== null) ? String(item.semana).toLowerCase().trim() : "";
+    const proyStr = (item.proyecto !== undefined && item.proyecto !== null) ? String(item.proyecto).toLowerCase().trim() : "";
+    const coincideSem = !fSem || semStr.includes(fSem);
+    const coincideProy = !fProy || proyStr.includes(fProy);
+    return coincideSem && coincideProy;
+  });
+
+  articulosFiltrados.sort((a, b) => String(a.semana || "").localeCompare(String(b.semana || ""), undefined, { numeric: true }));
+
+  const total = articulosFiltrados.length;
+  const retrasados = articulosFiltrados.filter(s => s.estado === "Retrasado").length;
+  const enProceso = articulosFiltrados.filter(s => s.estado === "En proceso").length;
+  const realizados = articulosFiltrados.filter(s => s.estado === "Realizado").length;
+  const validadosCostos = articulosFiltrados.filter(s => s.validadoCostos).length;
+
+  const kTotal = document.getElementById("kpi-sem-total");
+  const kRet = document.getElementById("kpi-sem-retrasados");
+  const kProc = document.getElementById("kpi-sem-proceso");
+  const kReal = document.getElementById("kpi-sem-realizados");
+  const kCost = document.getElementById("kpi-sem-costos");
+
+  if (kTotal) kTotal.textContent = total;
+  if (kRet) kRet.textContent = retrasados;
+  if (kProc) kProc.textContent = enProceso;
+  if (kReal) kReal.textContent = realizados;
+  if (kCost) kCost.textContent = `${validadosCostos} de ${total}`;
+
+  const badgeContainer = document.getElementById("badge-congelamiento-container");
+  if (badgeContainer) {
+    if (total === 0) {
+      badgeContainer.innerHTML = `<span class="bg-gray-100 text-gray-500 font-bold text-[11px] px-3 py-1 rounded-full border border-gray-200">Sin artículos coincidentes</span>`;
+    } else if (realizados === total && validadosCostos === total) {
+      badgeContainer.innerHTML = `
+        <span class="bg-green-100 text-green-800 font-bold text-[11px] px-3.5 py-1.5 rounded-full border border-green-300 inline-flex items-center space-x-1.5 shadow-sm">
+          <i class="fa-solid fa-circle-check text-green-600"></i>
+          <span>Listo para Congelamiento (100% Realizado y Validado en Costos)</span>
+        </span>
+      `;
+    } else {
+      const pendientes = total - validadosCostos;
+      badgeContainer.innerHTML = `
+        <span class="bg-amber-50 text-amber-800 font-bold text-[11px] px-3.5 py-1.5 rounded-full border border-amber-200 inline-flex items-center space-x-1.5">
+          <i class="fa-solid fa-clock text-amber-600"></i>
+          <span>${pendientes} artículo(s) pendientes por validar en Costos</span>
+        </span>
+      `;
+    }
+  }
+
+  const tbody = document.getElementById("table-informe-articulos-body");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  if (total === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400 italic">No hay artículos que coincidan con la búsqueda.</td></tr>`;
+    actualizarConteoSeleccionados();
+    return;
+  }
+
+  articulosFiltrados.forEach(item => {
+    const tr = document.createElement("tr");
+    tr.className = item.esMinuta 
+      ? "bg-amber-50/70 hover:bg-amber-100/70 border-b border-amber-200" 
+      : "hover:bg-gray-50/70 border-b border-gray-100";
+
+    const badgeMinuta = item.esMinuta ? `<span class="bg-amber-500 text-white font-bold text-[9px] px-1.5 py-0.2 rounded mr-1">PILOTO</span>` : '';
+
+    const fotoHTML = item.foto 
+      ? `<img src="${item.foto}" onclick="window.verFotoGrande('${item.foto}', '${item.proyecto} - ${item.articulo}')" class="w-10 h-7 object-cover rounded border border-gray-200 shadow-xs cursor-pointer hover:opacity-80 transition mx-auto" title="Click para ampliar">`
+      : `<div class="w-10 h-7 rounded border border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-[10px] mx-auto"><i class="fa-regular fa-image"></i></div>`;
+
+    tr.innerHTML = `
+      <td class="p-2.5 text-center">
+        <input type="checkbox" value="${item.id}" checked class="chk-articulo-informe h-4 w-4 accent-[#D61B28] cursor-pointer">
+      </td>
+      <td class="p-2 border-r border-gray-100 text-center">${fotoHTML}</td>
+      <td class="p-2.5 font-bold text-gray-700 font-mono">${item.semana}</td>
+      <td class="p-2.5 font-bold text-gray-800">${badgeMinuta}${item.proyecto}</td>
+      <td class="p-2.5 font-mono text-gray-700">${item.articulo}</td>
+      <td class="p-2.5 text-gray-600 max-w-xs truncate leading-relaxed" title="${item.boxCambio}">${item.boxCambio}</td>
+      <td class="p-2.5 text-center">
+        <span class="px-2 py-0.5 rounded font-bold text-[10px] ${item.estado === 'Realizado' ? 'bg-green-50 text-green-700 border border-green-200' : (item.estado === 'Retrasado' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-orange-50 text-orange-700 border border-orange-200')}">${item.estado}</span>
+      </td>
+      <td class="p-2.5 text-center font-bold text-[11px]">
+        ${item.validadoCostos ? '<span class="text-green-600"><i class="fa-solid fa-check"></i> Validado</span>' : '<span class="text-gray-300">Pendiente</span>'}
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.querySelectorAll(".chk-articulo-informe").forEach(chk => {
+    chk.onchange = actualizarConteoSeleccionados;
+  });
+
+  actualizarConteoSeleccionados();
+}
+
+function actualizarConteoSeleccionados() {
+  const total = document.querySelectorAll(".chk-articulo-informe").length;
+  const marcados = document.querySelectorAll(".chk-articulo-informe:checked").length;
+  const label = document.getElementById("label-conteo-seleccionados");
+  if (label) label.textContent = `${marcados} de ${total} seleccionados`;
+}
+
+window.generarTextoNotificacionBata = () => {
+  const seleccionadosIds = Array.from(document.querySelectorAll(".chk-articulo-informe:checked")).map(c => c.value);
+  if (seleccionadosIds.length === 0) {
+    alert("Selecciona al menos un artículo para generar la notificación.");
+    return;
+  }
+
+  const items = solicitudes.filter(s => seleccionadosIds.includes(s.id));
+  const semanaTitulo = colFiltroSemanaInforme ? colFiltroSemanaInforme : (items[0]?.semana || "GENERAL");
+
+  let texto = `CAMBIOS REALIZADOS PARA SEM: ${semanaTitulo}\n\n`;
+  texto += `Saludos Estimados, Todos los cambios en guías para el congelamiento de la semana mencionada filas arriba han sido realizados y se puede continuar con el proceso.\n\n`;
+  texto += `Detalle de Artículos Afectados:\n`;
+
+  items.forEach(it => {
+    texto += `Proyecto: ${it.proyecto.toUpperCase()}, Artículo: ${it.articulo}\n`;
+  });
+
+  const textarea = document.getElementById("texto-wsp-output");
+  if (textarea) textarea.value = texto;
+
+  safeClick("btn-copiar-texto-wsp", () => {
+    if (textarea) {
+      textarea.select();
+      navigator.clipboard.writeText(texto);
+      alert("Texto copiado al portapapeles.");
+    }
+  });
+
+  safeClick("btn-enviar-correo-informe", () => {
+    const asunto = encodeURIComponent(`Bata Bolivia - Cambios Realizados para Semana ${semanaTitulo}`);
+    const cuerpo = encodeURIComponent(texto);
+    window.location.href = `mailto:?subject=${asunto}&body=${cuerpo}`;
+  });
+
+  safeClick("btn-enviar-wsp-directo", () => {
+    const encoded = encodeURIComponent(texto);
+    window.open(`https://wa.me/?text=${encoded}`, "_blank");
+  });
+
+  modalTextoWsp?.classList.remove("hidden");
+};
+
+window.generarModalInformeResumen = () => {
+  const seleccionadosIds = Array.from(document.querySelectorAll(".chk-articulo-informe:checked")).map(c => c.value);
+  if (seleccionadosIds.length === 0) {
+    alert("Selecciona al menos un artículo para generar el informe PDF.");
+    return;
+  }
+
+  const items = solicitudes.filter(s => seleccionadosIds.includes(s.id));
+  const contenedor = document.getElementById("reporte-resumen-contenido");
+  if (!contenedor) return;
+
+  let html = `
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse border border-gray-200 text-xs">
+        <thead class="bg-gray-100 font-bold">
+          <tr>
+            <th class="p-2 border text-center w-12">Foto</th>
+            <th class="p-2 border">Semana</th>
+            <th class="p-2 border">Fecha Solicitud</th>
+            <th class="p-2 border">Solicitante</th>
+            <th class="p-2 border">Proyecto</th>
+            <th class="p-2 border">Artículo</th>
+            <th class="p-2 border">Descripción de Cambios</th>
+            <th class="p-2 border text-center">Estado</th>
+            <th class="p-2 border text-center">Fecha Realizado</th>
+            <th class="p-2 border text-center">Validación Costos</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  items.forEach(it => {
+    const fotoPrint = it.foto 
+      ? `<img src="${it.foto}" style="width: 44px; height: 30px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; margin: auto;">`
+      : `<span style="color: #bbb;">—</span>`;
+
+    html += `
+      <tr class="border-b">
+        <td class="p-1 border text-center">${fotoPrint}</td>
+        <td class="p-2 border font-bold font-mono">${it.semana || '—'}</td>
+        <td class="p-2 border whitespace-nowrap">${formatearFecha(it.fechaCreacion)}</td>
+        <td class="p-2 border whitespace-nowrap font-medium">${it.solicitanteNombre} <span class="text-[10px] text-gray-400">(${it.solicitanteRol})</span></td>
+        <td class="p-2 border font-bold text-gray-800">${it.proyecto}</td>
+        <td class="p-2 border font-mono">${it.articulo}</td>
+        <td class="p-2 border text-gray-700">${it.boxCambio}</td>
+        <td class="p-2 border text-center font-bold ${it.estado === 'Realizado' ? 'text-green-600' : (it.estado === 'Retrasado' ? 'text-red-600' : 'text-orange-600')}">${it.estado}</td>
+        <td class="p-2 border text-center whitespace-nowrap">${formatearFecha(it.fechaRealizado)}</td>
+        <td class="p-2 border text-center font-bold ${it.validadoCostos ? 'text-green-600' : 'text-gray-400'}">${it.validadoCostos ? 'Validado' : 'Pendiente'}</td>
+      </tr>
+    `;
+  });
+
+  html += `
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  contenedor.innerHTML = html;
+  modalResumen?.classList.remove("hidden");
 };
 
 // ==================== PROCUREMENT & STORAGE ====================
@@ -2098,30 +2344,30 @@ function renderTarjetasPreview() {
                 <span style="font-size:5px; font-weight:bold; text-align:center; overflow:hidden; white-space:nowrap;">${fecha}</span>
               </div>
 
-              <!-- FILAS TÉCNICAS ADELGAZADAS A 3.2mm -->
+              <!-- FILAS TÉCNICAS ADELGAZADAS A 2.8mm -->
               <div style="flex:1;">
                 <table style="width:100%; height:100%; border-collapse:collapse; font-size:6.5px; font-weight:900;">
-                  <tr style="border-bottom:1px solid #000; height:3.2mm;">
+                  <tr style="border-bottom:1px solid #000; height:2.8mm;">
                     <td style="border-right:1px solid #000; width:38%; text-align:center; padding:0;">ART:</td>
                     <td style="text-align:center; padding:0; font-size:7.5px; font-family:monospace;">${articulo}</td>
                   </tr>
-                  <tr style="border-bottom:1px solid #000; height:3.2mm;">
+                  <tr style="border-bottom:1px solid #000; height:2.8mm;">
                     <td style="border-right:1px solid #000; text-align:center; padding:0;">MARCA:</td>
                     <td style="text-align:center; padding:0;">${marca}</td>
                   </tr>
-                  <tr style="border-bottom:1px solid #000; height:3.2mm;">
+                  <tr style="border-bottom:1px solid #000; height:2.8mm;">
                     <td style="border-right:1px solid #000; text-align:center; padding:0;">SERIE:</td>
                     <td style="text-align:center; padding:0;">${serie}</td>
                   </tr>
-                  <tr style="border-bottom:1px solid #000; height:3.2mm;">
+                  <tr style="border-bottom:1px solid #000; height:2.8mm;">
                     <td style="border-right:1px solid #000; width:38%; text-align:center; padding:0;">CORTE:</td>
                     <td style="text-align:center; padding:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${materialCorte}</td>
                   </tr>
-                  <tr style="border-bottom:1px solid #000; height:3.2mm;">
+                  <tr style="border-bottom:1px solid #000; height:2.8mm;">
                     <td style="border-right:1px solid #000; width:38%; text-align:center; padding:0;">FORRO:</td>
                     <td style="text-align:center; padding:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${forro}</td>
                   </tr>
-                  <tr style="height:3.2mm;">
+                  <tr style="height:2.8mm;">
                     <td style="border-right:1px solid #000; width:38%; text-align:center; padding:0;">PLANT:</td>
                     <td style="text-align:center; padding:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${plantInt}</td>
                   </tr>
