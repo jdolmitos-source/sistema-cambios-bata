@@ -524,7 +524,7 @@ function actualizarHeaderUsuario() {
     }
   }
 
-  const esJefe = userData && userData.rol === "Desarrollo de producto - Jefe";
+  const esJefe = userData && (userData.rol === "Desarrollo de producto - Jefe" || userData.rol === "Jefe de Producción");
   const btnMinutaHeader = document.getElementById("btn-open-minuta-header");
   if (btnMinutaHeader) {
     if (esJefe || esAdmin) {
@@ -894,9 +894,8 @@ function escucharCambios() {
     });
     solicitudes.sort((a, b) => (b.fechaCreacion || "").localeCompare(a.fechaCreacion || ""));
     renderTabla();
-    if (!viewInforme?.classList.contains("hidden")) {
-      actualizarInformePorSemana();
-    }
+    // Reactividad en vivo para Informe
+    actualizarInformePorSemana();
   });
 }
 
@@ -1279,7 +1278,7 @@ if (formEntrega) {
   };
 }
 
-// ==================== MÓDULO PRODUCCIÓN (DASHBOARD) ====================
+// ==================== MÓDULO PRODUCCIÓN (DASHBOARD REAL-TIME) ====================
 function escucharProduccion() {
   const q = collection(db, "produccion_lotes");
   onSnapshot(q, (snapshot) => {
@@ -1338,8 +1337,8 @@ function renderProduccionView() {
   }
   empty?.classList.add("hidden");
 
-  const puedeAsignarMaquina = esJefeProduccion();
-  const puedeEliminar = esSuperAdmin() || puedeAsignarMaquina;
+  const esJefe = esJefeProduccion();
+  const puedeEliminar = esSuperAdmin() || esJefe;
 
   lotesProduccion.forEach(lote => {
     const tr = document.createElement("tr");
@@ -1350,8 +1349,39 @@ function renderProduccionView() {
     if (lote.estado === "ARMADO") badgeColor = "bg-purple-100 text-purple-800 border-purple-300";
     if (lote.estado === "INYECCIÓN") badgeColor = "bg-emerald-100 text-emerald-800 border-emerald-300";
 
+    // Campo de Pares Editable por Jefe de Producción
+    let celdaParesHTML = "";
+    if (esJefe) {
+      celdaParesHTML = `
+        <div class="flex items-center justify-center space-x-1">
+          <input type="number" min="1" id="in-pares-${lote.id}" value="${lote.pares}" class="w-20 px-1.5 py-0.5 border border-cyan-300 rounded font-bold text-center text-cyan-900">
+          <button onclick="window.guardarParesLote('${lote.id}')" title="Actualizar pares" class="bg-cyan-600 hover:bg-cyan-700 text-white p-1 rounded cursor-pointer">
+            <i class="fa-solid fa-floppy-disk text-[10px]"></i>
+          </button>
+        </div>
+      `;
+    } else {
+      celdaParesHTML = `<span class="font-black text-cyan-900">${(parseInt(lote.pares) || 0).toLocaleString()}</span>`;
+    }
+
+    // Estado Editable por Jefe de Producción
+    let celdaEstadoHTML = "";
+    if (esJefe) {
+      celdaEstadoHTML = `
+        <select onchange="window.actualizarEstadoLote('${lote.id}', this.value)" class="px-2 py-1 border border-gray-300 rounded text-xs font-bold bg-white text-gray-800">
+          <option value="CORTADO" ${lote.estado === 'CORTADO' ? 'selected' : ''}>CORTADO</option>
+          <option value="APARADO" ${lote.estado === 'APARADO' ? 'selected' : ''}>APARADO</option>
+          <option value="ARMADO" ${lote.estado === 'ARMADO' ? 'selected' : ''}>ARMADO</option>
+          <option value="INYECCIÓN" ${lote.estado === 'INYECCIÓN' ? 'selected' : ''}>INYECCIÓN</option>
+        </select>
+      `;
+    } else {
+      celdaEstadoHTML = `<span class="px-2 py-0.5 rounded border font-black text-[10px] ${badgeColor}">${lote.estado}</span>`;
+    }
+
+    // Máquina Editable por Jefe de Producción
     let celdaMaquinaHTML = "";
-    if (puedeAsignarMaquina) {
+    if (esJefe) {
       celdaMaquinaHTML = `
         <div class="flex items-center space-x-1">
           <input type="text" id="in-maquina-${lote.id}" value="${lote.maquina || ''}" placeholder="Asignar máquina..." class="px-2 py-1 border border-cyan-300 rounded font-semibold text-cyan-900 w-36">
@@ -1364,25 +1394,15 @@ function renderProduccionView() {
       celdaMaquinaHTML = `<span class="font-bold text-gray-700">${lote.maquina || '<span class="text-gray-300 italic font-normal">Sin asignar</span>'}</span>`;
     }
 
-    let accionesHTML = `
-      <div class="flex items-center justify-center space-x-2">
-        <select onchange="window.actualizarEstadoLote('${lote.id}', this.value)" class="px-1.5 py-0.5 border border-gray-300 rounded text-[11px] font-bold">
-          <option value="CORTADO" ${lote.estado === 'CORTADO' ? 'selected' : ''}>CORTADO</option>
-          <option value="APARADO" ${lote.estado === 'APARADO' ? 'selected' : ''}>APARADO</option>
-          <option value="ARMADO" ${lote.estado === 'ARMADO' ? 'selected' : ''}>ARMADO</option>
-          <option value="INYECCIÓN" ${lote.estado === 'INYECCIÓN' ? 'selected' : ''}>INYECCIÓN</option>
-        </select>
-        ${puedeEliminar ? `<button onclick="window.eliminarLoteProduccion('${lote.id}')" class="text-red-500 hover:text-red-700 text-xs p-1"><i class="fa-solid fa-trash-can"></i></button>` : ''}
-      </div>
-    `;
+    let accionesHTML = puedeEliminar 
+      ? `<button onclick="window.eliminarLoteProduccion('${lote.id}')" class="text-red-500 hover:text-red-700 text-xs p-1" title="Eliminar Lote"><i class="fa-solid fa-trash-can"></i></button>` 
+      : `<span class="text-gray-300">—</span>`;
 
     tr.innerHTML = `
       <td class="p-3 font-bold text-gray-800 border-r border-gray-100">${lote.proyecto}</td>
       <td class="p-3 font-mono text-gray-700 border-r border-gray-100">${lote.articulo}</td>
-      <td class="p-3 font-black text-center text-cyan-900 border-r border-gray-100">${(parseInt(lote.pares) || 0).toLocaleString()}</td>
-      <td class="p-3 text-center border-r border-gray-100">
-        <span class="px-2 py-0.5 rounded border font-black text-[10px] ${badgeColor}">${lote.estado}</span>
-      </td>
+      <td class="p-3 text-center border-r border-gray-100">${celdaParesHTML}</td>
+      <td class="p-3 text-center border-r border-gray-100">${celdaEstadoHTML}</td>
       <td class="p-3 text-center text-gray-600 border-r border-gray-100 whitespace-nowrap">${formatearFecha(lote.fechaRegistro)}</td>
       <td class="p-3 text-gray-700 border-r border-gray-100 font-semibold">${lote.taller || '—'}</td>
       <td class="p-3 border-r border-gray-100">${celdaMaquinaHTML}</td>
@@ -1431,19 +1451,327 @@ window.actualizarEstadoLote = async (id, nuevoEstado) => {
   });
 };
 
+window.guardarParesLote = async (id) => {
+  const input = document.getElementById(`in-pares-${id}`);
+  if (!input) return;
+  const nuevosPares = parseInt(input.value) || 0;
+  await updateDoc(doc(db, "produccion_lotes", id), {
+    pares: nuevosPares
+  });
+  alert("Cantidad de pares actualizada correctamente.");
+};
+
 window.guardarMaquinaLote = async (id) => {
   const input = document.getElementById(`in-maquina-${id}`);
   if (!input) return;
   await updateDoc(doc(db, "produccion_lotes", id), {
     maquina: input.value.trim()
   });
-  alert("Máquina asignada correctamente por Jefe de Producción.");
+  alert("Máquina inyectora asignada.");
 };
 
 window.eliminarLoteProduccion = async (id) => {
   if (confirm("¿Eliminar este lote de producción?")) {
     await deleteDoc(doc(db, "produccion_lotes", id));
   }
+};
+
+// ==================== PROCUREMENT & STORAGE ====================
+function escucharProcurement() {
+  const qBloqueos = collection(db, "procurement_bloqueos");
+  onSnapshot(qBloqueos, (snapshot) => {
+    bloqueosMateriales = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderTablaBloqueos();
+  }, (err) => console.log("Aviso Firestore Bloqueos:", err.message));
+
+  const qLlegadas = collection(db, "procurement_llegadas");
+  onSnapshot(qLlegadas, (snapshot) => {
+    llegadasMateriales = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderTablaLlegadas();
+  }, (err) => console.log("Aviso Firestore Llegadas:", err.message));
+}
+
+function renderProcurementView() {
+  renderTablaBloqueos();
+  renderTablaLlegadas();
+
+  safeClick("btn-open-nuevo-bloqueo", () => modalNuevoBloqueo?.classList.remove("hidden"));
+  safeClick("btn-open-nueva-llegada", () => modalNuevaLlegada?.classList.remove("hidden"));
+
+  const fItem = document.getElementById("col-filter-item-llegada");
+  const fNom = document.getElementById("col-filter-nombre-llegada");
+  const fSem = document.getElementById("col-filter-semana-llegada");
+
+  if (fItem) fItem.oninput = (e) => { colFiltroItemLlegada = e.target.value.trim().toLowerCase(); renderTablaLlegadas(); };
+  if (fNom) fNom.oninput = (e) => { colFiltroNombreLlegada = e.target.value.trim().toLowerCase(); renderTablaLlegadas(); };
+  if (fSem) fSem.oninput = (e) => { colFiltroSemanaLlegada = e.target.value.trim().toLowerCase(); renderTablaLlegadas(); };
+
+  safeClick("btn-reporte-llegadas-pdf", abrirReporteImpresoLlegadas);
+}
+
+const formBloqueo = document.getElementById("form-nuevo-bloqueo");
+if (formBloqueo) {
+  formBloqueo.onsubmit = async (e) => {
+    e.preventDefault();
+    const item = document.getElementById("bloq-item").value.trim();
+    const semana = document.getElementById("bloq-semana").value.trim();
+    const nombre = document.getElementById("bloq-nombre").value.trim();
+    const cantidad = parseFloat(document.getElementById("bloq-cantidad").value) || 0;
+    const unidad = document.getElementById("bloq-unidad").value;
+    const estado = document.getElementById("bloq-estado").value;
+    const notas = document.getElementById("bloq-notas").value.trim();
+
+    try {
+      const nombreUsuario = (userData && userData.nombre) || (currentUser && currentUser.email) || "Compras";
+      const rolUsuario = (userData && userData.rol) || "Compras";
+
+      await addDoc(collection(db, "procurement_bloqueos"), {
+        item,
+        semana,
+        nombre,
+        cantidad,
+        unidad,
+        estado,
+        notas,
+        notificadoAlmacen: false,
+        registradoPorNombre: nombreUsuario,
+        registradoPorRol: rolUsuario,
+        registradoPorId: currentUser ? currentUser.uid : null,
+        fechaCreacion: new Date().toISOString(),
+        timestamp: serverTimestamp()
+      });
+
+      formBloqueo.reset();
+      modalNuevoBloqueo?.classList.add("hidden");
+
+      abrirModalWhatsApp({
+        titulo: "Alerta de Disponibilidad Emitida",
+        subtitulo: "Enviar alerta inmediata al personal de Almacén:",
+        mensajeTexto: `📦 *ALERTA DE DISPONIBILIDAD DE MATERIAL - BATA BOLIVIA*\n*Compras a Almacén*\n\n📅 *Semana de Bloqueo:* ${semana}\n🔢 *Item:* ${item}\n🧵 *Material:* ${nombre}\n📏 *Cant. Permitida:* ${cantidad} ${unidad}\n⚠️ *Disposición:* ${estado}\n📝 *Notas:* ${notas || 'Sin notas'}\n👤 *Emitido por:* ${nombreUsuario} (${rolUsuario})\n\n_Favor ajustar las entregas físicas en almacén conforme a esta disposición._`,
+        rolFiltro: "Almacén"
+      });
+    } catch (err) {
+      alert("Error al guardar bloqueo: " + err.message);
+    }
+  };
+}
+
+function renderTablaBloqueos() {
+  const tbody = document.getElementById("table-bloqueos-body");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  if (bloqueosMateriales.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400 italic">No hay restricciones de materiales registradas.</td></tr>`;
+    return;
+  }
+
+  const esAlmacen = (userData && userData.rol === "Almacén") || esSuperAdmin();
+  const puedeBorrar = esComprasAdmin();
+
+  bloqueosMateriales.forEach(b => {
+    const tr = document.createElement("tr");
+    tr.className = "hover:bg-gray-50/70 border-b border-gray-100";
+
+    let estiloBadge = "bg-amber-100 text-amber-800";
+    if (b.estado === "Bloqueado para Producción") estiloBadge = "bg-red-100 text-red-800";
+    if (b.estado === "Disponible Libre") estiloBadge = "bg-green-100 text-green-800";
+
+    let accionAlmacen = b.notificadoAlmacen 
+      ? `<span class="text-green-600 font-bold text-[11px]"><i class="fa-solid fa-check"></i> Almacén Enterado</span>`
+      : (esAlmacen 
+          ? `<button onclick="window.confirmarEnteradoAlmacen('${b.id}')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-2 py-1 rounded border border-blue-200">Confirmar Enterado</button>`
+          : `<span class="text-gray-400 text-[11px] italic">Pendiente confirmación</span>`);
+
+    let eliminarHTML = puedeBorrar
+      ? `<button onclick="window.eliminarBloqueoMaterial('${b.id}', '${b.nombre}')" class="text-red-500 hover:text-red-700 font-bold text-xs cursor-pointer"><i class="fa-solid fa-trash-can"></i></button>`
+      : `<span class="text-gray-300">—</span>`;
+
+    tr.innerHTML = `
+      <td class="p-2.5 font-mono font-bold text-gray-700">${b.item}</td>
+      <td class="p-2.5 font-bold text-gray-800">${b.nombre} ${b.notas ? '<p class="text-[10px] text-gray-400 font-normal">' + b.notas + '</p>' : ''}</td>
+      <td class="p-2.5 font-mono font-bold text-amber-700">${b.semana}</td>
+      <td class="p-2.5 font-black text-gray-800">${b.cantidad} ${b.unidad || 'Mts'}</td>
+      <td class="p-2.5 text-center"><span class="px-2 py-0.5 rounded font-bold text-[10px] ${estiloBadge}">${b.estado}</span></td>
+      <td class="p-2.5 text-gray-600">${b.registradoPorNombre}</td>
+      <td class="p-2.5 text-center">${accionAlmacen}</td>
+      <td class="p-2.5 text-center">${eliminarHTML}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+window.confirmarEnteradoAlmacen = async (id) => {
+  await updateDoc(doc(db, "procurement_bloqueos", id), {
+    notificadoAlmacen: true,
+    fechaEnterado: new Date().toISOString(),
+    usuarioAlmacen: (userData && userData.nombre) || "Almacén"
+  });
+};
+
+window.eliminarBloqueoMaterial = async (id, nombre) => {
+  if (!esComprasAdmin()) {
+    alert("Solo Compras Admin o Super Admin pueden borrar bloqueos.");
+    return;
+  }
+  if (confirm(`¿Eliminar la restricción del material "${nombre}"?`)) {
+    await deleteDoc(doc(db, "procurement_bloqueos", id));
+  }
+};
+
+const formLlegada = document.getElementById("form-nueva-llegada");
+if (formLlegada) {
+  formLlegada.onsubmit = async (e) => {
+    e.preventDefault();
+    const item = document.getElementById("lleg-item").value.trim();
+    const semana = document.getElementById("lleg-semana").value.trim();
+    const nombre = document.getElementById("lleg-nombre").value.trim();
+    const cantidad = document.getElementById("lleg-cantidad").value.trim();
+    const fechaEst = document.getElementById("lleg-fecha-est").value;
+    const fechaReal = document.getElementById("lleg-fecha-real").value;
+
+    try {
+      const nombreUsuario = (userData && userData.nombre) || (currentUser && currentUser.email) || "Usuario";
+
+      await addDoc(collection(db, "procurement_llegadas"), {
+        item,
+        semana,
+        nombre,
+        cantidad,
+        fechaEstimada: fechaEst,
+        fechaReal: fechaReal || null,
+        validadoCompras: false,
+        registradoPor: nombreUsuario,
+        registradoPorId: currentUser ? currentUser.uid : null,
+        fechaCreacion: new Date().toISOString(),
+        timestamp: serverTimestamp()
+      });
+
+      formLlegada.reset();
+      modalNuevaLlegada?.classList.add("hidden");
+    } catch (err) {
+      alert("Error al guardar llegada: " + err.message);
+    }
+  };
+}
+
+function renderTablaLlegadas() {
+  const tbody = document.getElementById("table-llegadas-body");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  let filtradas = llegadasMateriales.filter(l => {
+    const cItem = !colFiltroItemLlegada || (l.item || "").toLowerCase().includes(colFiltroItemLlegada);
+    const cNom = !colFiltroNombreLlegada || (l.nombre || "").toLowerCase().includes(colFiltroNombreLlegada);
+    const cSem = !colFiltroSemanaLlegada || (l.semana || "").toString().includes(colFiltroSemanaLlegada);
+    return cItem && cNom && cSem;
+  });
+
+  if (filtradas.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400 italic">No hay registros de llegadas.</td></tr>`;
+    return;
+  }
+
+  const esCompras = esComprasAdmin();
+
+  filtradas.forEach(l => {
+    const tr = document.createElement("tr");
+    tr.className = "hover:bg-gray-50/70 border-b border-gray-100";
+
+    let validacionHTML = l.validadoCompras 
+      ? `<span class="text-green-700 font-bold text-xs"><i class="fa-solid fa-circle-check"></i> Validado</span>`
+      : (esCompras 
+          ? `<button onclick="window.validarLlegadaCompras('${l.id}')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-2.5 py-1 rounded border border-emerald-200">Validar</button>`
+          : `<span class="text-gray-300 text-[11px]">Pendiente</span>`);
+
+    let eliminarHTML = esCompras
+      ? `<button onclick="window.eliminarLlegadaMaterial('${l.id}', '${l.nombre}')" class="text-red-500 hover:text-red-700 font-bold text-xs cursor-pointer"><i class="fa-solid fa-trash-can"></i></button>`
+      : `<span class="text-gray-300">—</span>`;
+
+    tr.innerHTML = `
+      <td class="p-2.5 font-mono font-bold text-gray-700">${l.item}</td>
+      <td class="p-2.5 font-bold text-gray-800">${l.nombre}</td>
+      <td class="p-2.5 font-mono font-bold text-gray-600">${l.semana}</td>
+      <td class="p-2.5 font-black text-gray-700">${l.cantidad}</td>
+      <td class="p-2.5 text-gray-600">${l.fechaEstimada || '—'}</td>
+      <td class="p-2.5 font-bold ${l.fechaReal ? 'text-green-700' : 'text-amber-600'}">${l.fechaReal || 'En tránsito'}</td>
+      <td class="p-2.5 text-center">${validacionHTML}</td>
+      <td class="p-2.5 text-center">${eliminarHTML}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+window.validarLlegadaCompras = async (id) => {
+  if (confirm("¿Confirmar y validar la llegada física de este material a fábrica?")) {
+    await updateDoc(doc(db, "procurement_llegadas", id), {
+      validadoCompras: true,
+      fechaValidacion: new Date().toISOString(),
+      validadorCompras: (userData && userData.nombre) || "Compras"
+    });
+  }
+};
+
+window.eliminarLlegadaMaterial = async (id, nombre) => {
+  if (!esComprasAdmin()) {
+    alert("Solo Compras Admin o Super Admin pueden borrar llegadas.");
+    return;
+  }
+  if (confirm(`¿Eliminar el registro de llegada de "${nombre}"?`)) {
+    await deleteDoc(doc(db, "procurement_llegadas", id));
+  }
+};
+
+window.abrirReporteImpresoLlegadas = () => {
+  if (llegadasMateriales.length === 0) {
+    alert("No hay registros de llegadas para generar el informe.");
+    return;
+  }
+
+  const contenedor = document.getElementById("contenido-impresion-llegadas");
+  if (!contenedor) return;
+
+  let html = `
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse border border-gray-200 text-xs">
+        <thead class="bg-gray-100 font-bold">
+          <tr>
+            <th class="p-2 border">Item</th>
+            <th class="p-2 border">Nombre del Material</th>
+            <th class="p-2 border">Sem. Solicitud</th>
+            <th class="p-2 border">Cantidad</th>
+            <th class="p-2 border">Llegada Estimada</th>
+            <th class="p-2 border">Llegada Real</th>
+            <th class="p-2 border text-center">Estado / Validación</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  llegadasMateriales.forEach(it => {
+    html += `
+      <tr class="border-b">
+        <td class="p-2 border font-mono font-bold">${it.item}</td>
+        <td class="p-2 border font-bold">${it.nombre}</td>
+        <td class="p-2 border font-mono">${it.semana}</td>
+        <td class="p-2 border font-black">${it.cantidad}</td>
+        <td class="p-2 border">${it.fechaEstimada || '—'}</td>
+        <td class="p-2 border font-bold ${it.fechaReal ? 'text-green-700' : 'text-amber-600'}">${it.fechaReal || 'En Tránsito'}</td>
+        <td class="p-2 border text-center font-bold ${it.validadoCompras ? 'text-green-600' : 'text-gray-400'}">
+          ${it.validadoCompras ? 'Validado Compras' : 'Pendiente'}
+        </td>
+      </tr>
+    `;
+  });
+
+  html += `
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  contenedor.innerHTML = html;
+  document.getElementById("modal-reporte-llegadas-print")?.classList.remove("hidden");
 };
 
 // ==================== MÓDULO TARJETAS (PD) ====================
