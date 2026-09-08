@@ -32,12 +32,16 @@
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
     }
+
     @page {
       size: letter portrait;
       margin: 8mm;
     }
+
     @media print {
-      body * { visibility: hidden !important; }
+      body * {
+        visibility: hidden !important;
+      }
       #modal-reporte-entregas-print:not(.hidden), #modal-reporte-entregas-print:not(.hidden) *,
       #modal-resumen-reporte:not(.hidden), #modal-resumen-reporte:not(.hidden) *,
       #modal-reporte-llegadas-print:not(.hidden), #modal-reporte-llegadas-print:not(.hidden) * {
@@ -54,7 +58,9 @@
         padding: 5mm !important;
         background: white !important;
       }
-      .no-print { display: none !important; }
+      .no-print {
+        display: none !important;
+      }
     }
   </style>
 </head>
@@ -355,7 +361,7 @@
           </div>
         </section>
 
-        <!-- VISTA 2: INFORME EJECUTIVO -->
+        <!-- VISTA 2: INFORME EJECUTIVO CON 5 MINI-KPIS -->
         <section id="view-informe" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -606,7 +612,7 @@
             </div>
           </div>
 
-          <!-- PANEL COSTOS -->
+          <!-- PANEL COSTOS CON MARGEN BUDGET RET -->
           <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4 text-xs">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-gray-100 pb-3">
               <span class="font-bold text-gray-800 text-sm flex items-center space-x-1.5">
@@ -649,7 +655,7 @@
             </div>
           </div>
 
-          <!-- PANEL ESPECIFICACIONES -->
+          <!-- PANEL ESPECIFICACIONES CON CASILLAS NUMÉRICAS POR DESTINO -->
           <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4 text-xs">
             <div class="border-b border-gray-100 pb-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
               <span class="font-bold text-gray-800 text-sm flex items-center space-x-1.5">
@@ -833,7 +839,7 @@
     </div>
   </div>
 
-  <!-- MODAL: IMPRESIÓN DE TARJETAS -->
+  <!-- MODAL: IMPRESIÓN DE TARJETAS (VISTA PREVIA DIALOG) -->
   <div id="modal-impresion-tarjetas" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-5xl rounded-3xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
       <div class="border-b border-gray-200 pb-3 mb-4 flex justify-between items-center no-print">
