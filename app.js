@@ -43,19 +43,11 @@ let solicitudes = [];
 let entregas = [];
 let bloqueosMateriales = [];
 let llegadasMateriales = [];
+let lotesProduccion = [];
 
 let categoriaEntregaActiva = "todas";
 
-// Filtros
-let colFiltroSemanaInforme = "";
-let colFiltroProyectoInforme = "";
-let colFiltroSemanaEntregas = "";
-let colFiltroProyectoEntregas = "";
-let colFiltroItemLlegada = "";
-let colFiltroNombreLlegada = "";
-let colFiltroSemanaLlegada = "";
-
-// Memoria Tarjetas
+// Memoria Tarjetas PD
 let croquisTarjetaBase64 = null;
 let plantillaCorteTarjetaBase64 = null;
 
@@ -176,7 +168,7 @@ async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro =
   }
 }
 
-// ==================== FUNCIONES GLOBALES DE APERTURA (100% OPERATIVAS) ====================
+// ==================== FUNCIONES GLOBALES DE APERTURA ====================
 window.abrirModalCambio = () => {
   document.getElementById("modal-new-change")?.classList.remove("hidden");
 };
@@ -185,7 +177,6 @@ window.abrirModalMinuta = () => {
   document.getElementById("modal-minuta")?.classList.remove("hidden");
 };
 
-// BOTÓN VERDE REGISTRAR ENTREGA (REPARADO Y BLINDADO)
 window.abrirModalEntrega = () => {
   const selectTipo = document.getElementById("ent-tipo");
   if (selectTipo) {
@@ -212,6 +203,32 @@ window.abrirModalBloqueo = () => {
 window.abrirModalLlegada = () => {
   document.getElementById("modal-nueva-llegada")?.classList.remove("hidden");
 };
+
+window.abrirModalLoteProduccion = () => {
+  document.getElementById("modal-nuevo-lote-prod")?.classList.remove("hidden");
+};
+
+// Inicializador de semanas 01 a 52
+function inicializarSemanas01a52() {
+  const selects = [
+    document.getElementById("prod-filter-semana"),
+    document.getElementById("lote-semana")
+  ];
+
+  selects.forEach(sel => {
+    if (!sel) return;
+    const valorActual = sel.value;
+    const esFiltro = sel.id === "prod-filter-semana";
+    sel.innerHTML = esFiltro ? '<option value="">Todas las Semanas (01-52)</option>' : '';
+
+    for (let i = 1; i <= 52; i++) {
+      const numStr = i < 10 ? `0${i}` : `${i}`;
+      const val = `Semana ${numStr}`;
+      sel.innerHTML += `<option value="${val}">Semana ${numStr}</option>`;
+    }
+    if (valorActual) sel.value = valorActual;
+  });
+}
 
 // ==================== REPORTES DE ENTREGAS ====================
 window.abrirReporteImpresoEntregas = () => {
@@ -345,6 +362,7 @@ const modalNuevaLlegada = document.getElementById("modal-nueva-llegada");
 const modalReporteLlegadasPrint = document.getElementById("modal-reporte-llegadas-print");
 const modalImpresionTarjetas = document.getElementById("modal-impresion-tarjetas");
 const modalNewChange = document.getElementById("modal-new-change");
+const modalNuevoLoteProd = document.getElementById("modal-nuevo-lote-prod");
 
 safeClick("btn-close-whatsapp-modal", () => document.getElementById("modal-whatsapp")?.classList.add("hidden"));
 safeClick("btn-show-login", () => modalLogin?.classList.remove("hidden"));
@@ -368,6 +386,8 @@ safeClick("close-modal-llegadas-print", () => modalReporteLlegadasPrint?.classLi
 safeClick("close-modal-tarjetas", () => modalImpresionTarjetas?.classList.add("hidden"));
 safeClick("modal-btn-close", () => modalNewChange?.classList.add("hidden"));
 safeClick("modal-btn-cancel", () => modalNewChange?.classList.add("hidden"));
+safeClick("close-nuevo-lote-prod", () => modalNuevoLoteProd?.classList.add("hidden"));
+safeClick("cancel-nuevo-lote-prod", () => modalNuevoLoteProd?.classList.add("hidden"));
 
 safeClick("btn-reporte-entregas-pdf", window.abrirReporteImpresoEntregas);
 safeClick("btn-reporte-entregas-texto", window.abrirResumenTextoEntregas);
@@ -559,10 +579,11 @@ onAuthStateChanged(auth, async (user) => {
     actualizarHeaderUsuario();
     welcomeContainer?.classList.add("hidden");
     appContainer?.classList.remove("hidden");
+    inicializarSemanas01a52();
     activarVistaCambios();
     escucharCambios();
     escucharEntregas();
-    escucharProcurement();
+    escucharProduccion();
   } else {
     currentUser = null;
     userData = null;
@@ -575,6 +596,7 @@ onAuthStateChanged(auth, async (user) => {
 const viewCambios = document.getElementById("view-cambios");
 const viewInforme = document.getElementById("view-informe");
 const viewEntregas = document.getElementById("view-entregas");
+const viewProduccion = document.getElementById("view-produccion");
 const viewProcurement = document.getElementById("view-procurement");
 const viewTarjetas = document.getElementById("view-tarjetas");
 const viewUsuarios = document.getElementById("view-usuarios");
@@ -582,6 +604,7 @@ const viewUsuarios = document.getElementById("view-usuarios");
 const menuBtnCambios = document.getElementById("menu-btn-cambios");
 const menuBtnInforme = document.getElementById("menu-btn-informe");
 const menuBtnEntregasTodas = document.getElementById("menu-btn-entregas-todas");
+const menuBtnProduccion = document.getElementById("menu-btn-produccion");
 const menuBtnProcurement = document.getElementById("menu-btn-procurement");
 const menuBtnTarjetas = document.getElementById("menu-btn-tarjetas");
 const menuBtnUsuarios = document.getElementById("menu-btn-usuarios");
@@ -592,7 +615,7 @@ const CLASE_ACTIVO_PASTILLA = "sidebar-btn w-full flex items-center space-x-3 px
 const CLASE_ACTIVO_SUB_PASTILLA = "sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-black bg-white text-[#D61B28] shadow-md transition cursor-pointer pl-5 scale-[1.02]";
 
 function resetMenuStyles() {
-  [menuBtnCambios, menuBtnInforme, menuBtnEntregasTodas, menuBtnProcurement, menuBtnTarjetas, menuBtnUsuarios].forEach(b => {
+  [menuBtnCambios, menuBtnInforme, menuBtnEntregasTodas, menuBtnProduccion, menuBtnProcurement, menuBtnTarjetas, menuBtnUsuarios].forEach(b => {
     if (b) b.className = CLASE_INACTIVO_PRINCIPAL;
   });
 
@@ -603,6 +626,7 @@ function resetMenuStyles() {
   viewCambios?.classList.add("hidden");
   viewInforme?.classList.add("hidden");
   viewEntregas?.classList.add("hidden");
+  viewProduccion?.classList.add("hidden");
   viewProcurement?.classList.add("hidden");
   viewTarjetas?.classList.add("hidden");
   viewUsuarios?.classList.add("hidden");
@@ -635,11 +659,17 @@ safeClick("menu-btn-entregas-todas", () => {
   window.cambiarSubmenuEntrega("todas");
 });
 
+safeClick("menu-btn-produccion", () => {
+  resetMenuStyles();
+  viewProduccion?.classList.remove("hidden");
+  if (menuBtnProduccion) menuBtnProduccion.className = CLASE_ACTIVO_PASTILLA;
+  renderProduccionView();
+});
+
 safeClick("menu-btn-procurement", () => {
   resetMenuStyles();
   viewProcurement?.classList.remove("hidden");
   if (menuBtnProcurement) menuBtnProcurement.className = CLASE_ACTIVO_PASTILLA;
-  renderProcurementView();
 });
 
 safeClick("menu-btn-tarjetas", () => {
@@ -747,6 +777,215 @@ window.cambiarSubmenuEntrega = (categoria) => {
   renderTablaEntregas();
 };
 
+// ==================== MÓDULO PRODUCCIÓN WORK PLANNER (36 FILAS Y SECCIÓN AGRUPADA) ====================
+function escucharProduccion() {
+  const q = collection(db, "produccion_lotes");
+  onSnapshot(q, (snapshot) => {
+    lotesProduccion = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderProduccionView();
+  }, (err) => console.log("Aviso Firestore Producción:", err.message));
+}
+
+const formLoteProd = document.getElementById("form-nuevo-lote-prod");
+if (formLoteProd) {
+  formLoteProd.onsubmit = async (e) => {
+    e.preventDefault();
+    const semana = document.getElementById("lote-semana").value;
+    const dia = document.getElementById("lote-dia").value;
+    const linea = document.getElementById("lote-linea").value;
+    const plan = document.getElementById("lote-plan").value.trim();
+    const proyecto = document.getElementById("lote-proyecto").value.trim();
+    const articulo = document.getElementById("lote-articulo").value.trim();
+    const estado = document.getElementById("lote-estado").value;
+    const pares = parseInt(document.getElementById("lote-pares").value) || 0;
+
+    try {
+      await addDoc(collection(db, "produccion_lotes"), {
+        semana, dia, linea, plan, proyecto, articulo, estado, pares,
+        fechaRegistro: new Date().toISOString()
+      });
+      formLoteProd.reset();
+      modalNuevoLoteProd?.classList.add("hidden");
+      renderProduccionView();
+    } catch (err) {
+      alert("Error al registrar lote: " + err.message);
+    }
+  };
+}
+
+window.actualizarEstadoDiaLote = async (id, nuevoEstado) => {
+  if (!id) return;
+  await updateDoc(doc(db, "produccion_lotes", id), {
+    estado: nuevoEstado,
+    fechaActualizacion: new Date().toISOString()
+  });
+};
+
+window.eliminarTodosRegistrosProduccion = async () => {
+  if (confirm("⚠️ ¿Estás seguro de eliminar TODOS los registros de producción para empezar de 0?")) {
+    try {
+      const snap = await getDocs(collection(db, "produccion_lotes"));
+      const promises = snap.docs.map(d => deleteDoc(doc(db, "produccion_lotes", d.id)));
+      await Promise.all(promises);
+      alert("Todos los registros de producción han sido eliminados.");
+      renderProduccionView();
+    } catch (err) {
+      alert("Error: " + err.message);
+    }
+  }
+};
+
+window.exportarExcelProduccion = () => {
+  const tabla = document.getElementById("tabla-export-excel");
+  if (!tabla) return;
+  let html = tabla.outerHTML;
+  let blob = new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel' });
+  let url = URL.createObjectURL(blob);
+  let a = document.createElement('a');
+  a.href = url;
+  a.download = `Work_Planner_Produccion_${new Date().toISOString().slice(0,10)}.xls`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+};
+
+function renderProduccionView() {
+  const table = document.getElementById("tabla-matriz-produccion");
+  const empty = document.getElementById("produccion-empty-state");
+  const labelSemanaGrande = document.getElementById("label-semana-grande");
+  if (!table) return;
+
+  const fSem = document.getElementById("prod-filter-semana")?.value || "";
+  const fProy = document.getElementById("prod-filter-proyecto")?.value.trim().toLowerCase() || "";
+  const fLin = document.getElementById("prod-filter-linea")?.value || "";
+
+  if (labelSemanaGrande) {
+    labelSemanaGrande.textContent = fSem ? fSem.toUpperCase() : "TODAS LAS SEMANAS";
+  }
+
+  let filtrados = lotesProduccion.filter(l => {
+    const semMatch = !fSem || (l.semana || "") === fSem;
+    const proyMatch = !fProy || (l.proyecto || "").toLowerCase().includes(fProy) || (l.plan || "").toLowerCase().includes(fProy) || (l.articulo || "").toLowerCase().includes(fProy);
+    const linMatch = !fLin || String(l.linea || "") === String(fLin);
+    return semMatch && proyMatch && linMatch;
+  });
+
+  // KPIs
+  let totCortado = 0, totAparado = 0, totArmado = 0, totInyeccion = 0, totEntregado = 0;
+  lotesProduccion.forEach(l => {
+    const p = parseInt(l.pares) || 0;
+    if (l.estado === "CORTADO") totCortado += p;
+    else if (l.estado === "APARADO") totAparado += p;
+    else if (l.estado === "ARMADO") totArmado += p;
+    else if (l.estado === "INYECCIÓN") totInyeccion += p;
+    else if (l.estado === "ENTREGADO") totEntregado += p;
+  });
+
+  const grandTotal = totCortado + totAparado + totArmado + totInyeccion + totEntregado;
+  const setKpi = (idVal, idBar, val) => {
+    const vEl = document.getElementById(idVal);
+    const bEl = document.getElementById(idBar);
+    if (vEl) vEl.textContent = val.toLocaleString();
+    if (bEl && grandTotal > 0) bEl.style.width = `${Math.round((val / grandTotal) * 100)}%`;
+  };
+
+  const elTotKpi = document.getElementById("prod-total-pares-kpi");
+  if (elTotKpi) elTotKpi.textContent = `${grandTotal.toLocaleString()} Pares Totales`;
+
+  setKpi("kpi-cortado", "bar-cortado", totCortado);
+  setKpi("kpi-aparado", "bar-aparado", totAparado);
+  setKpi("kpi-armado", "bar-armado", totArmado);
+  setKpi("kpi-inyeccion", "bar-inyeccion", totInyeccion);
+  setKpi("kpi-entregado", "bar-entregado", totEntregado);
+
+  const seccionesDisponibles = fLin ? [fLin] : ["330", "331", "332", "251", "252", "254"];
+  const diasSemana = ["LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES"];
+
+  let html = "";
+  let rowIndexGlobal = 0;
+
+  seccionesDisponibles.forEach(seccion => {
+    const lotesSeccion = filtrados.filter(l => String(l.linea) === String(seccion));
+    const planesUnicos = {};
+    lotesSeccion.forEach(l => {
+      const pKey = l.plan || l.proyecto;
+      if (!planesUnicos[pKey]) {
+        planesUnicos[pKey] = { plan: l.plan, articulo: l.articulo, proyecto: l.proyecto, dias: {} };
+      }
+      planesUnicos[pKey].dias[l.dia] = l;
+    });
+
+    const listaPlanes = Object.values(planesUnicos);
+
+    // Exactamente 6 filas por sección
+    for (let i = 0; i < 6; i++) {
+      const datosPlan = listaPlanes[i] || null;
+      let totalFila = 0;
+      rowIndexGlobal++;
+      const colorBg = rowIndexGlobal % 2 === 0 ? 'bg-white' : 'bg-slate-50/70';
+
+      html += `<tr class="${colorBg} border-b border-gray-300 text-center">`;
+
+      // Sección combinada solo en la primera fila de las 6
+      if (i === 0) {
+        html += `<td rowspan="6" class="p-2 font-black font-mono border border-gray-300 bg-gray-100 text-gray-900 align-middle text-sm">${seccion}</td>`;
+      }
+
+      diasSemana.forEach(dia => {
+        const loteDia = datosPlan && datosPlan.dias ? datosPlan.dias[dia] : null;
+        if (loteDia) {
+          const p = parseInt(loteDia.pares) || 0;
+          totalFila += p;
+          const colorEstado = loteDia.estado === 'ENTREGADO' ? 'text-green-700 bg-green-50' : (loteDia.estado === 'APARADO' ? 'text-blue-700 bg-blue-50' : (loteDia.estado === 'ARMADO' ? 'text-purple-700 bg-purple-50' : 'text-amber-700 bg-amber-50'));
+          html += `
+            <td class="p-1 border border-gray-300 font-mono text-[10px] font-bold text-red-600">${loteDia.plan || '—'}</td>
+            <td class="p-1 border border-gray-300 font-mono text-[10px]">${loteDia.articulo || '—'}</td>
+            <td class="p-1 border border-gray-300 font-bold text-[10px] truncate max-w-[65px]">${loteDia.proyecto || '—'}</td>
+            <td class="p-1 border border-gray-300 font-black text-cyan-900 bg-cyan-50/30">${p.toLocaleString()}</td>
+            <td class="p-1 border border-gray-300">
+              <select onchange="window.actualizarEstadoDiaLote('${loteDia.id}', this.value)" class="text-[10px] font-bold rounded px-1 py-0.5 border ${colorEstado}">
+                <option value="CORTADO" ${loteDia.estado === 'CORTADO' ? 'selected' : ''}>CORTADO</option>
+                <option value="APARADO" ${loteDia.estado === 'APARADO' ? 'selected' : ''}>APARADO</option>
+                <option value="ARMADO" ${loteDia.estado === 'ARMADO' ? 'selected' : ''}>ARMADO</option>
+                <option value="INYECCIÓN" ${loteDia.estado === 'INYECCIÓN' ? 'selected' : ''}>INYECCIÓN</option>
+                <option value="ENTREGADO" ${loteDia.estado === 'ENTREGADO' ? 'selected' : ''}>ENTREGADO</option>
+              </select>
+            </td>
+          `;
+        } else {
+          html += `
+            <td class="p-1 border border-gray-300 text-gray-300">—</td>
+            <td class="p-1 border border-gray-300 text-gray-300">—</td>
+            <td class="p-1 border border-gray-300 text-gray-300">—</td>
+            <td class="p-1 border border-gray-300 text-gray-300">—</td>
+            <td class="p-1 border border-gray-300 text-gray-300">—</td>
+          `;
+        }
+      });
+
+      html += `<td class="p-2 border border-gray-300 font-black text-xs bg-gray-100 text-[#D61B28] align-middle">${totalFila > 0 ? totalFila.toLocaleString() : '—'}</td>`;
+      html += `</tr>`;
+    }
+  });
+
+  table.innerHTML = html;
+}
+
+const filtroSemanaProd = document.getElementById("prod-filter-semana");
+const filtroProyectoProd = document.getElementById("prod-filter-proyecto");
+const filtroLineaProd = document.getElementById("prod-filter-linea");
+
+if (filtroSemanaProd) filtroSemanaProd.onchange = renderProduccionView;
+if (filtroProyectoProd) filtroProyectoProd.oninput = renderProduccionView;
+if (filtroLineaProd) filtroLineaProd.onchange = renderProduccionView;
+
+safeClick("btn-limpiar-filtros-prod", () => {
+  if (filtroSemanaProd) filtroSemanaProd.value = "";
+  if (filtroProyectoProd) filtroProyectoProd.value = "";
+  if (filtroLineaProd) filtroLineaProd.value = "";
+  renderProduccionView();
+});
+
 // ==================== TABLA GENERAL DE ENTREGAS ====================
 function escucharEntregas() {
   const q = collection(db, "entregas_departamentos");
@@ -766,11 +1005,7 @@ function renderTablaEntregas() {
   let entregasFiltradas = entregas.filter(item => {
     const coincideCategoria = (categoriaEntregaActiva === "todas") || 
       ((item.tipo || "").toUpperCase().trim() === categoriaEntregaActiva.toUpperCase().trim());
-    const semStr = (item.semana || "").toString().toLowerCase().trim();
-    const proyStr = (item.proyecto || "").toString().toLowerCase().trim();
-    const coincideSem = !colFiltroSemanaEntregas || semStr.includes(colFiltroSemanaEntregas);
-    const coincideProy = !colFiltroProyectoEntregas || proyStr.includes(colFiltroProyectoEntregas);
-    return coincideCategoria && coincideSem && coincideProy;
+    return coincideCategoria;
   });
 
   if (entregasFiltradas.length === 0) {
@@ -853,27 +1088,9 @@ window.confirmarRecepcionEntrega = async (id, tipo, proyecto) => {
 function escucharCambios() {
   const q = collection(db, "solicitudes_cambios");
   onSnapshot(q, (snapshot) => {
-    const ahora = new Date();
-    solicitudes = snapshot.docs.map(docSnap => {
-      const data = docSnap.data();
-      const id = docSnap.id;
-
-      if (data.estado === "En proceso" && data.fechaCreacion) {
-        const fechaCrea = new Date(data.fechaCreacion);
-        const diferenciaDias = (ahora - fechaCrea) / (1000 * 60 * 60 * 24);
-        if (diferenciaDias >= 7) {
-          data.estado = "Retrasado";
-          updateDoc(doc(db, "solicitudes_cambios", id), { estado: "Retrasado" });
-        }
-      }
-
-      return { id, ...data };
-    });
+    solicitudes = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
     solicitudes.sort((a, b) => (b.fechaCreacion || "").localeCompare(a.fechaCreacion || ""));
     renderTabla();
-    if (!viewInforme?.classList.contains("hidden")) {
-      actualizarInformePorSemana();
-    }
   });
 }
 
@@ -883,7 +1100,6 @@ function formatearFecha(iso) {
   return d.toLocaleDateString("es-BO", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-// Render Tabla de Cambios Pública
 function renderTabla() {
   const tbody = document.getElementById("table-cambios-body");
   const empty = document.getElementById("table-empty-state");
@@ -902,226 +1118,105 @@ function renderTabla() {
 
   solicitudes.forEach((item) => {
     const tr = document.createElement("tr");
-    tr.className = item.esMinuta 
-      ? "bg-amber-50/70 hover:bg-amber-100/70 transition border-b border-amber-200" 
-      : "hover:bg-gray-50/80 transition border-b border-gray-100";
+    tr.className = item.esMinuta ? "bg-amber-50/70 border-b border-amber-200" : "hover:bg-gray-50/80 transition border-b border-gray-100";
 
-    let badgeMinuta = item.esMinuta 
-      ? `<span class="bg-amber-500 text-white font-black text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider block mb-1 w-fit shadow-xs">PLAN PILOTO</span>` 
-      : '';
+    let badgeMinuta = item.esMinuta ? `<span class="bg-amber-500 text-white font-black text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider block mb-1 w-fit">PLAN PILOTO</span>` : '';
 
     let estadoHTML = "";
     if (esDesarrolloUsuario) {
       estadoHTML = `
         <div class="flex items-center space-x-1.5">
-          <select id="sel-estado-${item.id}" class="border border-orange-200 text-orange-600 bg-orange-50 font-semibold rounded-lg px-2 py-1 text-xs focus:ring-1 focus:ring-[#D61B28]">
+          <select id="sel-estado-${item.id}" class="border border-orange-200 text-orange-600 bg-orange-50 font-semibold rounded-lg px-2 py-1 text-xs">
             <option value="En proceso" ${item.estado === "En proceso" ? "selected" : ""}>En proceso</option>
             <option value="Realizado" ${item.estado === "Realizado" ? "selected" : ""}>Realizado</option>
             <option value="Retrasado" ${item.estado === "Retrasado" ? "selected" : ""}>Retrasado</option>
           </select>
-          <button onclick="window.guardarCambioEstado('${item.id}', '${item.proyecto}', '${item.articulo}', '${item.semana || ''}')" title="Guardar y Notificar a Costos" class="bg-gray-100 hover:bg-[#D61B28] hover:text-white text-gray-600 p-1.5 rounded-lg text-xs transition cursor-pointer">
+          <button onclick="window.guardarCambioEstado('${item.id}', '${item.proyecto}', '${item.articulo}', '${item.semana || ''}')" class="bg-gray-100 hover:bg-[#D61B28] hover:text-white text-gray-600 p-1.5 rounded-lg text-xs transition cursor-pointer">
             <i class="fa-solid fa-floppy-disk"></i>
           </button>
         </div>
       `;
     } else {
-      const estilo = item.estado === "Realizado" ? "border-green-200 text-green-700 bg-green-50" : (item.estado === "Retrasado" ? "border-red-200 text-red-700 bg-red-50" : "border-orange-200 text-orange-600 bg-orange-50");
-      estadoHTML = `<span class="border ${estilo} px-3 py-1 rounded-lg font-bold text-xs">${item.estado}</span>`;
+      estadoHTML = `<span class="border px-3 py-1 rounded-lg font-bold text-xs">${item.estado}</span>`;
     }
 
-    const fechaRealizadoHTML = item.fechaRealizado 
-      ? `<span class="font-bold text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200">${formatearFecha(item.fechaRealizado)}</span>`
-      : `<span class="text-gray-300 text-[11px]">—</span>`;
+    const fechaRealizadoHTML = item.fechaRealizado ? `<span class="font-bold text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200">${formatearFecha(item.fechaRealizado)}</span>` : `<span class="text-gray-300 text-[11px]">—</span>`;
 
     let costosHTML = "";
     if (item.estado === "Realizado") {
       if (item.validadoCostos) {
-        costosHTML = `
-          <div class="flex items-center justify-center space-x-1 text-green-700 font-bold text-xs">
-            <i class="fa-solid fa-circle-check text-green-600"></i>
-            <span>Validado</span>
-            ${esAdmin ? `<button onclick="window.desbloquearValidacionCostos('${item.id}')" class="text-red-500 hover:text-red-700 text-[10px] ml-1 cursor-pointer" title="Desbloquear como Super Admin"><i class="fa-solid fa-unlock"></i></button>` : ''}
-          </div>
-        `;
+        costosHTML = `<span class="text-green-700 font-bold text-xs"><i class="fa-solid fa-circle-check"></i> Validado</span>`;
       } else {
-        costosHTML = `
-          <div class="flex items-center justify-center space-x-1">
-            <input type="checkbox" ${!esCostos ? "disabled title='Solo el usuario de Costos puede validar'" : ""} 
-                   onchange="window.confirmarValidacionCostos('${item.id}', '${item.proyecto}', '${item.articulo}', this)"
-                   class="h-4 w-4 accent-[#D61B28] rounded border-gray-300 cursor-${esCostos ? 'pointer' : 'not-allowed'}">
-            <span class="text-[11px] ${esCostos ? 'text-gray-600 font-semibold' : 'text-gray-300'}">Confirmar</span>
-          </div>
-        `;
+        costosHTML = `<input type="checkbox" ${!esCostos ? "disabled" : ""} onchange="window.confirmarValidacionCostos('${item.id}', '${item.proyecto}', '${item.articulo}', this)" class="h-4 w-4 accent-[#D61B28] rounded border-gray-300 cursor-pointer">`;
       }
     } else {
       costosHTML = `<input type="checkbox" disabled class="h-4 w-4 text-gray-300 rounded border-gray-200 opacity-40">`;
     }
 
-    const fotoHTML = item.foto 
-      ? `<img src="${item.foto}" onclick="window.verFotoGrande('${item.foto}', '${item.proyecto} - ${item.articulo}')" class="w-10 h-7 object-cover rounded border border-gray-200 shadow-xs cursor-pointer hover:opacity-80 transition mx-auto" title="Click para ampliar">`
-      : `<div class="w-10 h-7 rounded border border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-[10px] mx-auto"><i class="fa-regular fa-image"></i></div>`;
+    const fotoHTML = item.foto ? `<img src="${item.foto}" onclick="window.verFotoGrande('${item.foto}', '${item.proyecto}')" class="w-10 h-7 object-cover rounded border cursor-pointer mx-auto">` : '—';
 
     tr.innerHTML = `
-      <td class="p-2 border-r border-gray-100 text-center">${fotoHTML}</td>
-      <td class="p-3 font-bold text-gray-700 border-r border-gray-100 font-mono">${item.semana || '—'}</td>
-      <td class="p-3 text-gray-600 border-r border-gray-100 whitespace-nowrap">${formatearFecha(item.fechaCreacion)}</td>
-      <td class="p-3 border-r border-gray-100 whitespace-nowrap">
-        <span class="font-bold text-gray-800 block">${item.solicitanteNombre || '—'}</span>
-        <span class="text-[10px] text-gray-400">${item.solicitanteRol || ''}</span>
-      </td>
-      <td class="p-3.5 font-bold text-gray-800 border-r border-gray-100">${badgeMinuta}${item.proyecto}</td>
-      <td class="p-3.5 font-mono text-gray-700 border-r border-gray-100">${item.articulo}</td>
-      <td class="p-3.5 text-gray-700 border-r border-gray-100 leading-relaxed">${item.boxCambio}</td>
-      <td class="p-3.5 text-center border-r border-gray-100 whitespace-nowrap">${estadoHTML}</td>
-      <td class="p-3.5 text-center border-r border-gray-100 whitespace-nowrap">${fechaRealizadoHTML}</td>
+      <td class="p-2 border-r text-center">${fotoHTML}</td>
+      <td class="p-3 font-bold border-r font-mono">${item.semana || '—'}</td>
+      <td class="p-3 text-gray-600 border-r whitespace-nowrap">${formatearFecha(item.fechaCreacion)}</td>
+      <td class="p-3 border-r whitespace-nowrap"><span class="font-bold block">${item.solicitanteNombre || '—'}</span></td>
+      <td class="p-3.5 font-bold border-r">${badgeMinuta}${item.proyecto}</td>
+      <td class="p-3.5 font-mono border-r">${item.articulo}</td>
+      <td class="p-3.5 border-r">${item.boxCambio}</td>
+      <td class="p-3.5 text-center border-r whitespace-nowrap">${estadoHTML}</td>
+      <td class="p-3.5 text-center border-r whitespace-nowrap">${fechaRealizadoHTML}</td>
       <td class="p-3.5 text-center whitespace-nowrap">${costosHTML}</td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-// Guardar Estado
 window.guardarCambioEstado = async (id, proyecto, articulo, semana) => {
   const select = document.getElementById(`sel-estado-${id}`);
   if (!select) return;
   const nuevoEstado = select.value;
-
-  const updatePayload = { estado: nuevoEstado };
-  if (nuevoEstado === "Realizado") {
-    updatePayload.fechaRealizado = new Date().toISOString();
-  } else {
-    updatePayload.fechaRealizado = null;
-  }
-
-  await updateDoc(doc(db, "solicitudes_cambios", id), updatePayload);
-
-  if (nuevoEstado === "Realizado") {
-    abrirModalWhatsApp({
-      titulo: "Proyecto Realizado",
-      subtitulo: "Enviar alerta a los usuarios de Costos para su validación:",
-      mensajeTexto: `👟 *PROYECTO REALIZADO - REQUERIMIENTO DE COSTOS*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n✅ *Estado:* Realizado por Desarrollo de Producto (${(userData && userData.nombre) || 'Usuario'})\n\n_Por favor ingresar al sistema para validar los costos asociados._`,
-      rolFiltro: "Costos"
-    });
-  } else {
-    alert("Estado guardado correctamente.");
-  }
+  await updateDoc(doc(db, "solicitudes_cambios", id), {
+    estado: nuevoEstado,
+    fechaRealizado: nuevoEstado === "Realizado" ? new Date().toISOString() : null
+  });
+  alert("Estado guardado correctamente.");
 };
 
 window.confirmarValidacionCostos = async (id, proyecto, articulo, checkboxElem) => {
-  const confirma = confirm(`¿Estás seguro de validar los costos del proyecto "${proyecto}"? Una vez confirmado quedará bloqueado.`);
-  if (!confirma) {
+  if (confirm(`¿Validar costos de "${proyecto}"?`)) {
+    await updateDoc(doc(db, "solicitudes_cambios", id), { validadoCostos: true });
+  } else {
     checkboxElem.checked = false;
-    return;
-  }
-
-  await updateDoc(doc(db, "solicitudes_cambios", id), {
-    validadoCostos: true,
-    fechaValidacionCostos: new Date().toISOString(),
-    validadorCostosNombre: (userData && userData.nombre) || "Costos"
-  });
-
-  abrirModalWhatsApp({
-    titulo: "Costos Validados",
-    subtitulo: "Enviar notificación al equipo de Calidad:",
-    mensajeTexto: `📋 *VALIDACIÓN DE COSTOS COMPLETADA - ALERTA CALIDAD*\n\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n💰 *Costos:* Validados por ${(userData && userData.nombre) || 'Costos'} (Costos)\n\n_El proyecto cuenta con validación técnica y económica lista para producción._`,
-    rolFiltro: "Calidad"
-  });
-};
-
-window.desbloquearValidacionCostos = async (id) => {
-  if (confirm("¿Desbloquear validación de costos? (Acción de Super Admin)")) {
-    await updateDoc(doc(db, "solicitudes_cambios", id), { validadoCostos: false });
   }
 };
 
-// Solicitudes y Minutas
-const formMinuta = document.getElementById("form-minuta");
-if (formMinuta) {
-  formMinuta.onsubmit = async (e) => {
-    e.preventDefault();
-    const semana = document.getElementById("minuta-semana").value.trim();
-    const proyecto = document.getElementById("minuta-proyecto").value.trim();
-    const articulo = document.getElementById("minuta-articulo").value.trim();
-    const detalle = document.getElementById("minuta-box").value.trim();
-    const photoFile = document.getElementById("minuta-photo").files[0];
+// Panel Super Admin
+async function cargarPanelSuperAdmin() {
+  if (!esSuperAdmin()) return;
+  const tbodyUsers = document.getElementById("table-users-body");
+  const tbodySols = document.getElementById("table-admin-solicitudes-body");
+  const tbodyEnts = document.getElementById("table-admin-entregas-body");
 
-    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
-
-    try {
-      await addDoc(collection(db, "solicitudes_cambios"), {
-        semana,
-        proyecto,
-        articulo,
-        foto: fotoBase64,
-        boxCambio: detalle,
-        esMinuta: true,
-        solicitanteNombre: (userData && userData.nombre) || "Jefe Desarrollo",
-        solicitanteRol: (userData && userData.rol) || "Desarrollo de producto - Jefe",
-        solicitanteId: currentUser.uid,
-        estado: "En proceso",
-        fechaRealizado: null,
-        validadoCostos: false,
-        fechaCreacion: new Date().toISOString(),
-        timestamp: serverTimestamp()
+  try {
+    const snap = await getDocs(collection(db, "usuarios"));
+    if (tbodyUsers) {
+      tbodyUsers.innerHTML = "";
+      snap.forEach(docU => {
+        const u = docU.data();
+        const tr = document.createElement("tr");
+        tr.className = "border-b";
+        tr.innerHTML = `
+          <td class="p-3"><img src="${u.foto || 'https://via.placeholder.com/30'}" class="w-7 h-7 rounded-full object-cover"></td>
+          <td class="p-3 font-bold">${u.nombre || '—'}</td>
+          <td class="p-3">${u.email || '—'}</td>
+          <td class="p-3 font-mono">${u.celular || '—'}</td>
+          <td class="p-3 font-semibold text-[#D61B28]">${u.rol}</td>
+          <td class="p-3 text-center"><span class="text-xs text-gray-400">Activo</span></td>
+        `;
+        tbodyUsers.appendChild(tr);
       });
-
-      formMinuta.reset();
-      modalMinuta?.classList.add("hidden");
-
-      abrirModalWhatsApp({
-        titulo: "Minuta de Cambios Registrada",
-        subtitulo: "Enviar minuta a los Técnicos de Desarrollo:",
-        mensajeTexto: `📋 *MINUTA DE CAMBIOS - PLAN PILOTO*\n*Bata Bolivia / Desarrollo de Producto*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n👤 *Emitido por:* ${(userData && userData.nombre) || 'Jefe Desarrollo'}\n\n📝 *DETALLE DE CAMBIOS TÉCNICOS:*\n${detalle}\n\n_Registrado en el sistema para control de avance y realización._`,
-        rolFiltro: "Desarrollo de producto - Técnico"
-      });
-    } catch (err) {
-      alert("Error al guardar minuta: " + err.message);
     }
-  };
-}
-
-const formNewChange = document.getElementById("form-new-change");
-if (formNewChange) {
-  formNewChange.onsubmit = async (e) => {
-    e.preventDefault();
-    const semana = document.getElementById("change-semana").value.trim();
-    const proyecto = document.getElementById("change-project").value.trim();
-    const articulo = document.getElementById("change-article").value.trim();
-    const boxCambio = document.getElementById("change-box").value.trim();
-    const photoFile = document.getElementById("change-photo").files[0];
-
-    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
-
-    try {
-      await addDoc(collection(db, "solicitudes_cambios"), {
-        semana,
-        proyecto,
-        articulo,
-        foto: fotoBase64,
-        boxCambio,
-        esMinuta: false,
-        solicitanteNombre: (userData && userData.nombre) || (currentUser && currentUser.email) || "Usuario",
-        solicitanteRol: (userData && userData.rol) || "Usuario",
-        solicitanteId: currentUser.uid,
-        estado: "En proceso",
-        fechaRealizado: null,
-        validadoCostos: false,
-        fechaCreacion: new Date().toISOString(),
-        timestamp: serverTimestamp()
-      });
-
-      formNewChange.reset();
-      modalNewChange?.classList.add("hidden");
-
-      abrirModalWhatsApp({
-        titulo: "Solicitud Registrada",
-        subtitulo: "Notificar solicitud creada al equipo:",
-        mensajeTexto: `👞 *NUEVA SOLICITUD DE CAMBIO - BATA BOLIVIA*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n👤 *Solicitado por:* ${(userData && userData.nombre) || 'Usuario'} (${(userData && userData.rol) || ''})\n📝 *Cambio:* ${boxCambio}\n\n_Revisar en el Sistema de Gestión de Cambios Bata_`
-      });
-    } catch (err) {
-      alert("Error: " + err.message);
-    }
-  };
+  } catch (e) { console.error(e); }
 }
 
 // Configuración de campos dinámicos en Entrega
@@ -1162,23 +1257,19 @@ function actualizarCamposSegunTipoEntrega() {
   if (tipo === "GUÍA DE PRODUCCIÓN") {
     boxFoto?.classList.remove("hidden");
     selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
-  }
-  else if (tipo === "CORTE") {
+  } else if (tipo === "CORTE") {
     boxFoto?.classList.remove("hidden");
     selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
     selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-  }
-  else if (tipo === "MUESTRA DEFINITIVA") {
+  } else if (tipo === "MUESTRA DEFINITIVA") {
     boxFoto?.classList.remove("hidden");
     containerSingle?.classList.add("hidden");
     containerMultiple?.classList.remove("hidden");
-  }
-  else if (tipo === "HOJA DE DESBASTE") {
+  } else if (tipo === "HOJA DE DESBASTE") {
     boxFoto?.classList.remove("hidden");
     selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
     selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-  }
-  else if (tipo === "TIZADORES") {
+  } else if (tipo === "TIZADORES") {
     boxCopias?.classList.remove("hidden");
     selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
   } else {
@@ -1200,68 +1291,43 @@ if (formEntrega) {
     const notas = document.getElementById("ent-notas").value.trim();
     const copias = document.getElementById("ent-copias").value.trim();
     const photoFile = document.getElementById("ent-photo").files[0];
-
     const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
 
     try {
       let destinosAEntregar = [];
-
       if (tipo === "MUESTRA DEFINITIVA") {
         destinosAEntregar = Array.from(document.querySelectorAll(".chk-muestras-dest:checked")).map(c => c.value);
-        if (destinosAEntregar.length === 0) {
-          alert("Selecciona al menos un departamento para la muestra definitiva.");
-          return;
-        }
       } else {
         destinosAEntregar = [document.getElementById("ent-destino").value];
       }
 
-      const nombreUsuario = (userData && userData.nombre) || (currentUser && currentUser.email) || "Usuario";
-      const rolUsuario = (userData && userData.rol) || (esSuperAdmin() ? "Super Admin" : "Desarrollo de producto");
-
       for (const destino of destinosAEntregar) {
         await addDoc(collection(db, "entregas_departamentos"), {
-          semana,
-          proyecto,
+          semana, proyecto,
           articulo: tipo === "MATERIALES" ? "" : articulo,
-          tipo,
-          destino,
+          tipo, destino,
           copias: tipo === "TIZADORES" ? (copias || "1") : null,
-          foto: fotoBase64,
-          notas,
-          entregadoPorNombre: nombreUsuario,
-          entregadoPorRol: rolUsuario,
-          entregadoPorId: currentUser ? currentUser.uid : null,
+          foto: fotoBase64, notas,
+          entregadoPorNombre: (userData && userData.nombre) || "Usuario",
+          entregadoPorRol: (userData && userData.rol) || "Desarrollo",
           recibido: false,
-          fechaEntrega: new Date().toISOString(),
-          timestamp: serverTimestamp()
+          fechaEntrega: new Date().toISOString()
         });
       }
-
       formEntrega.reset();
       modalNuevaEntrega?.classList.add("hidden");
-
-      const destinosTexto = destinosAEntregar.join(", ");
-      let detalleCopias = (tipo === "TIZADORES" && copias) ? `📑 *Copias:* ${copias}\n` : '';
-
-      abrirModalWhatsApp({
-        titulo: "Entrega Registrada",
-        subtitulo: `Notificar recepción a los encargados de ${destinosTexto}:`,
-        mensajeTexto: `📦 ENTREGA REALIZADA - PD BOLIVIA\n\n📅 *Semana:* ${semana}\n📌 *Elemento:* ${tipo}\n🏷️ *Detalle/Proyecto:* ${proyecto}\n${articulo ? '🔢 *Artículo:* ' + articulo + '\n' : ''}${detalleCopias}👤 *Entregado por:* ${nombreUsuario} (${rolUsuario})\n🏢 *Destino:* ${destinosTexto}\n📝 *Notas:* ${notas || 'Sin notas adicionales'}\n\n_Favor de confirmar la recepción física en el sistema._`,
-        rolFiltro: destinosAEntregar.length === 1 ? destinosAEntregar[0] : null
-      });
+      alert("Entrega registrada con éxito.");
     } catch (err) {
-      alert("Error al registrar entrega: " + err.message);
+      alert("Error: " + err.message);
     }
   };
 }
 
-// ==================== MÓDULO TARJETAS (PD) ====================
+// ==================== MÓDULO TARJETAS (PD) - FORMATO CLÁSICO RESTAURADO ====================
 function initModuloTarjetas() {
   const inputFecha = document.getElementById("card-fecha");
   if (inputFecha && !inputFecha.value) {
-    const hoy = new Date();
-    inputFecha.value = hoy.toLocaleDateString("es-BO");
+    inputFecha.value = new Date().toLocaleDateString("es-BO");
   }
 
   const fileInput = document.getElementById("card-croquis-file");
@@ -1289,33 +1355,24 @@ function initModuloTarjetas() {
   safeClick("btn-quick-distribute", () => {
     const raw = document.getElementById("input-quick-paste-row")?.value.trim() || "";
     if (!raw) {
-      alert("Copia una fila de tu tabla de Excel y pégala en el campo.");
+      alert("Copia una fila de Excel y pégala aquí.");
       return;
     }
-
     let cols = raw.split("\t").map(c => c.trim()).filter(c => c !== "");
     if (cols.length < 4) {
       cols = raw.split(/\s{2,}/).map(c => c.trim()).filter(c => c !== "");
     }
 
     if (cols.length >= 4) {
-      const cArt = document.getElementById("card-costo-articulo");
-      const cLin = document.getElementById("card-costo-linea");
-      const cMar = document.getElementById("card-costo-marca");
-      const cBudRet = document.getElementById("card-costo-budret");
-      const cPre = document.getElementById("card-costo-precio");
-      const cMrg = document.getElementById("card-costo-margen");
-
-      if (cArt) cArt.value = cols[0] || "";
-      if (cLin) cLin.value = cols[2] || "";
-      if (cMar) cMar.value = cols[3] || "BATA";
-      if (cBudRet) cBudRet.value = cols[10] || "0.00%";
-      if (cPre) cPre.value = cols[8] || "0.00";
-      if (cMrg) cMrg.value = cols[9] || "0%";
-
+      document.getElementById("card-costo-articulo").value = cols[0] || "";
+      document.getElementById("card-costo-linea").value = cols[2] || "";
+      document.getElementById("card-costo-marca").value = cols[3] || "BATA";
+      document.getElementById("card-costo-budret").value = cols[10] || "0.00%";
+      document.getElementById("card-costo-precio").value = cols[8] || "0.00";
+      document.getElementById("card-costo-margen").value = cols[9] || "0%";
       renderTarjetasPreview();
     } else {
-      alert("No se detectaron suficientes columnas. Pega directamente la fila copiada de Excel.");
+      alert("Columnas insuficientes. Pega directamente la fila copiada de Excel.");
     }
   });
 
@@ -1343,13 +1400,11 @@ function initModuloTarjetas() {
   safeClick("btn-ejecutar-print-tarjetas", () => {
     const contenidoHTML = document.getElementById("contenedor-tarjetas-preview")?.innerHTML || "";
     if (!contenidoHTML) return;
-
     const ventanaPrint = window.open("", "_blank", "width=900,height=650");
     if (!ventanaPrint) {
-      alert("Por favor permite las ventanas emergentes para imprimir las tarjetas.");
+      alert("Permite las ventanas emergentes para imprimir.");
       return;
     }
-
     ventanaPrint.document.open();
     ventanaPrint.document.write(`
       <!DOCTYPE html>
@@ -1358,42 +1413,11 @@ function initModuloTarjetas() {
         <meta charset="UTF-8">
         <title>Impresión de Tarjetas - Bata Bolivia</title>
         <style>
-          @page {
-            size: letter portrait;
-            margin: 8mm;
-          }
-          * {
-            box-sizing: border-box;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          html, body {
-            margin: 0;
-            padding: 0;
-            background: #fff;
-            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-          }
-          .shoe-card-container {
-            width: 200mm !important;
-            height: 34mm !important;
-            max-height: 34mm !important;
-            border: 1px solid #000 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            display: flex;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-            background: #fff;
-          }
-          .shoe-panel {
-            width: 66.66mm !important;
-            height: 100% !important;
-            box-sizing: border-box !important;
-          }
-          .lateral-tab {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
+          @page { size: letter portrait; margin: 8mm; }
+          * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          html, body { margin: 0; padding: 0; background: #fff; font-family: sans-serif; }
+          .shoe-card-container { width: 200mm !important; height: 34mm !important; max-height: 34mm !important; border: 1px solid #000 !important; margin: 0 !important; padding: 0 !important; display: flex; page-break-inside: avoid !important; break-inside: avoid !important; background: #fff; }
+          .shoe-panel { width: 66.66mm !important; height: 100% !important; box-sizing: border-box !important; }
         </style>
       </head>
       <body>
@@ -1404,12 +1428,7 @@ function initModuloTarjetas() {
       </html>
     `);
     ventanaPrint.document.close();
-
-    setTimeout(() => {
-      ventanaPrint.focus();
-      ventanaPrint.print();
-      ventanaPrint.close();
-    }, 250);
+    setTimeout(() => { ventanaPrint.focus(); ventanaPrint.print(); ventanaPrint.close(); }, 250);
   });
 
   renderTarjetasPreview();
@@ -1437,347 +1456,132 @@ function renderTarjetasPreview() {
   const budRet = document.getElementById("card-costo-budret")?.value || "37.39%";
 
   const serie = document.getElementById("card-serie")?.value || "37-44";
-  const fecha = document.getElementById("card-fecha")?.value || "4/9/2026";
-  const materialCorte = (document.getElementById("card-material-corte")?.value || "IMITACION").toUpperCase();
-  const forro = (document.getElementById("card-forro")?.value || "PIQUE NEGRO").toUpperCase();
-  const plantInt = (document.getElementById("card-plant-int")?.value || "PIQUE NEGRO / CRETONE").toUpperCase();
-  const modelista = (document.getElementById("card-tecnico")?.value || "CARLOS ARCE").toUpperCase();
-  const construccion = (document.getElementById("card-construccion")?.value || "TRUE MOC").toUpperCase();
+  const fecha = document.getElementById("card-fecha")?.value || "8/9/2026";
+  const materialCorte = (document.getElementById("card-material-corte")?.value || "DNE IMITACION 6D1G14").toUpperCase();
+  const forro = (document.getElementById("card-forro")?.value || "DNE FORRO PINTADO 9DFP").toUpperCase();
+  const plantInt = (document.getElementById("card-plant-int")?.value || "DNE FORRO PINTADO 9DFP").toUpperCase();
+  const modelista = (document.getElementById("card-tecnico")?.value || "JOHNNY GUTIERREZ").toUpperCase();
+  const construccion = (document.getElementById("card-construccion")?.value || "ARMADO").toUpperCase();
   const suela = (document.getElementById("card-horma-suela")?.value || "QUIQUE").toUpperCase();
   const observaciones = document.getElementById("card-observaciones")?.value || "";
 
   const siluetaCalzadoHTML = croquisTarjetaBase64 
-    ? `<img src="${croquisTarjetaBase64}" style="width:100%; height:30px; object-fit:contain; margin:auto;">`
-    : `<div style="height:30px; display:flex; align-items:center; justify-content:center; font-size:8px; color:#999; border:1px dashed #ccc; border-radius:4px;">Croquis</div>`;
+    ? `<img src="${croquisTarjetaBase64}" style="width:100%; height:32px; object-fit:contain; margin:auto;">`
+    : `<div style="height:32px; display:flex; align-items:center; justify-content:center; font-size:8px; color:#999; border:1px dashed #ccc;">Croquis</div>`;
 
   const siluetaPlantillaHTML = plantillaCorteTarjetaBase64 
-    ? `<img src="${plantillaCorteTarjetaBase64}" style="width:100%; height:30px; object-fit:contain; margin:auto;">`
+    ? `<img src="${plantillaCorteTarjetaBase64}" style="width:100%; height:32px; object-fit:contain; margin:auto;">`
     : siluetaCalzadoHTML;
 
   const listaAImprimir = [];
-
-  for (let i = 1; i <= cCortes; i++) {
-    listaAImprimir.push({
-      color: "#FFFFFF",
-      etiqueta: cCortes === 1 ? "CORTE (PRODUCCIÓN)" : `CORTE #${i} (PRODUCCIÓN)`,
-      esInvertida: true,
-      recibePlantilla: true
-    });
-  }
-  for (let i = 1; i <= cProd; i++) {
-    listaAImprimir.push({
-      color: "#FFFFFF",
-      etiqueta: cProd === 1 ? "PRODUCCIÓN" : `PRODUCCIÓN #${i}`,
-      esInvertida: false,
-      recibePlantilla: false
-    });
-  }
-  for (let i = 1; i <= cVerdes; i++) {
-    listaAImprimir.push({
-      color: "#80C342",
-      etiqueta: `RETAIL ${cVerdes > 1 ? '#' + i : ''}`,
-      esInvertida: false,
-      recibePlantilla: false
-    });
-  }
-  for (let i = 1; i <= cAmarillas; i++) {
-    listaAImprimir.push({
-      color: "#FFF200",
-      etiqueta: `PLANEAMIENTO ${cAmarillas > 1 ? '#' + i : ''}`,
-      esInvertida: false,
-      recibePlantilla: false
-    });
-  }
-  for (let i = 1; i <= cRosadas; i++) {
-    listaAImprimir.push({
-      color: "#E06D8A",
-      etiqueta: `EXPORTACIÓN ${cRosadas > 1 ? '#' + i : ''}`,
-      esInvertida: false,
-      recibePlantilla: false
-    });
-  }
+  for (let i = 1; i <= cCortes; i++) listaAImprimir.push({ color: "#80C342", etiqueta: "APROBACIONES (RETAIL)", esInvertida: true, recibePlantilla: true });
+  for (let i = 1; i <= cProd; i++) listaAImprimir.push({ color: "#80C342", etiqueta: "APROBACIONES (PRODUCCIÓN)", esInvertida: false, recibePlantilla: false });
+  for (let i = 1; i <= cVerdes; i++) listaAImprimir.push({ color: "#80C342", etiqueta: "APROBACIONES (RETAIL)", esInvertida: false, recibePlantilla: false });
+  for (let i = 1; i <= cAmarillas; i++) listaAImprimir.push({ color: "#FFF200", etiqueta: "APROBACIONES (PLANEAMIENTO)", esInvertida: false, recibePlantilla: false });
+  for (let i = 1; i <= cRosadas; i++) listaAImprimir.push({ color: "#E06D8A", etiqueta: "APROBACIONES (EXPORTACIÓN)", esInvertida: false, recibePlantilla: false });
 
   let tarjetasHTML = "";
-
   listaAImprimir.forEach((tarj) => {
     const imagenIzquierdaHTML = tarj.recibePlantilla ? siluetaPlantillaHTML : siluetaCalzadoHTML;
 
-    const bloqueFirmasHTML = `
-      <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:3px 5px; ${tarj.esInvertida ? '' : 'border-right:1px dashed #555;'} font-size:6.5px;">
-        <div style="font-size:7px; font-weight:900; text-align:center; color:#1f2937; text-transform:uppercase; border-bottom:1px solid #d1d5db; padding-bottom:1px;">
-          APROBACIONES (${tarj.etiqueta})
+    const panelDerechoFirmas = `
+      <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:2px 4px; font-size:6px;">
+        <div style="font-size:6.5px; font-weight:900; text-align:center; color:#dc2626; text-transform:uppercase; border-bottom:1px solid #d1d5db; padding-bottom:1px;">
+          ${tarj.etiqueta}
         </div>
-
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; text-align:center; align-items:end; margin-top:1px;">
-          <div style="display:flex; flex-direction:column; justify-content:flex-end; height:12mm;">
-            <div style="border-bottom:1px solid #000; width:100%; margin-bottom:1px;"></div>
-            <span style="font-weight:bold; font-size:6px; display:block;">P.D. CHIEF</span>
-            <span style="font-size:5px; color:#9ca3af;">Fecha: ___/___/___</span>
+        <div style="display:flex; flex-direction:column; justify-content:space-around; flex:1; padding-top:2px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+            <div style="border-bottom:1px solid #000; width:65%; height:12px;"></div>
+            <span style="font-size:5.5px; font-weight:bold;">P.D. CHIEF</span>
           </div>
-          <div style="display:flex; flex-direction:column; justify-content:flex-end; height:12mm;">
-            <div style="border-bottom:1px solid #000; width:100%; margin-bottom:1px;"></div>
-            <span style="font-weight:bold; font-size:6px; display:block;">MERCHANDISING MAN.</span>
-            <span style="font-size:5px; color:#9ca3af;">Fecha: ___/___/___</span>
+          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+            <div style="border-bottom:1px solid #000; width:65%; height:12px;"></div>
+            <span style="font-size:5.5px; font-weight:bold;">PURCHASING MANAGER</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+            <div style="border-bottom:1px solid #000; width:65%; height:12px;"></div>
+            <span style="font-size:5.5px; font-weight:bold;">MERCHANDISING MAN.</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+            <div style="border-bottom:1px solid #000; width:65%; height:12px;"></div>
+            <span style="font-size:5.5px; font-weight:bold;">PRODUCTION MANAGER</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+            <div style="border-bottom:1px solid #000; width:65%; height:12px;"></div>
+            <span style="font-size:5.5px; font-weight:bold;">COUNTRY MANAGER</span>
           </div>
         </div>
-
-        <div style="text-align:center; width:65%; margin:0 auto; display:flex; flex-direction:column; justify-content:flex-end; height:10mm;">
-          <div style="border-bottom:1px solid #000; width:100%; margin-bottom:1px;"></div>
-          <span style="font-weight:bold; font-size:6px; display:block;">PURCHASING MANAGER</span>
-          <span style="font-size:5px; color:#9ca3af;">Fecha: ___/___/___</span>
-        </div>
-
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; text-align:center; align-items:end;">
-          <div style="display:flex; flex-direction:column; justify-content:flex-end; height:10mm;">
-            <div style="border-bottom:1px solid #000; width:100%; margin-bottom:1px;"></div>
-            <span style="font-weight:bold; font-size:6px; display:block;">PRODUCTION MANAGER</span>
-            <span style="font-size:5px; color:#9ca3af;">Fecha: ___/___/___</span>
-          </div>
-          <div style="display:flex; flex-direction:column; justify-content:flex-end; height:10mm;">
-            <div style="border-bottom:1px solid #000; width:100%; margin-bottom:1px;"></div>
-            <span style="font-weight:bold; font-size:6px; display:block;">COUNTRY MANAGER</span>
-            <span style="font-size:5px; color:#9ca3af;">Fecha: ___/___/___</span>
-          </div>
+        <div style="border-top:1px dashed #9ca3af; padding-top:1px; margin-top:1px;">
+          <span style="font-weight:900; font-size:5.5px; color:#374151; display:block;">OBSERVACIONES:</span>
+          <span style="font-size:5px; color:#4b5563;">PRODUCCION</span>
         </div>
       </div>
     `;
-
-    const bloqueObservacionesHTML = `
-      <div class="shoe-panel" style="padding:4px; display:flex; flex-direction:column; justify-content:space-between; font-size:7px; ${tarj.esInvertida ? 'border-right:1px dashed #555;' : ''}">
-        <div>
-          <span style="font-weight:900; color:#1f2937; text-transform:uppercase; display:block; margin-bottom:1px;">OBSERVACIONES:</span>
-          <p style="font-size:6.5px; color:#374151; font-style:italic; line-height:1.2;">${observaciones || 'Sin observaciones adicionales'}</p>
-        </div>
-        <div style="display:flex; flex-direction:column; gap:4px;">
-          <div style="border-bottom:1px dotted #9ca3af; height:6px;"></div>
-          <div style="border-bottom:1px dotted #9ca3af; height:6px;"></div>
-          <div style="border-bottom:1px dotted #9ca3af; height:6px;"></div>
-          <div style="text-align:right; font-size:6px; color:#9ca3af; font-weight:bold; letter-spacing:0.1em;">BATA BOLIVIA PD</div>
-        </div>
-      </div>
-    `;
-
-    const centroHTML = tarj.esInvertida ? bloqueObservacionesHTML : bloqueFirmasHTML;
-    const derechaHTML = tarj.esInvertida ? bloqueFirmasHTML : bloqueObservacionesHTML;
 
     tarjetasHTML += `
-      <div class="shoe-card-container" style="background:#fff; display:flex; font-size:7.5px; line-height:1.1; color:#000;">
-        <!-- PANEL 1: ESPECIFICACIONES CON 3 CAMPOS IZQ Y 3 CAMPOS DER EN LA BASE -->
-        <div class="shoe-panel" style="display:flex; border-right:1px dashed #555; overflow:hidden;">
-          <div class="lateral-tab" style="width:16px; border-right:1px solid #000; display:flex; align-items:center; justify-content:center; font-weight:900; letter-spacing:0.1em; font-size:9px; writing-mode:vertical-rl; transform:rotate(180deg); background-color:${tarj.color} !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;">
+      <div class="shoe-card-container" style="background:#fff; display:flex; font-size:7px; line-height:1.1; color:#000;">
+        <!-- PANEL 1: LENGÜETA Y ESPECIFICACIONES -->
+        <div class="shoe-panel" style="display:flex; border-right:1px solid #000; overflow:hidden;">
+          <div class="lateral-tab" style="width:16px; border-right:1px solid #000; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:9px; writing-mode:vertical-rl; transform:rotate(180deg); background-color:${tarj.color} !important;">
             ${linea}
           </div>
-          
           <div style="flex:1; display:flex; flex-direction:column; justify-content:space-between; padding:1px;">
-            <div style="font-size:8px; font-weight:900; color:#dc2626; text-align:center; border-bottom:1px solid #000; padding-bottom:1px;">
-              MANUFACTURA BOLIVIANA S.A.
+            <div style="font-size:8px; font-weight:900; color:#16a34a; text-align:center; border-bottom:1px solid #000; padding-bottom:1px;">
+              ${linea}
             </div>
-
-            <div style="display:flex; flex:1;">
-              <div style="width:58px; display:flex; flex-direction:column; justify-content:space-between; border-right:1px solid #000; padding-right:1px;">
+            <div style="display:flex; flex:1; align-items:center;">
+              <div style="width:52px; display:flex; flex-direction:column; justify-content:center; border-right:1px solid #000; padding-right:1px; height:100%;">
                 ${imagenIzquierdaHTML}
-                <span style="font-size:5px; font-weight:bold; text-align:center; overflow:hidden; white-space:nowrap;">${fecha}</span>
+                <span style="font-size:5px; font-weight:bold; text-align:center; margin-top:2px;">${fecha}</span>
               </div>
-
-              <!-- FILAS TÉCNICAS ADELGAZADAS A 3.2mm -->
-              <div style="flex:1;">
-                <table style="width:100%; height:100%; border-collapse:collapse; font-size:6.5px; font-weight:900;">
-                  <tr style="border-bottom:1px solid #000; height:3.2mm;">
-                    <td style="border-right:1px solid #000; width:38%; text-align:center; padding:0;">ART:</td>
-                    <td style="text-align:center; padding:0; font-size:7.5px; font-family:monospace;">${articulo}</td>
-                  </tr>
-                  <tr style="border-bottom:1px solid #000; height:3.2mm;">
-                    <td style="border-right:1px solid #000; text-align:center; padding:0;">MARCA:</td>
-                    <td style="text-align:center; padding:0;">${marca}</td>
-                  </tr>
-                  <tr style="border-bottom:1px solid #000; height:3.2mm;">
-                    <td style="border-right:1px solid #000; text-align:center; padding:0;">SERIE:</td>
-                    <td style="text-align:center; padding:0;">${serie}</td>
-                  </tr>
-                  <tr style="border-bottom:1px solid #000; height:3.2mm;">
-                    <td style="border-right:1px solid #000; width:38%; text-align:center; padding:0;">CORTE:</td>
-                    <td style="text-align:center; padding:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${materialCorte}</td>
-                  </tr>
-                  <tr style="border-bottom:1px solid #000; height:3.2mm;">
-                    <td style="border-right:1px solid #000; width:38%; text-align:center; padding:0;">FORRO:</td>
-                    <td style="text-align:center; padding:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${forro}</td>
-                  </tr>
-                  <tr style="height:3.2mm;">
-                    <td style="border-right:1px solid #000; width:38%; text-align:center; padding:0;">PLANT:</td>
-                    <td style="text-align:center; padding:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${plantInt}</td>
-                  </tr>
+              <div style="flex:1; height:100%;">
+                <table style="width:100%; height:100%; border-collapse:collapse; font-size:6px; font-weight:900;">
+                  <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; width:35%; text-align:center;">TEC:</td><td style="text-align:center; font-size:5.5px;">${modelista}</td></tr>
+                  <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; text-align:center;">CONTR:</td><td style="text-align:center;">${construccion}</td></tr>
+                  <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; text-align:center;">SUELA:</td><td style="text-align:center;">${suela}</td></tr>
                 </table>
               </div>
             </div>
-
-            <!-- BASE: 3 CAMPOS IZQUIERDA Y 3 CAMPOS DERECHA -->
-            <div style="display:flex; border-top:1px solid #000; font-size:5.5px; font-weight:800; padding:1px 0;">
-              <!-- 3 IZQUIERDA: MODELISTA, CONSTRUCCION, SUELA -->
-              <div style="width:50%; border-right:1px solid #000; padding-left:2px; display:flex; flex-direction:column; justify-content:space-around;">
-                <div>TEC: ${modelista}</div>
-                <div>CONTR: ${construccion}</div>
-                <div>SUELA: ${suela}</div>
-              </div>
-              <!-- 3 DERECHA: PRECIO, MARGEN BUD RET, MARGEN % -->
-              <div style="width:50%; padding-left:3px; display:flex; flex-direction:column; justify-content:space-around;">
-                <div>PRECIO: <b>${precio}</b></div>
-                <div>MRG BUD: <b>${budRet}</b></div>
-                <div>MRG: <b>${margen}</b></div>
-              </div>
-            </div>
           </div>
         </div>
 
-        <!-- PANEL 2 -->
-        ${centroHTML}
+        <!-- PANEL 2: TABLA TÉCNICA DE MATERIALES -->
+        <div class="shoe-panel" style="display:flex; flex-direction:column; border-right:1px solid #000; overflow:hidden;">
+          <div style="font-size:7px; font-weight:900; text-align:center; color:#dc2626; border-bottom:1px solid #000; padding-bottom:1px;">
+            MANUFACTURA BOLIVIANA S.A.
+          </div>
+          <div style="flex:1; display:flex;">
+            <table style="width:100%; height:100%; border-collapse:collapse; font-size:5.5px; font-weight:bold; text-align:center;">
+              <tr style="border-bottom:1px solid #000; background:#f9fafb;">
+                <td style="border-right:1px solid #000; padding:1px;">PLANT:</td>
+                <td style="border-right:1px solid #000; padding:1px;">FORRO:</td>
+                <td style="border-right:1px solid #000; padding:1px;">CORTE:</td>
+                <td style="border-right:1px solid #000; padding:1px;">SERIE:</td>
+                <td style="border-right:1px solid #000; padding:1px;">MARCA:</td>
+                <td style="padding:1px;">ART:</td>
+              </tr>
+              <tr style="border-bottom:1px solid #000;">
+                <td style="border-right:1px solid #000; padding:1px; font-size:5px;">${plantInt}</td>
+                <td style="border-right:1px solid #000; padding:1px; font-size:5px;">${forro}</td>
+                <td style="border-right:1px solid #000; padding:1px; font-size:5px;">${materialCorte}</td>
+                <td style="border-right:1px solid #000; padding:1px;">${serie}</td>
+                <td style="border-right:1px solid #000; padding:1px;">${marca}</td>
+                <td style="padding:1px; font-family:monospace; font-weight:900;">${articulo}</td>
+              </tr>
+            </table>
+          </div>
+          <div style="display:flex; border-top:1px solid #000; font-size:6px; font-weight:bold; padding:2px 4px; justify-content:space-between; background:#f9fafb;">
+            <span>PRECIO: ${precio}</span>
+            <span>MRG BUD: ${budRet}</span>
+            <span>MRG: ${margen}</span>
+          </div>
+        </div>
 
-        <!-- PANEL 3 -->
-        ${derechaHTML}
+        <!-- PANEL 3: FIRMAS Y APROBACIONES -->
+        ${panelDerechoFirmas}
       </div>
     `;
   });
 
   container.innerHTML = tarjetasHTML;
 }
-
-// Panel Super Admin
-async function cargarPanelSuperAdmin() {
-  if (!esSuperAdmin()) return;
-
-  const tbodyUsers = document.getElementById("table-users-body");
-  const tbodySols = document.getElementById("table-admin-solicitudes-body");
-  const tbodyEnts = document.getElementById("table-admin-entregas-body");
-
-  if (tbodyUsers) tbodyUsers.innerHTML = `<tr><td colspan="6" class="p-3 text-center text-gray-400">Cargando usuarios...</td></tr>`;
-
-  try {
-    const snap = await getDocs(collection(db, "usuarios"));
-    if (tbodyUsers) {
-      tbodyUsers.innerHTML = "";
-      snap.forEach(docU => {
-        const u = docU.data();
-        const tr = document.createElement("tr");
-        tr.className = "hover:bg-gray-50 border-b border-gray-100";
-        
-        const avatar = u.foto 
-          ? `<img src="${u.foto}" class="w-7 h-7 rounded-full object-cover">` 
-          : `<div class="w-7 h-7 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center"><i class="fa-solid fa-user text-[10px]"></i></div>`;
-
-        tr.innerHTML = `
-          <td class="p-3">${avatar}</td>
-          <td class="p-3 font-bold text-gray-800">${u.nombre || '—'}</td>
-          <td class="p-3 text-gray-600">${u.email || '—'}</td>
-          <td class="p-3 font-mono text-gray-600">${u.celular ? '+591 ' + u.celular : '<span class="text-red-400">Sin celular</span>'}</td>
-          <td class="p-3">
-            <select onchange="window.cambiarRolUsuario('${docU.id}', this.value)" class="border border-gray-300 rounded px-2 py-1 text-xs bg-white font-semibold text-gray-700 focus:ring-1 focus:ring-[#D61B28]">
-              <option value="Calidad" ${u.rol === 'Calidad' ? 'selected' : ''}>Calidad</option>
-              <option value="Costos" ${u.rol === 'Costos' ? 'selected' : ''}>Costos</option>
-              <option value="Compras" ${u.rol === 'Compras' ? 'selected' : ''}>Compras</option>
-              <option value="Compras Admin" ${u.rol === 'Compras Admin' ? 'selected' : ''}>Compras Admin</option>
-              <option value="Almacén" ${u.rol === 'Almacén' ? 'selected' : ''}>Almacén</option>
-              <option value="Producción" ${u.rol === 'Producción' ? 'selected' : ''}>Producción</option>
-              <option value="Planeamiento" ${u.rol === 'Planeamiento' ? 'selected' : ''}>Planeamiento</option>
-              <option value="Retail" ${u.rol === 'Retail' ? 'selected' : ''}>Retail</option>
-              <option value="Desarrollo de producto" ${u.rol === 'Desarrollo de producto' ? 'selected' : ''}>Desarrollo (General)</option>
-              <option value="Desarrollo de producto - Técnico" ${u.rol === 'Desarrollo de producto - Técnico' ? 'selected' : ''}>Desarrollo - Técnico (Modelista)</option>
-              <option value="Desarrollo de producto - Jefe" ${u.rol === 'Desarrollo de producto - Jefe' ? 'selected' : ''}>Desarrollo - Jefe</option>
-            </select>
-          </td>
-          <td class="p-3 text-center">
-            ${docU.id !== currentUser.uid ? `
-              <button onclick="window.eliminarUsuarioDoc('${docU.id}', '${u.nombre}')" class="text-red-600 hover:text-red-800 font-bold text-xs cursor-pointer">
-                <i class="fa-solid fa-trash"></i> Eliminar
-              </button>
-            ` : '<span class="text-gray-400 text-[10px] font-bold">Super Admin</span>'}
-          </td>
-        `;
-        tbodyUsers.appendChild(tr);
-      });
-    }
-
-    if (tbodySols) {
-      tbodySols.innerHTML = "";
-      if (solicitudes.length === 0) {
-        tbodySols.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400">No hay solicitudes registradas.</td></tr>`;
-      } else {
-        solicitudes.forEach(sol => {
-          const tr = document.createElement("tr");
-          tr.className = "hover:bg-gray-50 border-b border-gray-100";
-          tr.innerHTML = `
-            <td class="p-3 font-semibold text-gray-500 font-mono">${sol.semana || '—'}</td>
-            <td class="p-3 text-gray-600 whitespace-nowrap">${formatearFecha(sol.fechaCreacion)}</td>
-            <td class="p-3">
-              ${sol.esMinuta ? '<span class="bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded text-[10px]">MINUTA PILOTO</span>' : '<span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-[10px]">CAMBIO</span>'}
-            </td>
-            <td class="p-3 font-bold text-gray-800">${sol.proyecto}</td>
-            <td class="p-3 font-mono text-gray-700">${sol.articulo}</td>
-            <td class="p-3 text-gray-600">${sol.solicitanteNombre || '—'}</td>
-            <td class="p-3"><span class="px-2 py-0.5 rounded font-bold text-[10px] ${sol.estado === 'Realizado' ? 'bg-green-50 text-green-700' : (sol.estado === 'Retrasado' ? 'bg-red-50 text-red-700' : 'bg-orange-50 text-orange-700')}">${sol.estado}</span></td>
-            <td class="p-3 text-center">
-              <button onclick="window.eliminarSolicitudProyecto('${sol.id}', '${sol.proyecto}')" class="text-red-500 hover:text-red-700 p-1 rounded font-bold text-xs cursor-pointer">
-                <i class="fa-solid fa-trash-can"></i> Eliminar
-              </button>
-            </td>
-          `;
-          tbodySols.appendChild(tr);
-        });
-      }
-    }
-
-    if (tbodyEnts) {
-      tbodyEnts.innerHTML = "";
-      if (entregas.length === 0) {
-        tbodyEnts.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-400">No hay entregas registradas.</td></tr>`;
-      } else {
-        entregas.forEach(ent => {
-          const tr = document.createElement("tr");
-          tr.className = "hover:bg-gray-50 border-b border-gray-100";
-          tr.innerHTML = `
-            <td class="p-3 font-semibold text-gray-500 font-mono">${ent.semana || '—'}</td>
-            <td class="p-3 text-gray-600 whitespace-nowrap">${formatearFecha(ent.fechaEntrega)}</td>
-            <td class="p-3 font-semibold text-[#D61B28]">${ent.tipo}</td>
-            <td class="p-3 font-bold text-gray-800">${ent.proyecto} ${ent.copias ? '(' + ent.copias + ' copias)' : ''}</td>
-            <td class="p-3 font-mono text-gray-700">${ent.articulo || '—'}</td>
-            <td class="p-3 font-bold text-gray-700">${ent.destino}</td>
-            <td class="p-3 text-center">
-              <button onclick="window.eliminarEntregaDoc('${ent.id}', '${ent.tipo}', '${ent.proyecto}')" class="text-red-500 hover:text-red-700 p-1 rounded font-bold text-xs cursor-pointer">
-                <i class="fa-solid fa-trash-can"></i> Eliminar
-              </button>
-            </td>
-          `;
-          tbodyEnts.appendChild(tr);
-        });
-      }
-    }
-
-  } catch (error) {
-    console.error("Error al cargar panel Super Admin:", error);
-    if (tbodyUsers) tbodyUsers.innerHTML = `<tr><td colspan="6" class="p-3 text-center text-red-500">Error al cargar datos.</td></tr>`;
-  }
-}
-
-window.cambiarRolUsuario = async (userId, nuevoRol) => {
-  await updateDoc(doc(db, "usuarios", userId), { rol: nuevoRol });
-  alert("Rol asignado correctamente.");
-};
-
-window.eliminarUsuarioDoc = async (id, nombre) => {
-  if (confirm(`¿Eliminar al usuario ${nombre}?`)) {
-    await deleteDoc(doc(db, "usuarios", id));
-    cargarPanelSuperAdmin();
-  }
-};
-
-window.eliminarSolicitudProyecto = async (id, proyecto) => {
-  if (confirm(`¿Eliminar el registro "${proyecto}" permanentemente de la base de datos?`)) {
-    await deleteDoc(doc(db, "solicitudes_cambios", id));
-    cargarPanelSuperAdmin();
-  }
-};
-
-window.eliminarEntregaDoc = async (id, tipo, proyecto) => {
-  if (confirm(`¿Eliminar la entrega "${tipo}" del proyecto/material "${proyecto}" permanentemente?`)) {
-    await deleteDoc(doc(db, "entregas_departamentos", id));
-    cargarPanelSuperAdmin();
-  }
-};
