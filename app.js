@@ -65,7 +65,7 @@ const safeClick = (id, fn) => {
   if (el) el.onclick = fn;
 };
 
-// ==================== FUNCIONES DE APOYO Y HEADER ====================
+// ==================== FUNCIONES DE APOYO Y HEADER (DECLARADAS AL TOPE) ====================
 function actualizarHeaderUsuario() {
   const esAdmin = esSuperAdmin();
   const uName = document.getElementById("user-display-name");
@@ -712,7 +712,193 @@ window.eliminarEntregaDoc = async (id, tipo, proyecto) => {
   }
 };
 
-// ==================== INICIALIZACIÓN DE DATOS Y EVENTOS DOM ====================
+// ==================== NAVEGACIÓN Y DOM LOAD ====================
+const viewCambios = document.getElementById("view-cambios");
+const viewInforme = document.getElementById("view-informe");
+const viewEntregas = document.getElementById("view-entregas");
+const viewProduccionDash = document.getElementById("view-produccion-dash");
+const viewProcurement = document.getElementById("view-procurement");
+const viewTarjetas = document.getElementById("view-tarjetas");
+const viewUsuarios = document.getElementById("view-usuarios");
+
+const menuBtnCambios = document.getElementById("menu-btn-cambios");
+const menuBtnInforme = document.getElementById("menu-btn-informe");
+const menuBtnEntregasTodas = document.getElementById("menu-btn-entregas-todas");
+const menuBtnProduccionDash = document.getElementById("menu-btn-produccion-dash");
+const menuBtnProcurement = document.getElementById("menu-btn-procurement");
+const menuBtnTarjetas = document.getElementById("menu-btn-tarjetas");
+const menuBtnUsuarios = document.getElementById("menu-btn-usuarios");
+
+const CLASE_INACTIVO_PRINCIPAL = "sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white hover:bg-white/15 transition cursor-pointer";
+const CLASE_INACTIVO_SUB = "sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white/90 hover:bg-white/15 hover:text-white transition cursor-pointer pl-5";
+const CLASE_ACTIVO_PASTILLA = "sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-black text-xs bg-white text-[#D61B28] shadow-md transition cursor-pointer scale-[1.02]";
+const CLASE_ACTIVO_SUB_PASTILLA = "sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-black bg-white text-[#D61B28] shadow-md transition cursor-pointer pl-5 scale-[1.02]";
+
+function resetMenuStyles() {
+  [menuBtnCambios, menuBtnInforme, menuBtnEntregasTodas, menuBtnProduccionDash, menuBtnProcurement, menuBtnTarjetas, menuBtnUsuarios].forEach(b => {
+    if (b) b.className = CLASE_INACTIVO_PRINCIPAL;
+  });
+
+  document.querySelectorAll(".sub-ent-btn").forEach(b => {
+    b.className = CLASE_INACTIVO_SUB;
+  });
+
+  viewCambios?.classList.add("hidden");
+  viewInforme?.classList.add("hidden");
+  viewEntregas?.classList.add("hidden");
+  viewProduccionDash?.classList.add("hidden");
+  viewProcurement?.classList.add("hidden");
+  viewTarjetas?.classList.add("hidden");
+  viewUsuarios?.classList.add("hidden");
+}
+
+function activarVistaCambios() {
+  resetMenuStyles();
+  viewCambios?.classList.remove("hidden");
+  if (menuBtnCambios) menuBtnCambios.className = CLASE_ACTIVO_PASTILLA;
+}
+
+safeClick("menu-btn-cambios", activarVistaCambios);
+
+safeClick("menu-btn-informe", () => {
+  resetMenuStyles();
+  viewInforme?.classList.remove("hidden");
+  if (menuBtnInforme) menuBtnInforme.className = CLASE_ACTIVO_PASTILLA;
+  
+  colFiltroSemanaInforme = "";
+  colFiltroProyectoInforme = "";
+  const inSem = document.getElementById("col-filter-semana-informe");
+  const inProy = document.getElementById("col-filter-proyecto-informe");
+  if (inSem) inSem.value = "";
+  if (inProy) inProy.value = "";
+  
+  renderInformeView();
+});
+
+safeClick("menu-btn-entregas-todas", () => {
+  window.cambiarSubmenuEntrega("todas");
+});
+
+safeClick("menu-btn-produccion-dash", () => {
+  resetMenuStyles();
+  viewProduccionDash?.classList.remove("hidden");
+  if (menuBtnProduccionDash) menuBtnProduccionDash.className = CLASE_ACTIVO_PASTILLA;
+  renderProduccionView();
+});
+
+safeClick("menu-btn-procurement", () => {
+  resetMenuStyles();
+  viewProcurement?.classList.remove("hidden");
+  if (menuBtnProcurement) menuBtnProcurement.className = CLASE_ACTIVO_PASTILLA;
+  renderProcurementView();
+});
+
+safeClick("menu-btn-tarjetas", () => {
+  resetMenuStyles();
+  viewTarjetas?.classList.remove("hidden");
+  if (menuBtnTarjetas) menuBtnTarjetas.className = CLASE_ACTIVO_PASTILLA;
+  initModuloTarjetas();
+});
+
+safeClick("menu-btn-usuarios", () => {
+  if (!esSuperAdmin()) {
+    alert("Acceso denegado.");
+    return;
+  }
+  resetMenuStyles();
+  viewUsuarios?.classList.remove("hidden");
+  if (menuBtnUsuarios) menuBtnUsuarios.className = CLASE_ACTIVO_PASTILLA;
+  cargarPanelSuperAdmin();
+});
+
+// Submenús entregas
+safeClick("sub-btn-MATERIALES", () => window.cambiarSubmenuEntrega("MATERIALES"));
+safeClick("sub-btn-GUIA", () => window.cambiarSubmenuEntrega("GUÍA DE PRODUCCIÓN"));
+safeClick("sub-btn-CORTE", () => window.cambiarSubmenuEntrega("CORTE"));
+safeClick("sub-btn-MUESTRA", () => window.cambiarSubmenuEntrega("MUESTRA DEFINITIVA"));
+safeClick("sub-btn-DESBASTE", () => window.cambiarSubmenuEntrega("HOJA DE DESBASTE"));
+safeClick("sub-btn-TIZADORES", () => window.cambiarSubmenuEntrega("TIZADORES"));
+
+window.cambiarSubmenuEntrega = (categoria) => {
+  resetMenuStyles();
+  viewEntregas?.classList.remove("hidden");
+  categoriaEntregaActiva = categoria;
+
+  const titulo = document.getElementById("entregas-vista-titulo");
+  const subtitulo = document.getElementById("entregas-vista-subtitulo");
+  const thFoto = document.getElementById("th-ent-foto");
+  const thArt = document.getElementById("th-ent-art");
+  const labelThProy = document.getElementById("label-th-proy");
+  const btnTextEntrega = document.getElementById("btn-text-nueva-entrega");
+
+  if (categoria === "todas") {
+    if (menuBtnEntregasTodas) menuBtnEntregasTodas.className = CLASE_ACTIVO_PASTILLA;
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-truck-ramp-box"></i><span>Control de Entregas (Todas)</span>`;
+    if (subtitulo) subtitulo.textContent = "Visualizador consolidado de todas las entregas físicas a departamentos.";
+    if (thFoto) thFoto.classList.remove("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Entrega";
+  } else if (categoria === "MATERIALES") {
+    const btn = document.getElementById("sub-btn-MATERIALES");
+    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-boxes-packing text-blue-600"></i><span>Entrega de Materiales</span>`;
+    if (subtitulo) subtitulo.textContent = "Insumos y materiales (Semana y Nombre). Destinos: Desarrollo de producto, Producción.";
+    if (thFoto) thFoto.classList.add("hidden");
+    if (thArt) thArt.classList.add("hidden");
+    if (labelThProy) labelThProy.textContent = "Nombre del Material";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Material";
+  } else if (categoria === "GUÍA DE PRODUCCIÓN") {
+    const btn = document.getElementById("sub-btn-GUIA");
+    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-file-contract text-emerald-600"></i><span>Entrega de Guías de Producción</span>`;
+    if (subtitulo) subtitulo.textContent = "Entrega física de guías de producción. Destino exclusivo: Costos.";
+    if (thFoto) thFoto.classList.remove("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Guía";
+  } else if (categoria === "CORTE") {
+    const btn = document.getElementById("sub-btn-CORTE");
+    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-scissors text-amber-600"></i><span>Entrega de Cortes</span>`;
+    if (subtitulo) subtitulo.textContent = "Entrega de cortes. Destinos: Costos, Producción.";
+    if (thFoto) thFoto.classList.remove("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Corte";
+  } else if (categoria === "MUESTRA DEFINITIVA") {
+    const btn = document.getElementById("sub-btn-MUESTRA");
+    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-shoe-prints text-purple-600"></i><span>Entrega de Muestras Definitivas</span>`;
+    if (subtitulo) subtitulo.textContent = "Muestras definitivas con foto. Destinos: Producción, Planeamiento, Retail.";
+    if (thFoto) thFoto.classList.remove("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Muestra";
+  } else if (categoria === "HOJA DE DESBASTE") {
+    const btn = document.getElementById("sub-btn-DESBASTE");
+    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-layer-group text-cyan-600"></i><span>Entrega de Hoja de Desbaste</span>`;
+    if (subtitulo) subtitulo.textContent = "Entrega de especificaciones de desbaste. Destinos: Costos, Producción.";
+    if (thFoto) thFoto.classList.remove("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Desbaste";
+  } else if (categoria === "TIZADORES") {
+    const btn = document.getElementById("sub-btn-TIZADORES");
+    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-copy text-rose-600"></i><span>Entrega de Tizadores (Copias)</span>`;
+    if (subtitulo) subtitulo.textContent = "Entrega de tizadores a Producción con especificación de número de copias.";
+    if (thFoto) thFoto.classList.add("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Tizadores";
+  }
+
+  renderTablaEntregas();
+};
+
+// ==================== INICIALIZACIÓN DE EVENTOS DOM ====================
 function inicializarEventosDOM() {
   const welcomeContainer = document.getElementById("welcome-container");
   const appContainer = document.getElementById("app-container");
@@ -726,33 +912,6 @@ function inicializarEventosDOM() {
   safeClick("close-login", () => modalLogin?.classList.add("hidden"));
   safeClick("close-register", () => modalRegister?.classList.add("hidden"));
   safeClick("close-profile", () => modalProfile?.classList.add("hidden"));
-
-  safeClick("btn-reporte-entregas-pdf", window.abrirReporteImpresoEntregas);
-  safeClick("btn-reporte-entregas-texto", window.abrirResumenTextoEntregas);
-
-  safeClick("btn-forgot-pass", () => {
-    const email = document.getElementById("login-email")?.value.trim();
-    if (!email) {
-      alert("Por favor ingresa tu correo en la casilla antes de solicitar el reseteo.");
-      return;
-    }
-    const msg = encodeURIComponent(
-      `🔐 *SOLICITUD DE RESTABLECIMIENTO DE CONTRASEÑA*\n` +
-      `*Sistema de Cambios - Bata Bolivia*\n\n` +
-      `👤 *Correo del Solicitante:* ${email}\n\n` +
-      `_Hola Daniel, solicito generar el correo de restablecimiento de contraseña en Firebase Console para este usuario._`
-    );
-    window.open(`https://wa.me/${SUPER_ADMIN_WHATSAPP}?text=${msg}`, "_blank");
-  });
-
-  safeClick("btn-edit-profile", () => {
-    if (!userData) return;
-    const pName = document.getElementById("prof-name");
-    const pPhone = document.getElementById("prof-phone");
-    if (pName) pName.value = userData.nombre || "";
-    if (pPhone) pPhone.value = userData.celular || "";
-    modalProfile?.classList.remove("hidden");
-  });
 
   const formProfile = document.getElementById("form-update-profile");
   if (formProfile) {
@@ -823,12 +982,6 @@ function inicializarEventosDOM() {
     };
   }
 
-  safeClick("btn-logout", () => {
-    signOut(auth).then(() => {
-      window.location.reload();
-    });
-  });
-
   // Filtros de producción
   const prodFilterSemana = document.getElementById("prod-filter-semana");
   const prodFilterProyecto = document.getElementById("prod-filter-proyecto");
@@ -888,53 +1041,12 @@ function inicializarEventosDOM() {
       }
     };
   }
-
-  // Navegación lateral
-  safeClick("menu-btn-cambios", activarVistaCambios);
-  safeClick("menu-btn-informe", () => {
-    resetMenuStyles();
-    viewInforme?.classList.remove("hidden");
-    if (menuBtnInforme) menuBtnInforme.className = CLASE_ACTIVO_PASTILLA;
-    colFiltroSemanaInforme = "";
-    colFiltroProyectoInforme = "";
-    renderInformeView();
-  });
-  safeClick("menu-btn-entregas-todas", () => window.cambiarSubmenuEntrega("todas"));
-  safeClick("menu-btn-produccion-dash", () => {
-    resetMenuStyles();
-    viewProduccionDash?.classList.remove("hidden");
-    if (menuBtnProduccionDash) menuBtnProduccionDash.className = CLASE_ACTIVO_PASTILLA;
-    renderProduccionView();
-  });
-  safeClick("menu-btn-procurement", () => {
-    resetMenuStyles();
-    viewProcurement?.classList.remove("hidden");
-    if (menuBtnProcurement) menuBtnProcurement.className = CLASE_ACTIVO_PASTILLA;
-    renderProcurementView();
-  });
-  safeClick("menu-btn-tarjetas", () => {
-    resetMenuStyles();
-    viewTarjetas?.classList.remove("hidden");
-    if (menuBtnTarjetas) menuBtnTarjetas.className = CLASE_ACTIVO_PASTILLA;
-    initModuloTarjetas();
-  });
-  safeClick("menu-btn-usuarios", () => {
-    if (!esSuperAdmin()) { alert("Acceso denegado."); return; }
-    resetMenuStyles();
-    viewUsuarios?.classList.remove("hidden");
-    if (menuBtnUsuarios) menuBtnUsuarios.className = CLASE_ACTIVO_PASTILLA;
-    cargarPanelSuperAdmin();
-  });
-
-  safeClick("sub-btn-MATERIALES", () => window.cambiarSubmenuEntrega("MATERIALES"));
-  safeClick("sub-btn-GUIA", () => window.cambiarSubmenuEntrega("GUÍA DE PRODUCCIÓN"));
-  safeClick("sub-btn-CORTE", () => window.cambiarSubmenuEntrega("CORTE"));
-  safeClick("sub-btn-MUESTRA", () => window.cambiarSubmenuEntrega("MUESTRA DEFINITIVA"));
-  safeClick("sub-btn-DESBASTE", () => window.cambiarSubmenuEntrega("HOJA DE DESBASTE"));
-  safeClick("sub-btn-TIZADORES", () => window.cambiarSubmenuEntrega("TIZADORES"));
 }
 
 onAuthStateChanged(auth, async (user) => {
+  const welcomeContainer = document.getElementById("welcome-container");
+  const appContainer = document.getElementById("app-container");
+
   if (user) {
     currentUser = user;
     try {
@@ -976,52 +1088,6 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// Navegación references
-const viewCambios = document.getElementById("view-cambios");
-const viewInforme = document.getElementById("view-informe");
-const viewEntregas = document.getElementById("view-entregas");
-const viewProduccionDash = document.getElementById("view-produccion-dash");
-const viewProcurement = document.getElementById("view-procurement");
-const viewTarjetas = document.getElementById("view-tarjetas");
-const viewUsuarios = document.getElementById("view-usuarios");
-
-const menuBtnCambios = document.getElementById("menu-btn-cambios");
-const menuBtnInforme = document.getElementById("menu-btn-informe");
-const menuBtnEntregasTodas = document.getElementById("menu-btn-entregas-todas");
-const menuBtnProduccionDash = document.getElementById("menu-btn-produccion-dash");
-const menuBtnProcurement = document.getElementById("menu-btn-procurement");
-const menuBtnTarjetas = document.getElementById("menu-btn-tarjetas");
-const menuBtnUsuarios = document.getElementById("menu-btn-usuarios");
-
-const CLASE_INACTIVO_PRINCIPAL = "sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white hover:bg-white/15 transition cursor-pointer";
-const CLASE_INACTIVO_SUB = "sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white/90 hover:bg-white/15 hover:text-white transition cursor-pointer pl-5";
-const CLASE_ACTIVO_PASTILLA = "sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-black text-xs bg-white text-[#D61B28] shadow-md transition cursor-pointer scale-[1.02]";
-const CLASE_ACTIVO_SUB_PASTILLA = "sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-black bg-white text-[#D61B28] shadow-md transition cursor-pointer pl-5 scale-[1.02]";
-
-function resetMenuStyles() {
-  [menuBtnCambios, menuBtnInforme, menuBtnEntregasTodas, menuBtnProduccionDash, menuBtnProcurement, menuBtnTarjetas, menuBtnUsuarios].forEach(b => {
-    if (b) b.className = CLASE_INACTIVO_PRINCIPAL;
-  });
-
-  document.querySelectorAll(".sub-ent-btn").forEach(b => {
-    b.className = CLASE_INACTIVO_SUB;
-  });
-
-  viewCambios?.classList.add("hidden");
-  viewInforme?.classList.add("hidden");
-  viewEntregas?.classList.add("hidden");
-  viewProduccionDash?.classList.add("hidden");
-  viewProcurement?.classList.add("hidden");
-  viewTarjetas?.classList.add("hidden");
-  viewUsuarios?.classList.add("hidden");
-}
-
-function activarVistaCambios() {
-  resetMenuStyles();
-  viewCambios?.classList.remove("hidden");
-  if (menuBtnCambios) menuBtnCambios.className = CLASE_ACTIVO_PASTILLA;
-}
-
 // ==================== LÓGICA PRODUCCIÓN RENDERIZADO MATRIZ ====================
 function escucharProduccion() {
   const q = collection(db, "produccion_lotes");
@@ -1032,10 +1098,18 @@ function escucharProduccion() {
   }, (err) => console.log("Aviso Firestore Producción:", err.message));
 }
 
+const DEPARTAMENTOS_LINEAS = ["251", "252", "254", "330", "332", "331"];
+const DIAS_SEMANA = ["LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES"];
+
 function renderProduccionView() {
   const table = document.getElementById("tabla-matriz-produccion");
   const empty = document.getElementById("produccion-empty-state");
   if (!table) return;
+
+  const prodFilterSemana = document.getElementById("prod-filter-semana");
+  const prodFilterProyecto = document.getElementById("prod-filter-proyecto");
+  const prodFilterLinea = document.getElementById("prod-filter-linea");
+  const prodFilterEstado = document.getElementById("prod-filter-estado");
 
   const fSem = prodFilterSemana ? prodFilterSemana.value : "";
   const fProy = prodFilterProyecto ? prodFilterProyecto.value.trim().toLowerCase() : "";
