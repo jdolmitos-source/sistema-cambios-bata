@@ -47,6 +47,10 @@ let lotesProduccion = [];
 
 let categoriaEntregaActiva = "todas";
 
+// Memoria Tarjetas PD
+let croquisTarjetaBase64 = null;
+let plantillaCorteTarjetaBase64 = null;
+
 const safeClick = (id, fn) => {
   const el = document.getElementById(id);
   if (el) el.onclick = fn;
@@ -773,7 +777,7 @@ window.cambiarSubmenuEntrega = (categoria) => {
   renderTablaEntregas();
 };
 
-// ==================== MÓDULO PRODUCCIÓN WORK PLANNER ====================
+// ==================== MÓDULO PRODUCCIÓN WORK PLANNER (7 COLUMNAS) ====================
 function escucharProduccion() {
   const q = collection(db, "produccion_lotes");
   onSnapshot(q, (snapshot) => {
@@ -802,7 +806,7 @@ if (formLoteProd) {
       });
       formLoteProd.reset();
       modalNuevoLoteProd?.classList.add("hidden");
-      alert("Lote Work Planner registrado correctamente.");
+      alert("Plan Diario registrado correctamente.");
     } catch (err) {
       alert("Error al registrar lote: " + err.message);
     }
@@ -813,6 +817,14 @@ window.eliminarLoteProduccion = async (id) => {
   if (confirm("¿Estás seguro de eliminar este registro del Work Planner?")) {
     await deleteDoc(doc(db, "produccion_lotes", id));
   }
+};
+
+window.actualizarEstadoDiaLote = async (id, nuevoEstado) => {
+  if (!id) return;
+  await updateDoc(doc(db, "produccion_lotes", id), {
+    estado: nuevoEstado,
+    fechaActualizacion: new Date().toISOString()
+  });
 };
 
 function renderProduccionView() {
@@ -866,26 +878,73 @@ function renderProduccionView() {
   }
   empty?.classList.add("hidden");
 
-  let html = "";
+  // Agrupar por línea y plan/proyecto para armar la matriz semanal de 7 columnas
+  const diasSemana = ["LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES"];
+  
+  // Mapear por clave única (linea + plan)
+  const mapaPlan = {};
   filtrados.forEach(l => {
-    const p = parseInt(l.pares) || 0;
-    html += `
-      <tr class="hover:bg-slate-50 border-b text-center">
-        <td class="p-2.5 font-black font-mono border-r bg-gray-50 text-gray-900">${l.linea || '—'}</td>
-        <td class="p-2.5 font-bold border-r text-gray-700">${l.dia || '—'}</td>
-        <td class="p-2.5 font-mono border-r">${l.plan || '—'}</td>
-        <td class="p-2.5 font-bold text-left border-r">${l.proyecto || '—'} <span class="text-[10px] text-gray-400 font-mono block">${l.articulo || ''}</span></td>
-        <td class="p-2.5 border-r font-black text-amber-800 bg-amber-50/40">${l.estado === 'CORTADO' ? p.toLocaleString() : '—'}</td>
-        <td class="p-2.5 border-r font-black text-blue-800 bg-blue-50/40">${l.estado === 'APARADO' ? p.toLocaleString() : '—'}</td>
-        <td class="p-2.5 border-r font-black text-purple-800 bg-purple-50/40">${l.estado === 'ARMADO' ? p.toLocaleString() : '—'}</td>
-        <td class="p-2.5 border-r font-black text-emerald-800 bg-emerald-50/40">${l.estado === 'INYECCIÓN' ? p.toLocaleString() : '—'}</td>
-        <td class="p-2.5 border-r font-black text-green-800 bg-green-50/40">${l.estado === 'ENTREGADO' ? p.toLocaleString() : '—'}</td>
-        <td class="p-2.5 text-center">
-          <button onclick="window.eliminarLoteProduccion('${l.id}')" class="text-red-500 hover:text-red-700 p-1 cursor-pointer" title="Eliminar registro"><i class="fa-solid fa-trash-can"></i></button>
-        </td>
-      </tr>
-    `;
+    const key = `${l.linea}_${l.plan || l.proyecto}`;
+    if (!mapaPlan[key]) {
+      mapaPlan[key] = {
+        linea: l.linea,
+        plan: l.plan,
+        proyecto: l.proyecto,
+        articulo: l.articulo,
+        dias: {}
+      };
+    }
+    mapaPlan[key].dias[l.dia] = l;
   });
+
+  let html = "";
+  let granTotalGeneral = 0;
+
+  Object.values(mapaPlan.length ? mapaPlan : {}).forEach(item => {
+    let totalFila = 0;
+    html += `<tr class="border-b hover:bg-slate-50 text-center">`;
+    // Columna 1: Sección / Línea
+    html += `<td class="p-2 font-black font-mono border-r bg-gray-50 text-gray-900 align-middle">${item.linea}</td>`;
+
+    // Columnas 2 a 6: Días (Lunes a Viernes) con sus 5 subcolumnas
+    diasSemana.forEach(dia => {
+      const loteDia = item.dias[dia];
+      if (loteDia) {
+        const p = parseInt(loteDia.pares) || 0;
+        totalFila += p;
+        const colorEstado = loteDia.estado === 'ENTREGADO' ? 'text-green-700 bg-green-50' : (loteDia.estado === 'APARADO' ? 'text-blue-700 bg-blue-50' : (loteDia.estado === 'ARMADO' ? 'text-purple-700 bg-purple-50' : 'text-amber-700 bg-amber-50'));
+        html += `
+          <td class="p-1 border-r font-mono text-[10px]">${loteDia.plan || '—'}</td>
+          <td class="p-1 border-r font-mono text-[10px]">${loteDia.articulo || '—'}</td>
+          <td class="p-1 border-r font-bold text-[10px] truncate max-w-[70px]">${loteDia.proyecto || '—'}</td>
+          <td class="p-1 border-r font-black text-cyan-900 bg-cyan-50/30">${p.toLocaleString()}</td>
+          <td class="p-1 border-r">
+            <select onchange="window.actualizarEstadoDiaLote('${loteDia.id}', this.value)" class="text-[10px] font-bold rounded px-1 py-0.5 border ${colorEstado}">
+              <option value="CORTADO" ${loteDia.estado === 'CORTADO' ? 'selected' : ''}>CORTADO</option>
+              <option value="APARADO" ${loteDia.estado === 'APARADO' ? 'selected' : ''}>APARADO</option>
+              <option value="ARMADO" ${loteDia.estado === 'ARMADO' ? 'selected' : ''}>ARMADO</option>
+              <option value="INYECCIÓN" ${loteDia.estado === 'INYECCIÓN' ? 'selected' : ''}>INYECCIÓN</option>
+              <option value="ENTREGADO" ${loteDia.estado === 'ENTREGADO' ? 'selected' : ''}>ENTREGADO</option>
+            </select>
+          </td>
+        `;
+      } else {
+        html += `
+          <td class="p-1 border-r text-gray-300">—</td>
+          <td class="p-1 border-r text-gray-300">—</td>
+          <td class="p-1 border-r text-gray-300">—</td>
+          <td class="p-1 border-r text-gray-300">—</td>
+          <td class="p-1 border-r text-gray-300">—</td>
+        `;
+      }
+    });
+
+    granTotalGeneral += totalFila;
+    // Columna 7: Totales
+    html += `<td class="p-2 font-black text-sm bg-gray-100 text-[#D61B28] align-middle">${totalFila.toLocaleString()}</td>`;
+    html += `</tr>`;
+  });
+
   table.innerHTML = html;
 }
 
@@ -1236,7 +1295,7 @@ if (formEntrega) {
   };
 }
 
-// ==================== MÓDULO TARJETAS (PD) ====================
+// ==================== MÓDULO TARJETAS (PD) - REPARADO ====================
 function initModuloTarjetas() {
   const inputFecha = document.getElementById("card-fecha");
   if (inputFecha && !inputFecha.value) {
@@ -1254,10 +1313,28 @@ function initModuloTarjetas() {
     };
   }
 
+  const fileInputPlantilla = document.getElementById("card-plantilla-img-file");
+  if (fileInputPlantilla) {
+    fileInputPlantilla.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        plantillaCorteTarjetaBase64 = await comprimirImagen(file, 400, 0.8);
+        renderTarjetasPreview();
+      }
+    };
+  }
+
   safeClick("btn-quick-distribute", () => {
     const raw = document.getElementById("input-quick-paste-row")?.value.trim() || "";
-    if (!raw) return;
+    if (!raw) {
+      alert("Copia una fila de Excel y pégala aquí.");
+      return;
+    }
     let cols = raw.split("\t").map(c => c.trim()).filter(c => c !== "");
+    if (cols.length < 4) {
+      cols = raw.split(/\s{2,}/).map(c => c.trim()).filter(c => c !== "");
+    }
+
     if (cols.length >= 4) {
       document.getElementById("card-costo-articulo").value = cols[0] || "";
       document.getElementById("card-costo-linea").value = cols[2] || "";
@@ -1266,7 +1343,23 @@ function initModuloTarjetas() {
       document.getElementById("card-costo-precio").value = cols[8] || "0.00";
       document.getElementById("card-costo-margen").value = cols[9] || "0%";
       renderTarjetasPreview();
+    } else {
+      alert("Columnas insuficientes. Pega directamente la fila copiada de Excel.");
     }
+  });
+
+  ["count-card-corte", "count-card-prod", "count-card-verde", "count-card-amarilla", "count-card-rosada"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.oninput = renderTarjetasPreview;
+  });
+
+  [
+    "card-costo-articulo", "card-costo-linea", "card-costo-marca", "card-costo-budret", 
+    "card-costo-precio", "card-costo-margen", "card-serie", "card-fecha", "card-material-corte", 
+    "card-forro", "card-plant-int", "card-tecnico", "card-horma-suela", "card-construccion", "card-observaciones"
+  ].forEach(id => {
+    const elem = document.getElementById(id);
+    if (elem) elem.oninput = renderTarjetasPreview;
   });
 
   safeClick("btn-imprimir-tarjetas-action", () => {
@@ -1276,11 +1369,159 @@ function initModuloTarjetas() {
     modalImpresionTarjetas?.classList.remove("hidden");
   });
 
+  safeClick("btn-ejecutar-print-tarjetas", () => {
+    const contenidoHTML = document.getElementById("contenedor-tarjetas-preview")?.innerHTML || "";
+    if (!contenidoHTML) return;
+    const ventanaPrint = window.open("", "_blank", "width=900,height=650");
+    if (!ventanaPrint) {
+      alert("Permite las ventanas emergentes para imprimir.");
+      return;
+    }
+    ventanaPrint.document.open();
+    ventanaPrint.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Impresión de Tarjetas - Bata Bolivia</title>
+        <style>
+          @page { size: letter portrait; margin: 8mm; }
+          * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          html, body { margin: 0; padding: 0; background: #fff; font-family: sans-serif; }
+          .shoe-card-container { width: 200mm !important; height: 34mm !important; max-height: 34mm !important; border: 1px solid #000 !important; margin: 0 !important; padding: 0 !important; display: flex; page-break-inside: avoid !important; break-inside: avoid !important; background: #fff; }
+          .shoe-panel { width: 66.66mm !important; height: 100% !important; box-sizing: border-box !important; }
+        </style>
+      </head>
+      <body>
+        <div style="display:flex; flex-direction:column; align-items:flex-start; margin:0; padding:0;">
+          ${contenidoHTML}
+        </div>
+      </body>
+      </html>
+    `);
+    ventanaPrint.document.close();
+    setTimeout(() => { ventanaPrint.focus(); ventanaPrint.print(); ventanaPrint.close(); }, 250);
+  });
+
   renderTarjetasPreview();
 }
 
 function renderTarjetasPreview() {
   const container = document.getElementById("contenedor-tarjetas-preview");
   if (!container) return;
-  container.innerHTML = `<div class="p-4 text-center text-xs text-gray-500">Generador de tarjetas operativo. Configura arriba tus parámetros.</div>`;
+
+  const cCortes = parseInt(document.getElementById("count-card-corte")?.value) || 0;
+  const cProd = parseInt(document.getElementById("count-card-prod")?.value) || 0;
+  const cVerdes = parseInt(document.getElementById("count-card-verde")?.value) || 0;
+  const cAmarillas = parseInt(document.getElementById("count-card-amarilla")?.value) || 0;
+  const cRosadas = parseInt(document.getElementById("count-card-rosada")?.value) || 0;
+
+  const totalTarjetas = cCortes + cProd + cVerdes + cAmarillas + cRosadas;
+  const lblTotal = document.getElementById("label-total-tarjetas-count");
+  if (lblTotal) lblTotal.textContent = totalTarjetas;
+
+  const articulo = document.getElementById("card-costo-articulo")?.value || "34461836";
+  const linea = (document.getElementById("card-costo-linea")?.value || "QUIQUE").toUpperCase();
+  const marca = (document.getElementById("card-costo-marca")?.value || "TEENER").toUpperCase();
+  const precio = document.getElementById("card-costo-precio")?.value || "259.00";
+  const margen = document.getElementById("card-costo-margen")?.value || "55.00%";
+  const budRet = document.getElementById("card-costo-budret")?.value || "37.39%";
+
+  const serie = document.getElementById("card-serie")?.value || "37-44";
+  const fecha = document.getElementById("card-fecha")?.value || "4/9/2026";
+  const materialCorte = (document.getElementById("card-material-corte")?.value || "IMITACION").toUpperCase();
+  const forro = (document.getElementById("card-forro")?.value || "PIQUE NEGRO").toUpperCase();
+  const plantInt = (document.getElementById("card-plant-int")?.value || "PIQUE NEGRO").toUpperCase();
+  const modelista = (document.getElementById("card-tecnico")?.value || "CARLOS ARCE").toUpperCase();
+  const construccion = (document.getElementById("card-construccion")?.value || "TRUE MOC").toUpperCase();
+  const suela = (document.getElementById("card-horma-suela")?.value || "QUIQUE").toUpperCase();
+  const observaciones = document.getElementById("card-observaciones")?.value || "";
+
+  const siluetaCalzadoHTML = croquisTarjetaBase64 
+    ? `<img src="${croquisTarjetaBase64}" style="width:100%; height:30px; object-fit:contain; margin:auto;">`
+    : `<div style="height:30px; display:flex; align-items:center; justify-content:center; font-size:8px; color:#999; border:1px dashed #ccc;">Croquis</div>`;
+
+  const siluetaPlantillaHTML = plantillaCorteTarjetaBase64 
+    ? `<img src="${plantillaCorteTarjetaBase64}" style="width:100%; height:30px; object-fit:contain; margin:auto;">`
+    : siluetaCalzadoHTML;
+
+  const listaAImprimir = [];
+  for (let i = 1; i <= cCortes; i++) listaAImprimir.push({ color: "#FFFFFF", etiqueta: "CORTE", esInvertida: true, recibePlantilla: true });
+  for (let i = 1; i <= cProd; i++) listaAImprimir.push({ color: "#FFFFFF", etiqueta: "PRODUCCIÓN", esInvertida: false, recibePlantilla: false });
+  for (let i = 1; i <= cVerdes; i++) listaAImprimir.push({ color: "#80C342", etiqueta: "RETAIL", esInvertida: false, recibePlantilla: false });
+  for (let i = 1; i <= cAmarillas; i++) listaAImprimir.push({ color: "#FFF200", etiqueta: "PLANEAMIENTO", esInvertida: false, recibePlantilla: false });
+  for (let i = 1; i <= cRosadas; i++) listaAImprimir.push({ color: "#E06D8A", etiqueta: "EXPORTACIÓN", esInvertida: false, recibePlantilla: false });
+
+  let tarjetasHTML = "";
+  listaAImprimir.forEach((tarj) => {
+    const imagenIzquierdaHTML = tarj.recibePlantilla ? siluetaPlantillaHTML : siluetaCalzadoHTML;
+
+    const bloqueFirmasHTML = `
+      <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:3px 5px; ${tarj.esInvertida ? '' : 'border-right:1px dashed #555;'} font-size:6.5px;">
+        <div style="font-size:7px; font-weight:900; text-align:center; color:#1f2937; text-transform:uppercase; border-bottom:1px solid #d1d5db; padding-bottom:1px;">
+          APROBACIONES (${tarj.etiqueta})
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; text-align:center; align-items:end; margin-top:1px;">
+          <div style="display:flex; flex-direction:column; justify-content:flex-end; height:12mm;">
+            <div style="border-bottom:1px solid #000; width:100%; margin-bottom:1px;"></div>
+            <span style="font-weight:bold; font-size:6px; display:block;">P.D. CHIEF</span>
+          </div>
+          <div style="display:flex; flex-direction:column; justify-content:flex-end; height:12mm;">
+            <div style="border-bottom:1px solid #000; width:100%; margin-bottom:1px;"></div>
+            <span style="font-weight:bold; font-size:6px; display:block;">MERCHANDISING MAN.</span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const bloqueObservacionesHTML = `
+      <div class="shoe-panel" style="padding:4px; display:flex; flex-direction:column; justify-content:space-between; font-size:7px; ${tarj.esInvertida ? 'border-right:1px dashed #555;' : ''}">
+        <div>
+          <span style="font-weight:900; color:#1f2937; text-transform:uppercase; display:block; margin-bottom:1px;">OBSERVACIONES:</span>
+          <p style="font-size:6.5px; color:#374151; font-style:italic; line-height:1.2;">${observaciones || 'Sin observaciones adicionales'}</p>
+        </div>
+        <div style="text-align:right; font-size:6px; color:#9ca3af; font-weight:bold;">BATA BOLIVIA PD</div>
+      </div>
+    `;
+
+    const centroHTML = tarj.esInvertida ? bloqueObservacionesHTML : bloqueFirmasHTML;
+    const derechaHTML = tarj.esInvertida ? bloqueFirmasHTML : bloqueObservacionesHTML;
+
+    tarjetasHTML += `
+      <div class="shoe-card-container" style="background:#fff; display:flex; font-size:7.5px; line-height:1.1; color:#000;">
+        <div class="shoe-panel" style="display:flex; border-right:1px dashed #555; overflow:hidden;">
+          <div class="lateral-tab" style="width:16px; border-right:1px solid #000; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:9px; writing-mode:vertical-rl; transform:rotate(180deg); background-color:${tarj.color} !important;">
+            ${linea}
+          </div>
+          <div style="flex:1; display:flex; flex-direction:column; justify-content:space-between; padding:1px;">
+            <div style="font-size:8px; font-weight:900; color:#dc2626; text-align:center; border-bottom:1px solid #000; padding-bottom:1px;">MANUFACTURA BOLIVIANA S.A.</div>
+            <div style="display:flex; flex:1;">
+              <div style="width:58px; display:flex; flex-direction:column; justify-content:space-between; border-right:1px solid #000; padding-right:1px;">
+                ${imagenIzquierdaHTML}
+                <span style="font-size:5px; font-weight:bold; text-align:center;">${fecha}</span>
+              </div>
+              <div style="flex:1;">
+                <table style="width:100%; height:100%; border-collapse:collapse; font-size:6.5px; font-weight:900;">
+                  <tr style="border-bottom:1px solid #000; height:3.2mm;"><td style="border-right:1px solid #000; text-align:center;">ART:</td><td style="text-align:center; font-family:monospace;">${articulo}</td></tr>
+                  <tr style="border-bottom:1px solid #000; height:3.2mm;"><td style="border-right:1px solid #000; text-align:center;">MARCA:</td><td style="text-align:center;">${marca}</td></tr>
+                  <tr style="border-bottom:1px solid #000; height:3.2mm;"><td style="border-right:1px solid #000; text-align:center;">SERIE:</td><td style="text-align:center;">${serie}</td></tr>
+                  <tr style="border-bottom:1px solid #000; height:3.2mm;"><td style="border-right:1px solid #000; text-align:center;">CORTE:</td><td style="text-align:center;">${materialCorte}</td></tr>
+                  <tr style="border-bottom:1px solid #000; height:3.2mm;"><td style="border-right:1px solid #000; text-align:center;">FORRO:</td><td style="text-align:center;">${forro}</td></tr>
+                  <tr style="height:3.2mm;"><td style="border-right:1px solid #000; text-align:center;">PLANT:</td><td style="text-align:center;">${plantInt}</td></tr>
+                </table>
+              </div>
+            </div>
+            <div style="display:flex; border-top:1px solid #000; font-size:5.5px; font-weight:800; padding:1px 0;">
+              <div style="width:50%; border-right:1px solid #000; padding-left:2px;">TEC: ${modelista}</div>
+              <div style="width:50%; padding-left:3px;">PRECIO: <b>${precio}</b></div>
+            </div>
+          </div>
+        </div>
+        ${centroHTML}
+        ${derechaHTML}
+      </div>
+    `;
+  });
+
+  container.innerHTML = tarjetasHTML;
 }
