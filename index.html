@@ -518,21 +518,52 @@
           </div>
         </section>
 
-        <!-- VISTA PRODUCCIÓN WORK PLANNER (7 COLUMNAS) -->
+        <!-- VISTA PRODUCCIÓN WORK PLANNER (36 FILAS EXACTAS Y SEMANA GRANDE) -->
         <section id="view-produccion" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <h2 class="text-lg font-bold text-[#D61B28] flex items-center space-x-2">
                 <i class="fa-solid fa-industry text-cyan-600"></i>
-                <span>Producción Work Planner (7 Columnas: Lunes a Viernes)</span>
+                <span>Producción Work Planner (Planta 330, 331, etc.)</span>
               </h2>
-              <p class="text-xs text-gray-400">Control de flujo diario de planes y estados (Cortado, Aparado, Armado, Inyección, Entregado).</p>
+              <p class="text-xs text-gray-400">Control de flujo diario de planes y estados con 6 filas fijas por sección.</p>
             </div>
             <div class="flex items-center space-x-2">
+              <button type="button" onclick="window.exportarExcelProduccion()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
+                <i class="fa-solid fa-file-excel"></i>
+                <span>Exportar a Excel</span>
+              </button>
               <button type="button" onclick="window.abrirModalLoteProduccion()" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
                 <i class="fa-solid fa-plus"></i>
                 <span>Registrar / Mover Plan Diario</span>
               </button>
+            </div>
+          </div>
+
+          <!-- FILTROS Y SEMANA EN GRANDE -->
+          <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+              <span class="font-bold text-xs text-gray-600">Filtrar Semana:</span>
+              <select id="prod-filter-semana" class="px-3 py-1.5 border border-gray-300 rounded-lg font-mono font-bold bg-white text-red-600 text-xs"></select>
+            </div>
+            
+            <!-- SEMANA ACTUAL EN GRANDE AL MEDIO -->
+            <div class="text-center bg-red-50 border border-red-200 px-6 py-2 rounded-2xl shadow-inner">
+              <span class="text-[10px] font-bold text-red-500 uppercase tracking-widest block">Semana Activa en Vista</span>
+              <span id="label-semana-grande" class="text-xl font-black text-[#D61B28] font-mono">TODAS LAS SEMANAS</span>
+            </div>
+
+            <div class="flex items-center space-x-2">
+              <input type="text" id="prod-filter-proyecto" placeholder="Proyecto / Plan..." class="px-3 py-1.5 border border-gray-300 rounded-lg bg-white w-36 text-xs font-medium">
+              <select id="prod-filter-linea" class="px-3 py-1.5 border border-gray-300 rounded-lg font-mono bg-white font-bold text-xs">
+                <option value="">Sección (Todas)</option>
+                <option value="330">330</option>
+                <option value="331">331</option>
+                <option value="332">332</option>
+                <option value="251">251</option>
+                <option value="252">252</option>
+              </select>
+              <button type="button" id="btn-limpiar-filtros-prod" class="bg-gray-200 hover:bg-gray-300 px-3 py-1.5 rounded-lg font-bold text-gray-700 text-xs cursor-pointer">Limpiar</button>
             </div>
           </div>
 
@@ -566,29 +597,10 @@
             </div>
           </div>
 
-          <!-- FILTROS Y GRILLA DE 7 COLUMNAS -->
+          <!-- GRILLA DE 36 FILAS EXACTAS -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-            <div class="bg-gray-100 p-3.5 border-b border-gray-200 flex flex-wrap justify-between items-center gap-3 text-xs">
-              <div class="flex items-center space-x-2">
-                <span class="font-bold text-gray-800">Semana:</span>
-                <select id="prod-filter-semana" class="px-3 py-1.5 border border-gray-300 rounded-lg font-mono font-bold bg-white text-red-600 shadow-xs"></select>
-              </div>
-              <div class="flex flex-wrap items-center gap-2">
-                <input type="text" id="prod-filter-proyecto" placeholder="Proyecto / Plan..." class="px-2.5 py-1.5 border border-gray-300 rounded-lg bg-white w-36 font-medium">
-                <select id="prod-filter-linea" class="px-2.5 py-1.5 border border-gray-300 rounded-lg font-mono bg-white font-bold">
-                  <option value="">Línea (Todas)</option>
-                  <option value="330">330</option>
-                  <option value="331">331</option>
-                  <option value="332">332</option>
-                  <option value="251">251</option>
-                  <option value="252">252</option>
-                </select>
-                <button type="button" id="btn-limpiar-filtros-prod" class="bg-gray-200 hover:bg-gray-300 px-3 py-1.5 rounded-lg font-bold text-gray-700 cursor-pointer">Limpiar</button>
-              </div>
-            </div>
-
             <div class="overflow-x-auto">
-              <table class="w-full text-left border-collapse text-xs">
+              <table id="tabla-export-excel" class="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr class="bg-gray-100 border-b border-gray-300 text-center font-bold text-gray-700 text-[10px]">
                     <th class="p-2.5 border-r border-gray-300 w-16">1. SECCIÓN</th>
@@ -614,10 +626,6 @@
                 </thead>
                 <tbody id="tabla-matriz-produccion" class="divide-y divide-gray-200"></tbody>
               </table>
-            </div>
-            <div id="produccion-empty-state" class="hidden p-8 text-center text-gray-400 text-xs">
-              <i class="fa-solid fa-industry text-3xl mb-2 text-gray-300"></i>
-              <p>No hay lotes de producción registrados.</p>
             </div>
           </div>
         </section>
