@@ -31,7 +31,6 @@ const firebaseConfig = {
 };
 
 const SUPER_ADMIN_EMAIL = "jd.olmitos@gmail.com";
-const SUPER_ADMIN_WHATSAPP = "59174812364";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -41,24 +40,8 @@ let currentUser = null;
 let userData = null;
 let solicitudes = [];
 let entregas = [];
-let bloqueosMateriales = [];
-let llegadasMateriales = [];
 let lotesProduccion = [];
-
 let categoriaEntregaActiva = "todas";
-
-// Filtros globales
-let colFiltroSemanaInforme = "";
-let colFiltroProyectoInforme = "";
-let colFiltroSemanaEntregas = "";
-let colFiltroProyectoEntregas = "";
-
-// Memoria Tarjetas
-let croquisTarjetaBase64 = null;
-let plantillaCorteTarjetaBase64 = null;
-
-const DIAS_SEMANA = ["LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES", "SÁBADO"];
-const DEPARTAMENTOS_LINEAS = ["330", "331", "332", "251", "252", "254"];
 
 const safeClick = (id, fn) => {
   const el = document.getElementById(id);
@@ -67,7 +50,6 @@ const safeClick = (id, fn) => {
 
 // ==================== INICIALIZACIÓN Y EVENT LISTENERS ====================
 document.addEventListener("DOMContentLoaded", () => {
-  // Autenticación por estado de Firebase
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       currentUser = user;
@@ -80,7 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Botones de Portada e Inicio de Sesión
+  // Botones de Portada y Modales de Acceso
   safeClick("btn-show-login", () => document.getElementById("modal-login")?.classList.remove("hidden"));
   safeClick("close-login", () => document.getElementById("modal-login")?.classList.add("hidden"));
   safeClick("btn-show-register", () => document.getElementById("modal-register")?.classList.remove("hidden"));
@@ -136,10 +118,82 @@ document.addEventListener("DOMContentLoaded", () => {
   // Logout
   safeClick("btn-logout", () => signOut(auth));
 
-  // Inicializar selectores de semanas
+  // ==================== NAVEGACIÓN DEL MENÚ LATERAL ====================
+  safeClick("menu-btn-cambios", activarVistaCambios);
+
+  safeClick("menu-btn-informe", () => {
+    resetMenuStyles();
+    document.getElementById("view-informe")?.classList.remove("hidden");
+    renderInformeView();
+  });
+
+  safeClick("menu-btn-entregas-todas", () => cambiarSubmenuEntrega("todas"));
+
+  safeClick("menu-btn-produccion-dash", () => {
+    resetMenuStyles();
+    document.getElementById("view-produccion-dash")?.classList.remove("hidden");
+    renderProduccionView();
+  });
+
+  safeClick("menu-btn-procurement", () => {
+    resetMenuStyles();
+    document.getElementById("view-procurement")?.classList.remove("hidden");
+  });
+
+  safeClick("menu-btn-tarjetas", () => {
+    resetMenuStyles();
+    document.getElementById("view-tarjetas")?.classList.remove("hidden");
+  });
+
+  safeClick("menu-btn-usuarios", () => {
+    if (!esSuperAdmin()) {
+      alert("Acceso denegado.");
+      return;
+    }
+    resetMenuStyles();
+    document.getElementById("view-usuarios")?.classList.remove("hidden");
+    cargarPanelSuperAdmin();
+  });
+
+  // ==================== SUBMENÚS DE ENTREGAS ====================
+  safeClick("sub-btn-MATERIALES", () => cambiarSubmenuEntrega("MATERIALES"));
+  safeClick("sub-btn-GUIA", () => cambiarSubmenuEntrega("GUÍA DE PRODUCCIÓN"));
+  safeClick("sub-btn-CORTE", () => cambiarSubmenuEntrega("CORTE"));
+  safeClick("sub-btn-MUESTRA", () => cambiarSubmenuEntrega("MUESTRA DEFINITIVA"));
+  safeClick("sub-btn-DESBASTE", () => cambiarSubmenuEntrega("HOJA DE DESBASTE"));
+  safeClick("sub-btn-TIZADORES", () => cambiarSubmenuEntrega("TIZADORES"));
+
   inicializarSemanas01a52();
   escucharColecciones();
 });
+
+// ==================== FUNCIONES DE NAVEGACIÓN Y ESTILOS ====================
+function resetMenuStyles() {
+  const vistas = [
+    "view-cambios", 
+    "view-informe", 
+    "view-entregas", 
+    "view-produccion-dash", 
+    "view-procurement", 
+    "view-tarjetas", 
+    "view-usuarios"
+  ];
+  vistas.forEach(id => {
+    document.getElementById(id)?.classList.add("hidden");
+  });
+}
+
+function activarVistaCambios() {
+  resetMenuStyles();
+  document.getElementById("view-cambios")?.classList.remove("hidden");
+}
+
+window.cambiarSubmenuEntrega = (categoria) => {
+  resetMenuStyles();
+  document.getElementById("view-entregas")?.classList.remove("hidden");
+  categoriaEntregaActiva = categoria;
+  renderTablaEntregas();
+};
 
 // ==================== CARGA DE DATOS Y FIRESTORE ====================
 async function cargarDatosUsuario(uid) {
@@ -158,7 +212,6 @@ async function cargarDatosUsuario(uid) {
 }
 
 function escucharColecciones() {
-  // Solicitudes de Cambios
   onSnapshot(collection(db, "solicitudes_cambios"), (snapshot) => {
     solicitudes = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     solicitudes.sort((a, b) => (b.fechaCreacion || "").localeCompare(a.fechaCreacion || ""));
@@ -167,7 +220,6 @@ function escucharColecciones() {
     if (esSuperAdmin()) cargarPanelSuperAdmin();
   });
 
-  // Entregas de Departamentos
   onSnapshot(collection(db, "entregas_departamentos"), (snapshot) => {
     entregas = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     entregas.sort((a, b) => (b.fechaEntrega || "").localeCompare(a.fechaEntrega || ""));
@@ -175,14 +227,12 @@ function escucharColecciones() {
     if (esSuperAdmin()) cargarPanelSuperAdmin();
   });
 
-  // Producción Lotes
   onSnapshot(collection(db, "produccion_lotes"), (snapshot) => {
     lotesProduccion = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     renderProduccionView();
   });
 }
 
-// ==================== UI / NAVEGACIÓN ====================
 function mostrarDashboard() {
   document.getElementById("welcome-container")?.classList.add("hidden");
   document.getElementById("app-container")?.classList.remove("hidden");
@@ -239,7 +289,6 @@ function inicializarSemanas01a52() {
   });
 }
 
-// Renderizados rápidos de tablas principales
 function renderTablaCambios() {
   const tbody = document.getElementById("table-cambios-body");
   const empty = document.getElementById("table-empty-state");
@@ -321,7 +370,7 @@ function renderTablaEntregas() {
 function renderProduccionView() {
   const table = document.getElementById("tabla-matriz-produccion");
   if (!table) return;
-  table.innerHTML = `<tr><td class="p-4 text-center text-gray-500">Matriz de producción cargada correctamente. Filtre por semana o línea arriba.</td></tr>`;
+  table.innerHTML = `<tr><td class="p-4 text-center text-gray-500">Matriz de producción cargada correctamente.</td></tr>`;
 }
 
 function cargarPanelSuperAdmin() {
@@ -372,7 +421,7 @@ const comprimirImagen = (file, maxWidth = 600, calidad = 0.75) => new Promise((r
   reader.onerror = () => resolve(null);
 });
 
-// Exposición global de funciones de navegación y modales para asegurar compatibilidad inline
+// Exposición global para modales inline
 window.abrirModalCambio = () => document.getElementById("modal-new-change")?.classList.remove("hidden");
 window.abrirModalMinuta = () => document.getElementById("modal-minuta")?.classList.remove("hidden");
 window.abrirModalEntrega = () => document.getElementById("modal-nueva-entrega")?.classList.remove("hidden");
