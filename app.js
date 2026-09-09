@@ -208,7 +208,7 @@ window.abrirModalLoteProduccion = () => {
   document.getElementById("modal-nuevo-lote-prod")?.classList.remove("hidden");
 };
 
-// Inicializador de semanas 01 a 52 (Sincronizado sin prefijo extra conflictivo)
+// Inicializador de semanas 01 a 52
 function inicializarSemanas01a52() {
   const selects = [
     document.getElementById("prod-filter-semana"),
@@ -777,7 +777,7 @@ window.cambiarSubmenuEntrega = (categoria) => {
   renderTablaEntregas();
 };
 
-// ==================== MÓDULO PRODUCCIÓN WORK PLANNER (7 COLUMNAS) ====================
+// ==================== MÓDULO PRODUCCIÓN WORK PLANNER (36 FILAS FIJAS) ====================
 function escucharProduccion() {
   const q = collection(db, "produccion_lotes");
   onSnapshot(q, (snapshot) => {
@@ -827,14 +827,50 @@ window.actualizarEstadoDiaLote = async (id, nuevoEstado) => {
   });
 };
 
+// Botón Eliminar Todos los Registros de Producción (Empezar de 0)
+window.eliminarTodosRegistrosProduccion = async () => {
+  if (confirm("⚠️ ¿Estás seguro de eliminar TODOS los registros de producción para empezar de 0? Esta acción no se puede deshacer.")) {
+    try {
+      const snap = await getDocs(collection(db, "produccion_lotes"));
+      const promises = snap.docs.map(d => deleteDoc(doc(db, "produccion_lotes", d.id)));
+      await Promise.all(promises);
+      alert("Todos los registros de producción han sido eliminados.");
+      renderProduccionView();
+    } catch (err) {
+      alert("Error al limpiar registros: " + err.message);
+    }
+  }
+};
+
+// Exportar a Excel
+window.exportarExcelProduccion = () => {
+  const tabla = document.getElementById("tabla-export-excel");
+  if (!tabla) return;
+  
+  let html = tabla.outerHTML;
+  let blob = new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel' });
+  let url = URL.createObjectURL(blob);
+  let a = document.createElement('a');
+  a.href = url;
+  a.download = `Work_Planner_Produccion_${new Date().toISOString().slice(0,10)}.xls`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+};
+
 function renderProduccionView() {
   const table = document.getElementById("tabla-matriz-produccion");
   const empty = document.getElementById("produccion-empty-state");
+  const labelSemanaGrande = document.getElementById("label-semana-grande");
   if (!table) return;
 
   const fSem = document.getElementById("prod-filter-semana")?.value || "";
   const fProy = document.getElementById("prod-filter-proyecto")?.value.trim().toLowerCase() || "";
   const fLin = document.getElementById("prod-filter-linea")?.value || "";
+
+  if (labelSemanaGrande) {
+    labelSemanaGrande.textContent = fSem ? fSem.toUpperCase() : "TODAS LAS SEMANAS";
+  }
 
   let filtrados = lotesProduccion.filter(l => {
     const semMatch = !fSem || (l.semana || "") === fSem;
@@ -871,46 +907,52 @@ function renderProduccionView() {
   setKpi("kpi-inyeccion", "bar-inyeccion", totInyeccion);
   setKpi("kpi-entregado", "bar-entregado", totEntregado);
 
-  if (filtrados.length === 0) {
-    empty?.classList.remove("hidden");
-    table.innerHTML = "";
-    return;
-  }
-  empty?.classList.add("hidden");
-
+  // Generar exactamente 36 filas fijas (6 secciones x 6 filas por sección)
+  const seccionesDisponibles = fLin ? [fLin] : ["330", "331", "332", "251", "252", "254"];
   const diasSemana = ["LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES"];
-  const mapaPlan = {};
 
-  filtrados.forEach(l => {
-    const key = `${l.linea}_${l.plan || l.proyecto}`;
-    if (!mapaPlan[key]) {
-      mapaPlan[key] = {
-        linea: l.linea,
-        plan: l.plan,
-        proyecto: l.proyecto,
-        articulo: l.articulo,
-        dias: {}
-      };
+  // Mapear lotes por sección y fila índice (0 al 5)
+  // Agrupamos por sección para numerar 6 filas por cada una
+  const filasMatriz = [];
+  seccionesDisponibles.forEach(seccion => {
+    const lotesSeccion = filtrados.filter(l => String(l.linea) === String(seccion));
+    
+    // Agrupar por plan único dentro de la sección
+    const planesUnicos = {};
+    lotesSeccion.forEach(l => {
+      const pKey = l.plan || l.proyecto;
+      if (!planesUnicos[pKey]) {
+        planesUnicos[pKey] = { plan: l.plan, articulo: l.articulo, proyecto: l.proyecto, dias: {} };
+      }
+      planesUnicos[pKey].dias[l.dia] = l;
+    });
+
+    const listaPlanes = Object.values(planesUnicos);
+
+    // Asegurar exactamente 6 filas por sección
+    for (let i = 0; i < 6; i++) {
+      const datosPlan = listaPlanes[i] || null;
+      filasMatriz.push({
+        seccion: seccion,
+        datos: datosPlan
+      });
     }
-    mapaPlan[key].dias[l.dia] = l;
   });
 
   let html = "";
-  let granTotalGeneral = 0;
-
-  Object.values(mapaPlan).forEach(item => {
-    let totalFila = 0;
+  filasMatriz.forEach(fila => {
+    let totalFilaFila = 0;
     html += `<tr class="border-b hover:bg-slate-50 text-center">`;
-    html += `<td class="p-2 font-black font-mono border-r bg-gray-50 text-gray-900 align-middle">${item.linea}</td>`;
+    html += `<td class="p-2 font-black font-mono border-r bg-gray-50 text-gray-900 align-middle">${fila.seccion}</td>`;
 
     diasSemana.forEach(dia => {
-      const loteDia = item.dias[dia];
+      const loteDia = fila.datos && fila.datos.dias ? fila.datos.dias[dia] : null;
       if (loteDia) {
         const p = parseInt(loteDia.pares) || 0;
-        totalFila += p;
+        totalFilaFila += p;
         const colorEstado = loteDia.estado === 'ENTREGADO' ? 'text-green-700 bg-green-50' : (loteDia.estado === 'APARADO' ? 'text-blue-700 bg-blue-50' : (loteDia.estado === 'ARMADO' ? 'text-purple-700 bg-purple-50' : 'text-amber-700 bg-amber-50'));
         html += `
-          <td class="p-1 border-r font-mono text-[10px] font-bold">${loteDia.plan || '—'}</td>
+          <td class="p-1 border-r font-mono text-[10px] font-bold text-red-600">${loteDia.plan || '—'}</td>
           <td class="p-1 border-r font-mono text-[10px]">${loteDia.articulo || '—'}</td>
           <td class="p-1 border-r font-bold text-[10px] truncate max-w-[70px]">${loteDia.proyecto || '—'}</td>
           <td class="p-1 border-r font-black text-cyan-900 bg-cyan-50/30">${p.toLocaleString()}</td>
@@ -935,8 +977,7 @@ function renderProduccionView() {
       }
     });
 
-    granTotalGeneral += totalFila;
-    html += `<td class="p-2 font-black text-sm bg-gray-100 text-[#D61B28] align-middle">${totalFila.toLocaleString()}</td>`;
+    html += `<td class="p-2 font-black text-sm bg-gray-100 text-[#D61B28] align-middle">${totalFilaFila > 0 ? totalFilaFila.toLocaleString() : '—'}</td>`;
     html += `</tr>`;
   });
 
@@ -1295,7 +1336,7 @@ if (formEntrega) {
   };
 }
 
-// ==================== MÓDULO TARJETAS (PD) ====================
+// ==================== MÓDULO TARJETAS (PD) - FORMATO CLÁSICO RESTAURADO ====================
 function initModuloTarjetas() {
   const inputFecha = document.getElementById("card-fecha");
   if (inputFecha && !inputFecha.value) {
@@ -1428,97 +1469,129 @@ function renderTarjetasPreview() {
   const budRet = document.getElementById("card-costo-budret")?.value || "37.39%";
 
   const serie = document.getElementById("card-serie")?.value || "37-44";
-  const fecha = document.getElementById("card-fecha")?.value || "4/9/2026";
-  const materialCorte = (document.getElementById("card-material-corte")?.value || "IMITACION").toUpperCase();
-  const forro = (document.getElementById("card-forro")?.value || "PIQUE NEGRO").toUpperCase();
-  const plantInt = (document.getElementById("card-plant-int")?.value || "PIQUE NEGRO").toUpperCase();
-  const modelista = (document.getElementById("card-tecnico")?.value || "CARLOS ARCE").toUpperCase();
-  const construccion = (document.getElementById("card-construccion")?.value || "TRUE MOC").toUpperCase();
+  const fecha = document.getElementById("card-fecha")?.value || "8/9/2026";
+  const materialCorte = (document.getElementById("card-material-corte")?.value || "DNE IMITACION 6D1G14").toUpperCase();
+  const forro = (document.getElementById("card-forro")?.value || "DNE FORRO PINTADO 9DFP").toUpperCase();
+  const plantInt = (document.getElementById("card-plant-int")?.value || "DNE FORRO PINTADO 9DFP").toUpperCase();
+  const modelista = (document.getElementById("card-tecnico")?.value || "JOHNNY GUTIERREZ").toUpperCase();
+  const construccion = (document.getElementById("card-construccion")?.value || "ARMADO").toUpperCase();
   const suela = (document.getElementById("card-horma-suela")?.value || "QUIQUE").toUpperCase();
   const observaciones = document.getElementById("card-observaciones")?.value || "";
 
   const siluetaCalzadoHTML = croquisTarjetaBase64 
-    ? `<img src="${croquisTarjetaBase64}" style="width:100%; height:30px; object-fit:contain; margin:auto;">`
-    : `<div style="height:30px; display:flex; align-items:center; justify-content:center; font-size:8px; color:#999; border:1px dashed #ccc;">Croquis</div>`;
+    ? `<img src="${croquisTarjetaBase64}" style="width:100%; height:32px; object-fit:contain; margin:auto;">`
+    : `<div style="height:32px; display:flex; align-items:center; justify-content:center; font-size:8px; color:#999; border:1px dashed #ccc;">Croquis</div>`;
 
   const siluetaPlantillaHTML = plantillaCorteTarjetaBase64 
-    ? `<img src="${plantillaCorteTarjetaBase64}" style="width:100%; height:30px; object-fit:contain; margin:auto;">`
+    ? `<img src="${plantillaCorteTarjetaBase64}" style="width:100%; height:32px; object-fit:contain; margin:auto;">`
     : siluetaCalzadoHTML;
 
   const listaAImprimir = [];
-  for (let i = 1; i <= cCortes; i++) listaAImprimir.push({ color: "#FFFFFF", etiqueta: "CORTE", esInvertida: true, recibePlantilla: true });
-  for (let i = 1; i <= cProd; i++) listaAImprimir.push({ color: "#FFFFFF", etiqueta: "PRODUCCIÓN", esInvertida: false, recibePlantilla: false });
-  for (let i = 1; i <= cVerdes; i++) listaAImprimir.push({ color: "#80C342", etiqueta: "RETAIL", esInvertida: false, recibePlantilla: false });
-  for (let i = 1; i <= cAmarillas; i++) listaAImprimir.push({ color: "#FFF200", etiqueta: "PLANEAMIENTO", esInvertida: false, recibePlantilla: false });
-  for (let i = 1; i <= cRosadas; i++) listaAImprimir.push({ color: "#E06D8A", etiqueta: "EXPORTACIÓN", esInvertida: false, recibePlantilla: false });
+  for (let i = 1; i <= cCortes; i++) listaAImprimir.push({ color: "#80C342", etiqueta: "APROBACIONES (RETAIL)", esInvertida: true, recibePlantilla: true });
+  for (let i = 1; i <= cProd; i++) listaAImprimir.push({ color: "#80C342", etiqueta: "APROBACIONES (PRODUCCIÓN)", esInvertida: false, recibePlantilla: false });
+  for (let i = 1; i <= cVerdes; i++) listaAImprimir.push({ color: "#80C342", etiqueta: "APROBACIONES (RETAIL)", esInvertida: false, recibePlantilla: false });
+  for (let i = 1; i <= cAmarillas; i++) listaAImprimir.push({ color: "#FFF200", etiqueta: "APROBACIONES (PLANEAMIENTO)", esInvertida: false, recibePlantilla: false });
+  for (let i = 1; i <= cRosadas; i++) listaAImprimir.push({ color: "#E06D8A", etiqueta: "APROBACIONES (EXPORTACIÓN)", esInvertida: false, recibePlantilla: false });
 
   let tarjetasHTML = "";
   listaAImprimir.forEach((tarj) => {
     const imagenIzquierdaHTML = tarj.recibePlantilla ? siluetaPlantillaHTML : siluetaCalzadoHTML;
 
-    const bloqueFirmasHTML = `
-      <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:3px 5px; ${tarj.esInvertida ? '' : 'border-right:1px dashed #555;'} font-size:6.5px;">
-        <div style="font-size:7px; font-weight:900; text-align:center; color:#1f2937; text-transform:uppercase; border-bottom:1px solid #d1d5db; padding-bottom:1px;">
-          APROBACIONES (${tarj.etiqueta})
+    const panelDerechoFirmas = `
+      <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:2px 4px; font-size:6px;">
+        <div style="font-size:6.5px; font-weight:900; text-align:center; color:#dc2626; text-transform:uppercase; border-bottom:1px solid #d1d5db; padding-bottom:1px;">
+          ${tarj.etiqueta}
         </div>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; text-align:center; align-items:end; margin-top:1px;">
-          <div style="display:flex; flex-direction:column; justify-content:flex-end; height:12mm;">
-            <div style="border-bottom:1px solid #000; width:100%; margin-bottom:1px;"></div>
-            <span style="font-weight:bold; font-size:6px; display:block;">P.D. CHIEF</span>
+        <div style="display:flex; flex-direction:column; justify-content:space-around; flex:1; padding-top:2px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+            <div style="border-bottom:1px solid #000; width:65%; height:12px;"></div>
+            <span style="font-size:5.5px; font-weight:bold;">P.D. CHIEF</span>
           </div>
-          <div style="display:flex; flex-direction:column; justify-content:flex-end; height:12mm;">
-            <div style="border-bottom:1px solid #000; width:100%; margin-bottom:1px;"></div>
-            <span style="font-weight:bold; font-size:6px; display:block;">MERCHANDISING MAN.</span>
+          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+            <div style="border-bottom:1px solid #000; width:65%; height:12px;"></div>
+            <span style="font-size:5.5px; font-weight:bold;">PURCHASING MANAGER</span>
           </div>
+          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+            <div style="border-bottom:1px solid #000; width:65%; height:12px;"></div>
+            <span style="font-size:5.5px; font-weight:bold;">MERCHANDISING MAN.</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+            <div style="border-bottom:1px solid #000; width:65%; height:12px;"></div>
+            <span style="font-size:5.5px; font-weight:bold;">PRODUCTION MANAGER</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+            <div style="border-bottom:1px solid #000; width:65%; height:12px;"></div>
+            <span style="font-size:5.5px; font-weight:bold;">COUNTRY MANAGER</span>
+          </div>
+        </div>
+        <div style="border-top:1px dashed #9ca3af; padding-top:1px; margin-top:1px;">
+          <span style="font-weight:900; font-size:5.5px; color:#374151; display:block;">OBSERVACIONES:</span>
+          <span style="font-size:5px; color:#4b5563;">PRODUCCION</span>
         </div>
       </div>
     `;
-
-    const bloqueObservacionesHTML = `
-      <div class="shoe-panel" style="padding:4px; display:flex; flex-direction:column; justify-content:space-between; font-size:7px; ${tarj.esInvertida ? 'border-right:1px dashed #555;' : ''}">
-        <div>
-          <span style="font-weight:900; color:#1f2937; text-transform:uppercase; display:block; margin-bottom:1px;">OBSERVACIONES:</span>
-          <p style="font-size:6.5px; color:#374151; font-style:italic; line-height:1.2;">${observaciones || 'Sin observaciones adicionales'}</p>
-        </div>
-        <div style="text-align:right; font-size:6px; color:#9ca3af; font-weight:bold;">BATA BOLIVIA PD</div>
-      </div>
-    `;
-
-    const centroHTML = tarj.esInvertida ? bloqueObservacionesHTML : bloqueFirmasHTML;
-    const derechaHTML = tarj.esInvertida ? bloqueFirmasHTML : bloqueObservacionesHTML;
 
     tarjetasHTML += `
-      <div class="shoe-card-container" style="background:#fff; display:flex; font-size:7.5px; line-height:1.1; color:#000;">
-        <div class="shoe-panel" style="display:flex; border-right:1px dashed #555; overflow:hidden;">
+      <div class="shoe-card-container" style="background:#fff; display:flex; font-size:7px; line-height:1.1; color:#000;">
+        <!-- PANEL 1: LENGÜETA Y ESPECIFICACIONES -->
+        <div class="shoe-panel" style="display:flex; border-right:1px solid #000; overflow:hidden;">
           <div class="lateral-tab" style="width:16px; border-right:1px solid #000; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:9px; writing-mode:vertical-rl; transform:rotate(180deg); background-color:${tarj.color} !important;">
             ${linea}
           </div>
           <div style="flex:1; display:flex; flex-direction:column; justify-content:space-between; padding:1px;">
-            <div style="font-size:8px; font-weight:900; color:#dc2626; text-align:center; border-bottom:1px solid #000; padding-bottom:1px;">MANUFACTURA BOLIVIANA S.A.</div>
-            <div style="display:flex; flex:1;">
-              <div style="width:58px; display:flex; flex-direction:column; justify-content:space-between; border-right:1px solid #000; padding-right:1px;">
+            <div style="font-size:8px; font-weight:900; color:#16a34a; text-align:center; border-bottom:1px solid #000; padding-bottom:1px;">
+              ${linea}
+            </div>
+            <div style="display:flex; flex:1; align-items:center;">
+              <div style="width:52px; display:flex; flex-direction:column; justify-content:center; border-right:1px solid #000; padding-right:1px; height:100%;">
                 ${imagenIzquierdaHTML}
-                <span style="font-size:5px; font-weight:bold; text-align:center;">${fecha}</span>
+                <span style="font-size:5px; font-weight:bold; text-align:center; margin-top:2px;">${fecha}</span>
               </div>
-              <div style="flex:1;">
-                <table style="width:100%; height:100%; border-collapse:collapse; font-size:6.5px; font-weight:900;">
-                  <tr style="border-bottom:1px solid #000; height:3.2mm;"><td style="border-right:1px solid #000; text-align:center;">ART:</td><td style="text-align:center; font-family:monospace;">${articulo}</td></tr>
-                  <tr style="border-bottom:1px solid #000; height:3.2mm;"><td style="border-right:1px solid #000; text-align:center;">MARCA:</td><td style="text-align:center;">${marca}</td></tr>
-                  <tr style="border-bottom:1px solid #000; height:3.2mm;"><td style="border-right:1px solid #000; text-align:center;">SERIE:</td><td style="text-align:center;">${serie}</td></tr>
-                  <tr style="border-bottom:1px solid #000; height:3.2mm;"><td style="border-right:1px solid #000; text-align:center;">CORTE:</td><td style="text-align:center;">${materialCorte}</td></tr>
-                  <tr style="border-bottom:1px solid #000; height:3.2mm;"><td style="border-right:1px solid #000; text-align:center;">FORRO:</td><td style="text-align:center;">${forro}</td></tr>
-                  <tr style="height:3.2mm;"><td style="border-right:1px solid #000; text-align:center;">PLANT:</td><td style="text-align:center;">${plantInt}</td></tr>
+              <div style="flex:1; height:100%;">
+                <table style="width:100%; height:100%; border-collapse:collapse; font-size:6px; font-weight:900;">
+                  <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; width:35%; text-align:center;">TEC:</td><td style="text-align:center; font-size:5.5px;">${modelista}</td></tr>
+                  <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; text-align:center;">CONTR:</td><td style="text-align:center;">${construccion}</td></tr>
+                  <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; text-align:center;">SUELA:</td><td style="text-align:center;">${suela}</td></tr>
                 </table>
               </div>
             </div>
-            <div style="display:flex; border-top:1px solid #000; font-size:5.5px; font-weight:800; padding:1px 0;">
-              <div style="width:50%; border-right:1px solid #000; padding-left:2px;">TEC: ${modelista}</div>
-              <div style="width:50%; padding-left:3px;">PRECIO: <b>${precio}</b></div>
-            </div>
           </div>
         </div>
-        ${centroHTML}
-        ${derechaHTML}
+
+        <!-- PANEL 2: TABLA TÉCNICA DE MATERIALES -->
+        <div class="shoe-panel" style="display:flex; flex-direction:column; border-right:1px solid #000; overflow:hidden;">
+          <div style="font-size:7px; font-weight:900; text-align:center; color:#dc2626; border-bottom:1px solid #000; padding-bottom:1px;">
+            MANUFACTURA BOLIVIANA S.A.
+          </div>
+          <div style="flex:1; display:flex;">
+            <table style="width:100%; height:100%; border-collapse:collapse; font-size:5.5px; font-weight:bold; text-align:center;">
+              <tr style="border-bottom:1px solid #000; background:#f9fafb;">
+                <td style="border-right:1px solid #000; padding:1px;">PLANT:</td>
+                <td style="border-right:1px solid #000; padding:1px;">FORRO:</td>
+                <td style="border-right:1px solid #000; padding:1px;">CORTE:</td>
+                <td style="border-right:1px solid #000; padding:1px;">SERIE:</td>
+                <td style="border-right:1px solid #000; padding:1px;">MARCA:</td>
+                <td style="padding:1px;">ART:</td>
+              </tr>
+              <tr style="border-bottom:1px solid #000;">
+                <td style="border-right:1px solid #000; padding:1px; font-size:5px;">${plantInt}</td>
+                <td style="border-right:1px solid #000; padding:1px; font-size:5px;">${forro}</td>
+                <td style="border-right:1px solid #000; padding:1px; font-size:5px;">${materialCorte}</td>
+                <td style="border-right:1px solid #000; padding:1px;">${serie}</td>
+                <td style="border-right:1px solid #000; padding:1px;">${marca}</td>
+                <td style="padding:1px; font-family:monospace; font-weight:900;">${articulo}</td>
+              </tr>
+            </table>
+          </div>
+          <div style="display:flex; border-top:1px solid #000; font-size:6px; font-weight:bold; padding:2px 4px; justify-content:space-between; background:#f9fafb;">
+            <span>PRECIO: ${precio}</span>
+            <span>MRG BUD: ${budRet}</span>
+            <span>MRG: ${margen}</span>
+          </div>
+        </div>
+
+        <!-- PANEL 3: FIRMAS Y APROBACIONES -->
+        ${panelDerechoFirmas}
       </div>
     `;
   });
