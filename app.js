@@ -65,7 +65,7 @@ const safeClick = (id, fn) => {
   if (el) el.onclick = fn;
 };
 
-// Ojito contraseña
+// ==================== EXPOSICIÓN GLOBAL ABSOLUTA (WINDOW) ====================
 window.togglePasswordVisibility = (inputId, eyeIconId) => {
   const input = document.getElementById(inputId);
   const icon = document.getElementById(eyeIconId);
@@ -81,130 +81,6 @@ window.togglePasswordVisibility = (inputId, eyeIconId) => {
   }
 };
 
-const comprimirImagen = (file, maxWidth = 600, calidad = 0.75) => new Promise((resolve) => {
-  if (!file) return resolve(null);
-  const reader = new FileReader();
-  reader.readAsDataURL(file);
-  reader.onload = (event) => {
-    const img = new Image();
-    img.src = event.target.result;
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      let width = img.width;
-      let height = img.height;
-
-      if (width > maxWidth) {
-        height = Math.round((height * maxWidth) / width);
-        width = maxWidth;
-      }
-
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, width, height);
-
-      const base64Comprimido = canvas.toDataURL("image/jpeg", calidad);
-      resolve(base64Comprimido);
-    };
-    img.onerror = () => resolve(null);
-  };
-  reader.onerror = () => resolve(null);
-});
-
-function esSuperAdmin() {
-  if (!currentUser || !currentUser.email) return false;
-  return currentUser.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
-}
-
-function esComprasAdmin() {
-  if (esSuperAdmin()) return true;
-  return userData && (userData.rol === "Compras Admin" || userData.rol === "Compras");
-}
-
-function esDesarrollo() {
-  if (esSuperAdmin()) return true;
-  return userData && (userData.rol || "").includes("Desarrollo");
-}
-
-function esJefeProduccion() {
-  if (esSuperAdmin()) return true;
-  return userData && (userData.rol === "Jefe de Producción" || userData.rol === "Producción");
-}
-
-// Poblar selector de semanas (01 a 52)
-function inicializarSemanas01a52() {
-  const selects = [
-    document.getElementById("prod-filter-semana"),
-    document.getElementById("lote-semana")
-  ];
-
-  selects.forEach(sel => {
-    if (!sel) return;
-    const valorActual = sel.value;
-    const esFiltro = sel.id === "prod-filter-semana";
-    sel.innerHTML = esFiltro ? '<option value="">Todas las Semanas (01-52)</option>' : '';
-
-    for (let i = 1; i <= 52; i++) {
-      const numStr = i < 10 ? `0${i}` : `${i}`;
-      const val = `SEM-${numStr}`;
-      sel.innerHTML += `<option value="${val}">Semana ${numStr}</option>`;
-    }
-    if (valorActual) sel.value = valorActual;
-  });
-}
-
-// Modal WhatsApp
-async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro = null }) {
-  const modalWA = document.getElementById("modal-whatsapp");
-  const listContainer = document.getElementById("whatsapp-contacts-list");
-  if (!modalWA || !listContainer) return;
-  document.getElementById("wa-modal-title").textContent = titulo;
-  document.getElementById("wa-modal-desc").textContent = subtitulo;
-  listContainer.innerHTML = "";
-
-  const encodedMsg = encodeURIComponent(mensajeTexto);
-
-  try {
-    const usuariosSnap = await getDocs(collection(db, "usuarios"));
-    let count = 0;
-
-    usuariosSnap.forEach(d => {
-      const u = d.data();
-      const coincideRol = !rolFiltro || u.rol === rolFiltro || 
-        (rolFiltro === "Desarrollo de producto - Técnico" && (u.rol || "").includes("Técnico")) ||
-        (rolFiltro === "Compras" && ((u.rol || "").includes("Compras")));
-
-      if (u.celular && coincideRol) {
-        count++;
-        const item = document.createElement("a");
-        item.href = `https://wa.me/591${u.celular}?text=${encodedMsg}`;
-        item.target = "_blank";
-        item.className = "flex items-center justify-between p-2.5 bg-gray-50 hover:bg-green-50 rounded-xl border border-gray-200 transition text-gray-800";
-        item.innerHTML = `
-          <div>
-            <span class="font-bold">${u.nombre}</span>
-            <span class="text-[10px] text-gray-400 block">${u.rol} - +591 ${u.celular}</span>
-          </div>
-          <span class="bg-[#25D366] text-white px-2.5 py-1 rounded-lg font-bold text-[10px] flex items-center space-x-1">
-            <i class="fa-brands fa-whatsapp"></i>
-            <span>Enviar</span>
-          </span>
-        `;
-        listContainer.appendChild(item);
-      }
-    });
-
-    if (count === 0) {
-      listContainer.innerHTML = `<p class="p-3 text-center text-gray-400 text-xs">No hay contactos registrados con el rol de ${rolFiltro || 'ese departamento'}.</p>`;
-    }
-
-    modalWA.classList.remove("hidden");
-  } catch (error) {
-    console.error("Error al abrir WhatsApp:", error);
-  }
-}
-
-// ==================== ENLACES GLOBALES WINDOW (SOLUCIÓN DE BOTONES) ====================
 window.abrirModalCambio = () => {
   document.getElementById("modal-new-change")?.classList.remove("hidden");
 };
@@ -664,7 +540,7 @@ window.eliminarEntregaDoc = async (id, tipo, proyecto) => {
   }
 };
 
-// Controles y Modales Base
+// ==================== COMPROBACIÓN DE USUARIO Y DOM LOAD ====================
 const welcomeContainer = document.getElementById("welcome-container");
 const appContainer = document.getElementById("app-container");
 const modalLogin = document.getElementById("modal-login");
@@ -727,7 +603,6 @@ safeClick("btn-forgot-pass", () => {
   window.open(`https://wa.me/${SUPER_ADMIN_WHATSAPP}?text=${msg}`, "_blank");
 });
 
-// Perfil
 safeClick("btn-edit-profile", () => {
   if (!userData) return;
   const pName = document.getElementById("prof-name");
@@ -762,7 +637,6 @@ if (formProfile) {
   };
 }
 
-// Registro
 const formRegister = document.getElementById("form-register");
 if (formRegister) {
   formRegister.onsubmit = async (e) => {
@@ -792,7 +666,6 @@ if (formRegister) {
   };
 }
 
-// Login
 const formLogin = document.getElementById("form-login");
 if (formLogin) {
   formLogin.onsubmit = async (e) => {
@@ -961,3 +834,82 @@ safeClick("sub-btn-CORTE", () => window.cambiarSubmenuEntrega("CORTE"));
 safeClick("sub-btn-MUESTRA", () => window.cambiarSubmenuEntrega("MUESTRA DEFINITIVA"));
 safeClick("sub-btn-DESBASTE", () => window.cambiarSubmenuEntrega("HOJA DE DESBASTE"));
 safeClick("sub-btn-TIZADORES", () => window.cambiarSubmenuEntrega("TIZADORES"));
+
+window.cambiarSubmenuEntrega = (categoria) => {
+  resetMenuStyles();
+  viewEntregas?.classList.remove("hidden");
+  categoriaEntregaActiva = categoria;
+
+  const titulo = document.getElementById("entregas-vista-titulo");
+  const subtitulo = document.getElementById("entregas-vista-subtitulo");
+  const thFoto = document.getElementById("th-ent-foto");
+  const thArt = document.getElementById("th-ent-art");
+  const labelThProy = document.getElementById("label-th-proy");
+  const btnTextEntrega = document.getElementById("btn-text-nueva-entrega");
+
+  if (categoria === "todas") {
+    if (menuBtnEntregasTodas) menuBtnEntregasTodas.className = CLASE_ACTIVO_PASTILLA;
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-truck-ramp-box"></i><span>Control de Entregas (Todas)</span>`;
+    if (subtitulo) subtitulo.textContent = "Visualizador consolidado de todas las entregas físicas a departamentos.";
+    if (thFoto) thFoto.classList.remove("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Entrega";
+  } else if (categoria === "MATERIALES") {
+    const btn = document.getElementById("sub-btn-MATERIALES");
+    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-boxes-packing text-blue-600"></i><span>Entrega de Materiales</span>`;
+    if (subtitulo) subtitulo.textContent = "Insumos y materiales (Semana y Nombre). Destinos: Desarrollo de producto, Producción.";
+    if (thFoto) thFoto.classList.add("hidden");
+    if (thArt) thArt.classList.add("hidden");
+    if (labelThProy) labelThProy.textContent = "Nombre del Material";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Material";
+  } else if (categoria === "GUÍA DE PRODUCCIÓN") {
+    const btn = document.getElementById("sub-btn-GUIA");
+    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-file-contract text-emerald-600"></i><span>Entrega de Guías de Producción</span>`;
+    if (subtitulo) subtitulo.textContent = "Entrega física de guías de producción. Destino exclusivo: Costos.";
+    if (thFoto) thFoto.classList.remove("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Guía";
+  } else if (categoria === "CORTE") {
+    const btn = document.getElementById("sub-btn-CORTE");
+    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-scissors text-amber-600"></i><span>Entrega de Cortes</span>`;
+    if (subtitulo) subtitulo.textContent = "Entrega de cortes. Destinos: Costos, Producción.";
+    if (thFoto) thFoto.classList.remove("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Corte";
+  } else if (categoria === "MUESTRA DEFINITIVA") {
+    const btn = document.getElementById("sub-btn-MUESTRA");
+    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-shoe-prints text-purple-600"></i><span>Entrega de Muestras Definitivas</span>`;
+    if (subtitulo) subtitulo.textContent = "Muestras definitivas con foto. Destinos: Producción, Planeamiento, Retail.";
+    if (thFoto) thFoto.classList.remove("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Muestra";
+  } else if (categoria === "HOJA DE DESBASTE") {
+    const btn = document.getElementById("sub-btn-DESBASTE");
+    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-layer-group text-cyan-600"></i><span>Entrega de Hoja de Desbaste</span>`;
+    if (subtitulo) subtitulo.textContent = "Entrega de especificaciones de desbaste. Destinos: Costos, Producción.";
+    if (thFoto) thFoto.classList.remove("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Desbaste";
+  } else if (categoria === "TIZADORES") {
+    const btn = document.getElementById("sub-btn-TIZADORES");
+    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-copy text-rose-600"></i><span>Entrega de Tizadores (Copias)</span>`;
+    if (subtitulo) subtitulo.textContent = "Entrega de tizadores a Producción con especificación de número de copias.";
+    if (thFoto) thFoto.classList.add("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Tizadores";
+  }
+
+  renderTablaEntregas();
+};
