@@ -777,7 +777,7 @@ window.cambiarSubmenuEntrega = (categoria) => {
   renderTablaEntregas();
 };
 
-// ==================== MÓDULO PRODUCCIÓN WORK PLANNER (36 FILAS Y SECCIÓN AGRUPADA) ====================
+// ==================== MÓDULO PRODUCCIÓN WORK PLANNER ====================
 function escucharProduccion() {
   const q = collection(db, "produccion_lotes");
   onSnapshot(q, (snapshot) => {
@@ -917,16 +917,16 @@ function renderProduccionView() {
 
     const listaPlanes = Object.values(planesUnicos);
 
-    // Exactamente 6 filas por sección
+    // Exactamente 6 filas por sección con 2 colores intercalados
     for (let i = 0; i < 6; i++) {
       const datosPlan = listaPlanes[i] || null;
       let totalFila = 0;
       rowIndexGlobal++;
-      const colorBg = rowIndexGlobal % 2 === 0 ? 'bg-white' : 'bg-slate-50/70';
+      const colorBg = rowIndexGlobal % 2 === 0 ? 'bg-white' : 'bg-slate-50';
 
       html += `<tr class="${colorBg} border-b border-gray-300 text-center">`;
 
-      // Sección combinada solo en la primera fila de las 6
+      // Sección combinada verticalmente en las 6 filas
       if (i === 0) {
         html += `<td rowspan="6" class="p-2 font-black font-mono border border-gray-300 bg-gray-100 text-gray-900 align-middle text-sm">${seccion}</td>`;
       }
