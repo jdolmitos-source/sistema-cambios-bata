@@ -65,7 +65,7 @@ const safeClick = (id, fn) => {
   if (el) el.onclick = fn;
 };
 
-// ==================== FUNCIONES DE APOYO Y HEADER (DECLARADAS AL TOPE) ====================
+// ==================== FUNCIONES DE APOYO Y HEADER ====================
 function actualizarHeaderUsuario() {
   const esAdmin = esSuperAdmin();
   const uName = document.getElementById("user-display-name");
@@ -712,7 +712,7 @@ window.eliminarEntregaDoc = async (id, tipo, proyecto) => {
   }
 };
 
-// ==================== NAVEGACIÓN Y DOM LOAD ====================
+// ==================== NAVEGACIÓN Y DOM LOAD (VARIABLES AL TOPE) ====================
 const viewCambios = document.getElementById("view-cambios");
 const viewInforme = document.getElementById("view-informe");
 const viewEntregas = document.getElementById("view-entregas");
@@ -898,196 +898,6 @@ window.cambiarSubmenuEntrega = (categoria) => {
   renderTablaEntregas();
 };
 
-// ==================== INICIALIZACIÓN DE EVENTOS DOM ====================
-function inicializarEventosDOM() {
-  const welcomeContainer = document.getElementById("welcome-container");
-  const appContainer = document.getElementById("app-container");
-  const modalLogin = document.getElementById("modal-login");
-  const modalRegister = document.getElementById("modal-register");
-  const modalProfile = document.getElementById("modal-profile");
-
-  safeClick("btn-close-whatsapp-modal", () => document.getElementById("modal-whatsapp")?.classList.add("hidden"));
-  safeClick("btn-show-login", () => modalLogin?.classList.remove("hidden"));
-  safeClick("btn-show-register", () => modalRegister?.classList.remove("hidden"));
-  safeClick("close-login", () => modalLogin?.classList.add("hidden"));
-  safeClick("close-register", () => modalRegister?.classList.add("hidden"));
-  safeClick("close-profile", () => modalProfile?.classList.add("hidden"));
-
-  const formProfile = document.getElementById("form-update-profile");
-  if (formProfile) {
-    formProfile.onsubmit = async (e) => {
-      e.preventDefault();
-      const name = document.getElementById("prof-name").value.trim();
-      const phone = document.getElementById("prof-phone").value.trim();
-      const photoFile = document.getElementById("prof-photo").files[0];
-
-      const updateData = { nombre: name, celular: phone };
-      if (photoFile) {
-        updateData.foto = await comprimirImagen(photoFile, 200, 0.7);
-      }
-
-      try {
-        await updateDoc(doc(db, "usuarios", currentUser.uid), updateData);
-        userData = { ...userData, ...updateData };
-        actualizarHeaderUsuario();
-        modalProfile?.classList.add("hidden");
-        alert("Perfil actualizado correctamente.");
-      } catch (err) {
-        alert("Error: " + err.message);
-      }
-    };
-  }
-
-  const formRegister = document.getElementById("form-register");
-  if (formRegister) {
-    formRegister.onsubmit = async (e) => {
-      e.preventDefault();
-      const name = document.getElementById("reg-name").value.trim();
-      const phone = document.getElementById("reg-phone").value.trim();
-      const email = document.getElementById("reg-email").value.trim();
-      const role = document.getElementById("reg-role").value;
-      const pass = document.getElementById("reg-pass").value;
-      const photoFile = document.getElementById("reg-photo").files[0];
-      const photoBase64 = photoFile ? await comprimirImagen(photoFile, 200, 0.7) : null;
-
-      try {
-        const cred = await createUserWithEmailAndPassword(auth, email, pass);
-        await setDoc(doc(db, "usuarios", cred.user.uid), {
-          nombre: name,
-          celular: phone,
-          email: email,
-          rol: role,
-          foto: photoBase64,
-          fechaCreacion: serverTimestamp()
-        });
-        modalRegister?.classList.add("hidden");
-      } catch (err) {
-        alert("Error de registro: " + err.message);
-      }
-    };
-  }
-
-  const formLogin = document.getElementById("form-login");
-  if (formLogin) {
-    formLogin.onsubmit = async (e) => {
-      e.preventDefault();
-      const email = document.getElementById("login-email").value.trim();
-      const pass = document.getElementById("login-pass").value;
-      try {
-        await signInWithEmailAndPassword(auth, email, pass);
-        modalLogin?.classList.add("hidden");
-      } catch (err) {
-        alert("Credenciales incorrectas o usuario no registrado.");
-      }
-    };
-  }
-
-  // Filtros de producción
-  const prodFilterSemana = document.getElementById("prod-filter-semana");
-  const prodFilterProyecto = document.getElementById("prod-filter-proyecto");
-  const prodFilterLinea = document.getElementById("prod-filter-linea");
-  const prodFilterEstado = document.getElementById("prod-filter-estado");
-  const btnLimpiarFiltrosProd = document.getElementById("btn-limpiar-filtros-prod");
-
-  if (prodFilterSemana) prodFilterSemana.onchange = renderProduccionView;
-  if (prodFilterProyecto) prodFilterProyecto.oninput = renderProduccionView;
-  if (prodFilterLinea) prodFilterLinea.onchange = renderProduccionView;
-  if (prodFilterEstado) prodFilterEstado.onchange = renderProduccionView;
-
-  if (btnLimpiarFiltrosProd) {
-    btnLimpiarFiltrosProd.onclick = () => {
-      if (prodFilterSemana) prodFilterSemana.value = "";
-      if (prodFilterProyecto) prodFilterProyecto.value = "";
-      if (prodFilterLinea) prodFilterLinea.value = "";
-      if (prodFilterEstado) prodFilterEstado.value = "";
-      renderProduccionView();
-    };
-  }
-
-  const formLoteProd = document.getElementById("form-nuevo-lote-prod");
-  if (formLoteProd) {
-    formLoteProd.onsubmit = async (e) => {
-      e.preventDefault();
-      const semana = document.getElementById("lote-semana").value;
-      const dia = document.getElementById("lote-dia").value;
-      const linea = document.getElementById("lote-linea").value;
-      const plan = document.getElementById("lote-plan").value.trim();
-      const proyecto = document.getElementById("lote-proyecto").value.trim().toUpperCase();
-      const articulo = document.getElementById("lote-articulo").value.trim();
-      const pares = parseInt(document.getElementById("lote-pares").value) || 0;
-      const estado = document.getElementById("lote-estado").value;
-      const alerta = document.getElementById("lote-alerta").value.trim();
-
-      try {
-        await addDoc(collection(db, "produccion_lotes"), {
-          semana,
-          dia,
-          linea,
-          plan,
-          proyecto,
-          articulo,
-          pares,
-          estado,
-          alerta,
-          fechaRegistro: new Date().toISOString(),
-          registradoPor: (userData && userData.nombre) || (currentUser && currentUser.email) || "Usuario",
-          timestamp: serverTimestamp()
-        });
-
-        formLoteProd.reset();
-        document.getElementById("modal-nuevo-lote-prod")?.classList.add("hidden");
-      } catch (err) {
-        alert("Error al registrar lote: " + err.message);
-      }
-    };
-  }
-}
-
-onAuthStateChanged(auth, async (user) => {
-  const welcomeContainer = document.getElementById("welcome-container");
-  const appContainer = document.getElementById("app-container");
-
-  if (user) {
-    currentUser = user;
-    try {
-      const docSnap = await getDoc(doc(db, "usuarios", user.uid));
-      if (docSnap.exists()) {
-        userData = docSnap.data();
-      } else {
-        userData = {
-          nombre: esSuperAdmin() ? "Super Admin" : (user.email.split("@")[0]),
-          email: user.email,
-          rol: esSuperAdmin() ? "Super Admin" : "Desarrollo de producto",
-          celular: ""
-        };
-      }
-    } catch (e) {
-      console.error("Error al cargar perfil:", e);
-      userData = {
-        nombre: esSuperAdmin() ? "Super Admin" : (user.email.split("@")[0]),
-        email: user.email,
-        rol: esSuperAdmin() ? "Super Admin" : "Desarrollo de producto",
-        celular: ""
-      };
-    }
-    actualizarHeaderUsuario();
-    inicializarSemanas01a52();
-    inicializarEventosDOM();
-    welcomeContainer?.classList.add("hidden");
-    appContainer?.classList.remove("hidden");
-    activarVistaCambios();
-    escucharCambios();
-    escucharEntregas();
-    escucharProcurement();
-    escucharProduccion();
-  } else {
-    currentUser = null;
-    userData = null;
-    welcomeContainer?.classList.remove("hidden");
-    appContainer?.classList.add("hidden");
-  }
-});
-
 // ==================== LÓGICA PRODUCCIÓN RENDERIZADO MATRIZ ====================
 function escucharProduccion() {
   const q = collection(db, "produccion_lotes");
@@ -1097,9 +907,6 @@ function escucharProduccion() {
     renderProduccionView();
   }, (err) => console.log("Aviso Firestore Producción:", err.message));
 }
-
-const DEPARTAMENTOS_LINEAS = ["251", "252", "254", "330", "332", "331"];
-const DIAS_SEMANA = ["LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES"];
 
 function renderProduccionView() {
   const table = document.getElementById("tabla-matriz-produccion");
