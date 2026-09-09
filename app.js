@@ -918,7 +918,7 @@ function renderProduccionView() {
     const listaPlanes = Object.values(planesUnicos);
     let sumaParesSeccion = 0;
 
-    // Exactamente 6 filas por sección con orden CORREGIDO Y ESTRICTO: PLAN, ART, PROY, PRS, ESTADO
+    // Exactamente 6 filas por sección con orden estricto PLAN, ART, PROY, PRS, ESTADO
     for (let i = 0; i < 6; i++) {
       const datosPlan = listaPlanes[i] || null;
       let totalFila = 0;
