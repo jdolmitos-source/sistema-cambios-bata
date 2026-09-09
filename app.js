@@ -208,7 +208,7 @@ window.abrirModalLoteProduccion = () => {
   document.getElementById("modal-nuevo-lote-prod")?.classList.remove("hidden");
 };
 
-// Inicializador de semanas 01 a 52
+// Inicializador de semanas 01 a 52 (Sincronizado sin prefijo extra conflictivo)
 function inicializarSemanas01a52() {
   const selects = [
     document.getElementById("prod-filter-semana"),
@@ -223,7 +223,7 @@ function inicializarSemanas01a52() {
 
     for (let i = 1; i <= 52; i++) {
       const numStr = i < 10 ? `0${i}` : `${i}`;
-      const val = `SEM-${numStr}`;
+      const val = `Semana ${numStr}`;
       sel.innerHTML += `<option value="${val}">Semana ${numStr}</option>`;
     }
     if (valorActual) sel.value = valorActual;
@@ -806,7 +806,7 @@ if (formLoteProd) {
       });
       formLoteProd.reset();
       modalNuevoLoteProd?.classList.add("hidden");
-      alert("Plan Diario registrado correctamente.");
+      renderProduccionView();
     } catch (err) {
       alert("Error al registrar lote: " + err.message);
     }
@@ -878,11 +878,9 @@ function renderProduccionView() {
   }
   empty?.classList.add("hidden");
 
-  // Agrupar por línea y plan/proyecto para armar la matriz semanal de 7 columnas
   const diasSemana = ["LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES"];
-  
-  // Mapear por clave única (linea + plan)
   const mapaPlan = {};
+
   filtrados.forEach(l => {
     const key = `${l.linea}_${l.plan || l.proyecto}`;
     if (!mapaPlan[key]) {
@@ -900,13 +898,11 @@ function renderProduccionView() {
   let html = "";
   let granTotalGeneral = 0;
 
-  Object.values(mapaPlan.length ? mapaPlan : {}).forEach(item => {
+  Object.values(mapaPlan).forEach(item => {
     let totalFila = 0;
     html += `<tr class="border-b hover:bg-slate-50 text-center">`;
-    // Columna 1: Sección / Línea
     html += `<td class="p-2 font-black font-mono border-r bg-gray-50 text-gray-900 align-middle">${item.linea}</td>`;
 
-    // Columnas 2 a 6: Días (Lunes a Viernes) con sus 5 subcolumnas
     diasSemana.forEach(dia => {
       const loteDia = item.dias[dia];
       if (loteDia) {
@@ -914,7 +910,7 @@ function renderProduccionView() {
         totalFila += p;
         const colorEstado = loteDia.estado === 'ENTREGADO' ? 'text-green-700 bg-green-50' : (loteDia.estado === 'APARADO' ? 'text-blue-700 bg-blue-50' : (loteDia.estado === 'ARMADO' ? 'text-purple-700 bg-purple-50' : 'text-amber-700 bg-amber-50'));
         html += `
-          <td class="p-1 border-r font-mono text-[10px]">${loteDia.plan || '—'}</td>
+          <td class="p-1 border-r font-mono text-[10px] font-bold">${loteDia.plan || '—'}</td>
           <td class="p-1 border-r font-mono text-[10px]">${loteDia.articulo || '—'}</td>
           <td class="p-1 border-r font-bold text-[10px] truncate max-w-[70px]">${loteDia.proyecto || '—'}</td>
           <td class="p-1 border-r font-black text-cyan-900 bg-cyan-50/30">${p.toLocaleString()}</td>
@@ -940,7 +936,6 @@ function renderProduccionView() {
     });
 
     granTotalGeneral += totalFila;
-    // Columna 7: Totales
     html += `<td class="p-2 font-black text-sm bg-gray-100 text-[#D61B28] align-middle">${totalFila.toLocaleString()}</td>`;
     html += `</tr>`;
   });
@@ -948,13 +943,18 @@ function renderProduccionView() {
   table.innerHTML = html;
 }
 
+const filtroSemanaProd = document.getElementById("prod-filter-semana");
+const filtroProyectoProd = document.getElementById("prod-filter-proyecto");
+const filtroLineaProd = document.getElementById("prod-filter-linea");
+
+if (filtroSemanaProd) filtroSemanaProd.onchange = renderProduccionView;
+if (filtroProyectoProd) filtroProyectoProd.oninput = renderProduccionView;
+if (filtroLineaProd) filtroLineaProd.onchange = renderProduccionView;
+
 safeClick("btn-limpiar-filtros-prod", () => {
-  const fSem = document.getElementById("prod-filter-semana");
-  const fProy = document.getElementById("prod-filter-proyecto");
-  const fLin = document.getElementById("prod-filter-linea");
-  if (fSem) fSem.value = "";
-  if (fProy) fProy.value = "";
-  if (fLin) fLin.value = "";
+  if (filtroSemanaProd) filtroSemanaProd.value = "";
+  if (filtroProyectoProd) filtroProyectoProd.value = "";
+  if (filtroLineaProd) filtroLineaProd.value = "";
   renderProduccionView();
 });
 
@@ -1295,7 +1295,7 @@ if (formEntrega) {
   };
 }
 
-// ==================== MÓDULO TARJETAS (PD) - REPARADO ====================
+// ==================== MÓDULO TARJETAS (PD) ====================
 function initModuloTarjetas() {
   const inputFecha = document.getElementById("card-fecha");
   if (inputFecha && !inputFecha.value) {
