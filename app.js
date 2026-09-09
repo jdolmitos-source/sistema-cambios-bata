@@ -1479,11 +1479,12 @@ function renderTarjetasPreview() {
     : `<div style="height:32px; display:flex; align-items:center; justify-content:center; font-size:8px; color:#999; border:1px dashed #ccc;">Croquis</div>`;
 
   const listaAImprimir = [];
-  for (let i = 1; i <= cCortes; i++) listaAImprimir.push({ etiqueta: "APROBACIONES (CORTE (PRODUCCIÓN))" });
-  for (let i = 1; i <= cProd; i++) listaAImprimir.push({ etiqueta: "APROBACIONES (PRODUCCIÓN)" });
-  for (let i = 1; i <= cVerdes; i++) listaAImprimir.push({ etiqueta: "APROBACIONES (RETAIL)" });
-  for (let i = 1; i <= cAmarillas; i++) listaAImprimir.push({ etiqueta: "APROBACIONES (PLANEAMIENTO)" });
-  for (let i = 1; i <= cRosadas; i++) listaAImprimir.push({ etiqueta: "APROBACIONES (EXPORTACIÓN)" });
+  // Color de lengüeta exacto según destino solicitado (Corte/Prod: Blanco, Retail: Verde, Plan: Amarillo, Export: Rosado)
+  for (let i = 1; i <= cCortes; i++) listaAImprimir.push({ color: "#FFFFFF", etiqueta: "APROBACIONES (CORTE (PRODUCCIÓN))" });
+  for (let i = 1; i <= cProd; i++) listaAImprimir.push({ color: "#FFFFFF", etiqueta: "APROBACIONES (PRODUCCIÓN)" });
+  for (let i = 1; i <= cVerdes; i++) listaAImprimir.push({ color: "#80C342", etiqueta: "APROBACIONES (RETAIL)" });
+  for (let i = 1; i <= cAmarillas; i++) listaAImprimir.push({ color: "#FFF200", etiqueta: "APROBACIONES (PLANEAMIENTO)" });
+  for (let i = 1; i <= cRosadas; i++) listaAImprimir.push({ color: "#E06D8A", etiqueta: "APROBACIONES (EXPORTACIÓN)" });
 
   let tarjetasHTML = "";
   listaAImprimir.forEach((tarj) => {
@@ -1491,7 +1492,7 @@ function renderTarjetasPreview() {
       <div class="shoe-card-container" style="background:#fff; display:flex; font-size:7px; line-height:1.1; color:#000;">
         <!-- PANEL 1: LENGÜETA Y ESPECIFICACIONES -->
         <div class="shoe-panel" style="display:flex; border-right:1px solid #000; overflow:hidden;">
-          <div class="lateral-tab" style="width:16px; border-right:1px solid #000; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:9px; writing-mode:vertical-rl; transform:rotate(180deg); background-color:#fff !important;">
+          <div class="lateral-tab" style="width:16px; border-right:1px solid #000; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:9px; writing-mode:vertical-rl; transform:rotate(180deg); background-color:${tarj.color} !important;">
             ${linea}
           </div>
           <div style="flex:1; display:flex; flex-direction:column; justify-content:space-between; padding:1px;">
@@ -1540,23 +1541,23 @@ function renderTarjetasPreview() {
           <div style="display:flex; flex-direction:column; justify-content:space-around; flex:1; padding-top:2px;">
             <div style="display:flex; justify-content:space-between; align-items:flex-end;">
               <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
-              <span style="font-size:5px; font-weight:bold;">P.D. CHIEF</span>
+              <span style="font-size:5.5px; font-weight:bold;">P.D. CHIEF</span>
             </div>
             <div style="display:flex; justify-content:space-between; align-items:flex-end;">
               <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
-              <span style="font-size:5px; font-weight:bold;">PURCHASING MANAGER</span>
+              <span style="font-size:5.5px; font-weight:bold;">PURCHASING MANAGER</span>
             </div>
             <div style="display:flex; justify-content:space-between; align-items:flex-end;">
               <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
-              <span style="font-size:5px; font-weight:bold;">MERCHANDISING MAN.</span>
+              <span style="font-size:5.5px; font-weight:bold;">MERCHANDISING MAN.</span>
             </div>
             <div style="display:flex; justify-content:space-between; align-items:flex-end;">
               <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
-              <span style="font-size:5px; font-weight:bold;">PRODUCTION MANAGER</span>
+              <span style="font-size:5.5px; font-weight:bold;">PRODUCTION MANAGER</span>
             </div>
             <div style="display:flex; justify-content:space-between; align-items:flex-end;">
               <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
-              <span style="font-size:5px; font-weight:bold;">COUNTRY MANAGER</span>
+              <span style="font-size:5.5px; font-weight:bold;">COUNTRY MANAGER</span>
             </div>
           </div>
         </div>
