@@ -32,10 +32,7 @@
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
     }
-    @page {
-      size: letter portrait;
-      margin: 8mm;
-    }
+    @page { size: letter portrait; margin: 8mm; }
     @media print {
       body * { visibility: hidden !important; }
       #modal-reporte-entregas-print:not(.hidden), #modal-reporte-entregas-print:not(.hidden) *,
@@ -48,13 +45,7 @@
       #modal-resumen-reporte:not(.hidden), 
       #modal-reporte-llegadas-print:not(.hidden),
       #modal-impresion-tarjetas:not(.hidden) {
-        position: absolute !important;
-        left: 0 !important;
-        top: 0 !important;
-        width: 100% !important;
-        margin: 0 !important;
-        padding: 5mm !important;
-        background: white !important;
+        position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; margin: 0 !important; padding: 5mm !important; background: white !important;
       }
       .no-print { display: none !important; }
     }
@@ -128,7 +119,7 @@
         <div>
           <div class="flex justify-between items-center mb-1">
             <label class="font-semibold text-gray-600">Contraseña</label>
-            <button type="button" id="btn-forgot-pass" class="text-[10px] text-[#D61B28] hover:underline font-semibold flex items-center space-x-1" title="Solicitar reseteo por WhatsApp">
+            <button type="button" id="btn-forgot-pass" class="text-[10px] text-[#D61B28] hover:underline font-semibold flex items-center space-x-1">
               <i class="fa-brands fa-whatsapp text-green-600 text-xs"></i>
               <span>¿Resetear por WhatsApp?</span>
             </button>
@@ -242,7 +233,6 @@
           <span>Informe</span>
         </button>
 
-        <!-- SUBMENÚS ENTREGAS -->
         <div class="pt-3 border-t border-white/20 space-y-1">
           <div class="px-3 text-[10px] font-black text-white/70 uppercase tracking-widest mb-1.5">Módulos de Entregas</div>
           
@@ -282,7 +272,6 @@
           </button>
         </div>
 
-        <!-- MÓDULO PRODUCCIÓN -->
         <div class="pt-3 border-t border-white/20 space-y-1">
           <div class="px-3 text-[10px] font-black text-white/70 uppercase tracking-widest mb-1.5">Planta de Fabricación</div>
           <button type="button" id="menu-btn-produccion-dash" class="sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white transition cursor-pointer">
@@ -291,7 +280,6 @@
           </button>
         </div>
 
-        <!-- CADENA DE SUMINISTRO -->
         <div class="pt-3 border-t border-white/20 space-y-1">
           <div class="px-3 text-[10px] font-black text-white/70 uppercase tracking-widest mb-1.5">Cadena de Suministro</div>
           <button type="button" id="menu-btn-procurement" class="sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white transition cursor-pointer">
@@ -300,7 +288,6 @@
           </button>
         </div>
 
-        <!-- MÓDULO TARJETAS (PD) -->
         <div id="section-menu-tarjetas" class="pt-3 border-t border-white/20 space-y-1">
           <div class="px-3 text-[10px] font-black text-white/70 uppercase tracking-widest mb-1.5">Modelaje y Muestras</div>
           <button type="button" id="menu-btn-tarjetas" class="sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white transition cursor-pointer">
@@ -367,7 +354,7 @@
           </div>
         </section>
 
-        <!-- VISTA 2: INFORME EJECUTIVO -->
+        <!-- VISTA 2: INFORME -->
         <section id="view-informe" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -531,7 +518,6 @@
             </div>
           </div>
 
-          <!-- BARRAS DE PROGRESO NATIVAS -->
           <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4">
             <div class="flex justify-between items-center border-b border-gray-100 pb-2">
               <span class="font-bold text-xs text-gray-700 uppercase tracking-wider">Avance Consolidado de Pares por Estación</span>
@@ -539,7 +525,6 @@
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-              <!-- CORTADO -->
               <div class="bg-amber-50/70 p-3.5 rounded-xl border border-amber-200 space-y-2">
                 <div class="flex justify-between text-xs font-bold text-amber-900">
                   <span>CORTADO</span>
@@ -551,7 +536,6 @@
                 <span id="pct-pares-cortado" class="text-[10px] text-amber-700 font-semibold block text-right">0%</span>
               </div>
 
-              <!-- APARADO -->
               <div class="bg-blue-50/70 p-3.5 rounded-xl border border-blue-200 space-y-2">
                 <div class="flex justify-between text-xs font-bold text-blue-900">
                   <span>APARADO</span>
@@ -563,7 +547,6 @@
                 <span id="pct-pares-aparado" class="text-[10px] text-blue-700 font-semibold block text-right">0%</span>
               </div>
 
-              <!-- ARMADO -->
               <div class="bg-purple-50/70 p-3.5 rounded-xl border border-purple-200 space-y-2">
                 <div class="flex justify-between text-xs font-bold text-purple-900">
                   <span>ARMADO</span>
@@ -575,7 +558,6 @@
                 <span id="pct-pares-armado" class="text-[10px] text-purple-700 font-semibold block text-right">0%</span>
               </div>
 
-              <!-- INYECCIÓN -->
               <div class="bg-emerald-50/70 p-3.5 rounded-xl border border-emerald-200 space-y-2">
                 <div class="flex justify-between text-xs font-bold text-emerald-900">
                   <span>INYECCIÓN</span>
@@ -589,14 +571,11 @@
             </div>
           </div>
 
-          <!-- GRILLA ESTILO EXCEL CON FILTROS SUPERIORES -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-300 overflow-hidden">
             <div class="bg-gray-100 p-3.5 border-b border-gray-300 flex flex-wrap justify-between items-center gap-3 text-xs">
               <div class="flex items-center space-x-2">
                 <span class="font-bold text-gray-800">Seleccionar Semana:</span>
-                <select id="prod-filter-semana" class="px-3 py-1.5 border border-gray-300 rounded-lg font-mono font-bold bg-white text-red-600 shadow-xs">
-                  <!-- Se poblará de SEM-01 a SEM-52 -->
-                </select>
+                <select id="prod-filter-semana" class="px-3 py-1.5 border border-gray-300 rounded-lg font-mono font-bold bg-white text-red-600 shadow-xs"></select>
               </div>
               <div class="flex flex-wrap items-center gap-2">
                 <input type="text" id="prod-filter-proyecto" placeholder="Filtrar Proyecto / Art..." class="px-2.5 py-1.5 border border-gray-300 rounded-lg bg-white w-32 font-medium">
@@ -621,9 +600,7 @@
             </div>
 
             <div class="overflow-x-auto">
-              <table id="tabla-matriz-produccion" class="w-full text-left border-collapse text-xs">
-                <!-- Grilla dinámica con las 7 columnas y bloques por línea -->
-              </table>
+              <table id="tabla-matriz-produccion" class="w-full text-left border-collapse text-xs"></table>
             </div>
             <div id="produccion-empty-state" class="hidden p-8 text-center text-gray-400 text-xs">
               <i class="fa-solid fa-industry text-3xl mb-2 text-gray-300"></i>
@@ -632,7 +609,7 @@
           </div>
         </section>
 
-        <!-- VISTA 5: PROCUREMENT & STORAGE -->
+        <!-- VISTA 5: PROCUREMENT -->
         <section id="view-procurement" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -658,7 +635,6 @@
             </div>
           </div>
 
-          <!-- TABLA BLOQUEOS -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <div class="bg-gray-50 p-3 border-b border-gray-200 flex justify-between items-center text-xs">
               <span class="font-bold text-gray-700 flex items-center space-x-1.5">
@@ -685,7 +661,6 @@
             </div>
           </div>
 
-          <!-- TABLA LLEGADAS -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <div class="bg-gray-50 p-3 border-b border-gray-200 flex justify-between items-center text-xs">
               <span class="font-bold text-gray-700 flex items-center space-x-1.5">
@@ -713,7 +688,7 @@
           </div>
         </section>
 
-        <!-- VISTA 6: TARJETAS DE MUESTRA (PD) -->
+        <!-- VISTA 6: TARJETAS (PD) -->
         <section id="view-tarjetas" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -731,7 +706,6 @@
             </div>
           </div>
 
-          <!-- PANEL COSTOS -->
           <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4 text-xs">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-gray-100 pb-3">
               <span class="font-bold text-gray-800 text-sm flex items-center space-x-1.5">
@@ -774,7 +748,6 @@
             </div>
           </div>
 
-          <!-- PANEL ESPECIFICACIONES -->
           <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4 text-xs">
             <div class="border-b border-gray-100 pb-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
               <span class="font-bold text-gray-800 text-sm flex items-center space-x-1.5">
@@ -958,7 +931,7 @@
     </div>
   </div>
 
-  <!-- MODALS DE APOYO -->
+  <!-- MODALS AUXILIARES -->
   <div id="modal-impresion-tarjetas" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-5xl rounded-3xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
       <div class="border-b border-gray-200 pb-3 mb-4 flex justify-between items-center no-print">
@@ -1061,9 +1034,7 @@
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block font-bold text-gray-700 mb-1">Semana</label>
-            <select id="lote-semana" class="w-full px-3 py-2 border border-gray-300 rounded-lg font-bold bg-white">
-              <!-- Se poblará de 01 a 52 -->
-            </select>
+            <select id="lote-semana" class="w-full px-3 py-2 border border-gray-300 rounded-lg font-bold bg-white"></select>
           </div>
           <div>
             <label class="block font-bold text-gray-700 mb-1">Día de la Semana</label>
