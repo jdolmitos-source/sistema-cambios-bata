@@ -44,12 +44,14 @@
       }
       #modal-reporte-entregas-print:not(.hidden), #modal-reporte-entregas-print:not(.hidden) *,
       #modal-resumen-reporte:not(.hidden), #modal-resumen-reporte:not(.hidden) *,
-      #modal-reporte-llegadas-print:not(.hidden), #modal-reporte-llegadas-print:not(.hidden) * {
+      #modal-reporte-llegadas-print:not(.hidden), #modal-reporte-llegadas-print:not(.hidden) *,
+      #modal-impresion-tarjetas:not(.hidden), #modal-impresion-tarjetas:not(.hidden) * {
         visibility: visible !important;
       }
       #modal-reporte-entregas-print:not(.hidden), 
       #modal-resumen-reporte:not(.hidden), 
-      #modal-reporte-llegadas-print:not(.hidden) {
+      #modal-reporte-llegadas-print:not(.hidden),
+      #modal-impresion-tarjetas:not(.hidden) {
         position: absolute !important;
         left: 0 !important;
         top: 0 !important;
@@ -516,20 +518,20 @@
           </div>
         </section>
 
-        <!-- VISTA PRODUCCIÓN WORK PLANNER -->
+        <!-- VISTA PRODUCCIÓN WORK PLANNER (7 COLUMNAS) -->
         <section id="view-produccion" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <h2 class="text-lg font-bold text-[#D61B28] flex items-center space-x-2">
                 <i class="fa-solid fa-industry text-cyan-600"></i>
-                <span>Producción Work Planner (Lunes a Viernes)</span>
+                <span>Producción Work Planner (7 Columnas: Lunes a Viernes)</span>
               </h2>
-              <p class="text-xs text-gray-400">Control de flujos por estaciones: Cortado ➔ Aparado ➔ Armado ➔ Inyección ➔ Entregado.</p>
+              <p class="text-xs text-gray-400">Control de flujo diario de planes y estados (Cortado, Aparado, Armado, Inyección, Entregado).</p>
             </div>
             <div class="flex items-center space-x-2">
               <button type="button" onclick="window.abrirModalLoteProduccion()" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
                 <i class="fa-solid fa-plus"></i>
-                <span>Registrar / Mover Lote</span>
+                <span>Registrar / Mover Plan Diario</span>
               </button>
             </div>
           </div>
@@ -564,7 +566,7 @@
             </div>
           </div>
 
-          <!-- FILTROS Y GRILLA -->
+          <!-- FILTROS Y GRILLA DE 7 COLUMNAS -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <div class="bg-gray-100 p-3.5 border-b border-gray-200 flex flex-wrap justify-between items-center gap-3 text-xs">
               <div class="flex items-center space-x-2">
@@ -588,17 +590,26 @@
             <div class="overflow-x-auto">
               <table class="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr class="bg-gray-100 border-b border-gray-300 text-center font-bold text-gray-700 text-[11px]">
-                    <th class="p-2.5 border-r border-gray-300 w-16">LÍNEA</th>
-                    <th class="p-2.5 border-r border-gray-300 w-24">DÍA</th>
-                    <th class="p-2.5 border-r border-gray-300 w-20">PLAN</th>
-                    <th class="p-2.5 border-r border-gray-300">PROYECTO / ART</th>
-                    <th class="p-2.5 border-r border-gray-300 bg-amber-50">CORTADO</th>
-                    <th class="p-2.5 border-r border-gray-300 bg-blue-50">APARADO</th>
-                    <th class="p-2.5 border-r border-gray-300 bg-purple-50">ARMADO</th>
-                    <th class="p-2.5 border-r border-gray-300 bg-emerald-50">INYECCIÓN</th>
-                    <th class="p-2.5 border-r border-gray-300 bg-green-50">ENTREGADO</th>
-                    <th class="p-2.5 text-center w-20">ACCIONES</th>
+                  <tr class="bg-gray-100 border-b border-gray-300 text-center font-bold text-gray-700 text-[10px]">
+                    <th class="p-2.5 border-r border-gray-300 w-16">1. SECCIÓN</th>
+                    <th class="p-2.5 border-r border-gray-300 bg-slate-50" colspan="5">2. LUNES</th>
+                    <th class="p-2.5 border-r border-gray-300 bg-slate-100" colspan="5">3. MARTES</th>
+                    <th class="p-2.5 border-r border-gray-300 bg-slate-50" colspan="5">4. MIÉRCOLES</th>
+                    <th class="p-2.5 border-r border-gray-300 bg-slate-100" colspan="5">5. JUEVES</th>
+                    <th class="p-2.5 border-r border-gray-300 bg-slate-50" colspan="5">6. VIERNES</th>
+                    <th class="p-2.5 bg-gray-200 w-20" rowspan="2">7. TOTALES</th>
+                  </tr>
+                  <tr class="bg-gray-50 border-b border-gray-300 text-center font-semibold text-gray-600 text-[9px]">
+                    <!-- Lunes -->
+                    <th class="p-1.5 border-r">PLAN</th><th class="p-1.5 border-r">ART</th><th class="p-1.5 border-r">PROY</th><th class="p-1.5 border-r">PRS</th><th class="p-1.5 border-r">ESTADO</th>
+                    <!-- Martes -->
+                    <th class="p-1.5 border-r">PLAN</th><th class="p-1.5 border-r">ART</th><th class="p-1.5 border-r">PROY</th><th class="p-1.5 border-r">PRS</th><th class="p-1.5 border-r">ESTADO</th>
+                    <!-- Miércoles -->
+                    <th class="p-1.5 border-r">PLAN</th><th class="p-1.5 border-r">ART</th><th class="p-1.5 border-r">PROY</th><th class="p-1.5 border-r">PRS</th><th class="p-1.5 border-r">ESTADO</th>
+                    <!-- Jueves -->
+                    <th class="p-1.5 border-r">PLAN</th><th class="p-1.5 border-r">ART</th><th class="p-1.5 border-r">PROY</th><th class="p-1.5 border-r">PRS</th><th class="p-1.5 border-r">ESTADO</th>
+                    <!-- Viernes -->
+                    <th class="p-1.5 border-r">PLAN</th><th class="p-1.5 border-r">ART</th><th class="p-1.5 border-r">PROY</th><th class="p-1.5 border-r">PRS</th><th class="p-1.5 border-r">ESTADO</th>
                   </tr>
                 </thead>
                 <tbody id="tabla-matriz-produccion" class="divide-y divide-gray-200"></tbody>
@@ -969,7 +980,7 @@
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block font-bold text-gray-700 mb-1">Línea de Planta</label>
+            <label class="block font-bold text-gray-700 mb-1">Línea / Sección</label>
             <select id="lote-linea" required class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono font-bold bg-white">
               <option value="330">330</option>
               <option value="331">331</option>
@@ -995,7 +1006,7 @@
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block font-bold text-gray-700 mb-1">Estación / Estado Actual</label>
+            <label class="block font-bold text-gray-700 mb-1">Estado de Planta</label>
             <select id="lote-estado" required class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white font-bold text-[#D61B28]">
               <option value="CORTADO">CORTADO</option>
               <option value="APARADO">APARADO</option>
@@ -1013,7 +1024,7 @@
           <button type="button" id="cancel-nuevo-lote-prod" class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg font-bold cursor-pointer">Cancelar</button>
           <button type="submit" class="px-5 py-2 bg-[#D61B28] hover:bg-red-700 text-white rounded-lg font-bold flex items-center space-x-2 shadow cursor-pointer">
             <i class="fa-solid fa-floppy-disk"></i>
-            <span>Guardar Lote Work Planner</span>
+            <span>Guardar Plan Diario</span>
           </button>
         </div>
       </form>
