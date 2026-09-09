@@ -47,7 +47,7 @@ let lotesProduccion = [];
 
 let categoriaEntregaActiva = "todas";
 
-// Filtros
+// Filtros globales
 let colFiltroSemanaInforme = "";
 let colFiltroProyectoInforme = "";
 let colFiltroSemanaEntregas = "";
@@ -540,152 +540,227 @@ window.eliminarEntregaDoc = async (id, tipo, proyecto) => {
   }
 };
 
-// ==================== COMPROBACIÓN DE USUARIO Y DOM LOAD ====================
-const welcomeContainer = document.getElementById("welcome-container");
-const appContainer = document.getElementById("app-container");
-const modalLogin = document.getElementById("modal-login");
-const modalRegister = document.getElementById("modal-register");
-const modalProfile = document.getElementById("modal-profile");
-const modalMinuta = document.getElementById("modal-minuta");
-const modalResumen = document.getElementById("modal-resumen-reporte");
-const modalTextoWsp = document.getElementById("modal-texto-wsp");
-const modalNuevaEntrega = document.getElementById("modal-nueva-entrega");
-const modalReporteEntregasPrint = document.getElementById("modal-reporte-entregas-print");
-const modalEntregasTexto = document.getElementById("modal-entregas-texto");
-const modalVisorFoto = document.getElementById("modal-visor-foto");
-const modalNuevoBloqueo = document.getElementById("modal-nuevo-bloqueo");
-const modalNuevaLlegada = document.getElementById("modal-nueva-llegada");
-const modalReporteLlegadasPrint = document.getElementById("modal-reporte-llegadas-print");
-const modalImpresionTarjetas = document.getElementById("modal-impresion-tarjetas");
-const modalNewChange = document.getElementById("modal-new-change");
-const modalNuevoLoteProd = document.getElementById("modal-nuevo-lote-prod");
+// ==================== INICIALIZACIÓN DE DATOS Y EVENTOS DOM ====================
+function inicializarEventosDOM() {
+  const welcomeContainer = document.getElementById("welcome-container");
+  const appContainer = document.getElementById("app-container");
+  const modalLogin = document.getElementById("modal-login");
+  const modalRegister = document.getElementById("modal-register");
+  const modalProfile = document.getElementById("modal-profile");
 
-safeClick("btn-close-whatsapp-modal", () => document.getElementById("modal-whatsapp")?.classList.add("hidden"));
-safeClick("btn-show-login", () => modalLogin?.classList.remove("hidden"));
-safeClick("btn-show-register", () => modalRegister?.classList.remove("hidden"));
-safeClick("close-login", () => modalLogin?.classList.add("hidden"));
-safeClick("close-register", () => modalRegister?.classList.add("hidden"));
-safeClick("close-profile", () => modalProfile?.classList.add("hidden"));
-safeClick("close-minuta", () => modalMinuta?.classList.add("hidden"));
-safeClick("close-modal-resumen", () => modalResumen?.classList.add("hidden"));
-safeClick("close-texto-wsp", () => modalTextoWsp?.classList.add("hidden"));
-safeClick("close-nueva-entrega", () => modalNuevaEntrega?.classList.add("hidden"));
-safeClick("cancel-nueva-entrega", () => modalNuevaEntrega?.classList.add("hidden"));
-safeClick("close-modal-entregas-print", () => modalReporteEntregasPrint?.classList.add("hidden"));
-safeClick("close-modal-entregas-texto", () => modalEntregasTexto?.classList.add("hidden"));
-safeClick("close-visor-foto", () => modalVisorFoto?.classList.add("hidden"));
-safeClick("close-nuevo-bloqueo", () => modalNuevoBloqueo?.classList.add("hidden"));
-safeClick("cancel-nuevo-bloqueo", () => modalNuevoBloqueo?.classList.add("hidden"));
-safeClick("close-nueva-llegada", () => modalNuevaLlegada?.classList.add("hidden"));
-safeClick("cancel-nueva-llegada", () => modalNuevaLlegada?.classList.add("hidden"));
-safeClick("close-modal-llegadas-print", () => modalReporteLlegadasPrint?.classList.add("hidden"));
-safeClick("close-modal-tarjetas", () => modalImpresionTarjetas?.classList.add("hidden"));
-safeClick("close-nuevo-lote-prod", () => modalNuevoLoteProd?.classList.add("hidden"));
-safeClick("cancel-nuevo-lote-prod", () => modalNuevoLoteProd?.classList.add("hidden"));
-safeClick("modal-btn-close", () => modalNewChange?.classList.add("hidden"));
-safeClick("modal-btn-cancel", () => modalNewChange?.classList.add("hidden"));
+  safeClick("btn-close-whatsapp-modal", () => document.getElementById("modal-whatsapp")?.classList.add("hidden"));
+  safeClick("btn-show-login", () => modalLogin?.classList.remove("hidden"));
+  safeClick("btn-show-register", () => modalRegister?.classList.remove("hidden"));
+  safeClick("close-login", () => modalLogin?.classList.add("hidden"));
+  safeClick("close-register", () => modalRegister?.classList.add("hidden"));
+  safeClick("close-profile", () => modalProfile?.classList.add("hidden"));
 
-safeClick("btn-reporte-entregas-pdf", window.abrirReporteImpresoEntregas);
-safeClick("btn-reporte-entregas-texto", window.abrirResumenTextoEntregas);
+  safeClick("btn-reporte-entregas-pdf", window.abrirReporteImpresoEntregas);
+  safeClick("btn-reporte-entregas-texto", window.abrirResumenTextoEntregas);
 
-safeClick("btn-forgot-pass", () => {
-  const email = document.getElementById("login-email")?.value.trim();
-  if (!email) {
-    alert("Por favor ingresa tu correo en la casilla antes de solicitar el reseteo.");
-    return;
-  }
-  const msg = encodeURIComponent(
-    `🔐 *SOLICITUD DE RESTABLECIMIENTO DE CONTRASEÑA*\n` +
-    `*Sistema de Cambios - Bata Bolivia*\n\n` +
-    `👤 *Correo del Solicitante:* ${email}\n\n` +
-    `_Hola Daniel, solicito generar el correo de restablecimiento de contraseña en Firebase Console para este usuario._`
-  );
-  window.open(`https://wa.me/${SUPER_ADMIN_WHATSAPP}?text=${msg}`, "_blank");
-});
-
-safeClick("btn-edit-profile", () => {
-  if (!userData) return;
-  const pName = document.getElementById("prof-name");
-  const pPhone = document.getElementById("prof-phone");
-  if (pName) pName.value = userData.nombre || "";
-  if (pPhone) pPhone.value = userData.celular || "";
-  modalProfile?.classList.remove("hidden");
-});
-
-const formProfile = document.getElementById("form-update-profile");
-if (formProfile) {
-  formProfile.onsubmit = async (e) => {
-    e.preventDefault();
-    const name = document.getElementById("prof-name").value.trim();
-    const phone = document.getElementById("prof-phone").value.trim();
-    const photoFile = document.getElementById("prof-photo").files[0];
-
-    const updateData = { nombre: name, celular: phone };
-    if (photoFile) {
-      updateData.foto = await comprimirImagen(photoFile, 200, 0.7);
+  safeClick("btn-forgot-pass", () => {
+    const email = document.getElementById("login-email")?.value.trim();
+    if (!email) {
+      alert("Por favor ingresa tu correo en la casilla antes de solicitar el reseteo.");
+      return;
     }
-
-    try {
-      await updateDoc(doc(db, "usuarios", currentUser.uid), updateData);
-      userData = { ...userData, ...updateData };
-      actualizarHeaderUsuario();
-      modalProfile?.classList.add("hidden");
-      alert("Perfil actualizado correctamente.");
-    } catch (err) {
-      alert("Error: " + err.message);
-    }
-  };
-}
-
-const formRegister = document.getElementById("form-register");
-if (formRegister) {
-  formRegister.onsubmit = async (e) => {
-    e.preventDefault();
-    const name = document.getElementById("reg-name").value.trim();
-    const phone = document.getElementById("reg-phone").value.trim();
-    const email = document.getElementById("reg-email").value.trim();
-    const role = document.getElementById("reg-role").value;
-    const pass = document.getElementById("reg-pass").value;
-    const photoFile = document.getElementById("reg-photo").files[0];
-    const photoBase64 = photoFile ? await comprimirImagen(photoFile, 200, 0.7) : null;
-
-    try {
-      const cred = await createUserWithEmailAndPassword(auth, email, pass);
-      await setDoc(doc(db, "usuarios", cred.user.uid), {
-        nombre: name,
-        celular: phone,
-        email: email,
-        rol: role,
-        foto: photoBase64,
-        fechaCreacion: serverTimestamp()
-      });
-      modalRegister?.classList.add("hidden");
-    } catch (err) {
-      alert("Error de registro: " + err.message);
-    }
-  };
-}
-
-const formLogin = document.getElementById("form-login");
-if (formLogin) {
-  formLogin.onsubmit = async (e) => {
-    e.preventDefault();
-    const email = document.getElementById("login-email").value.trim();
-    const pass = document.getElementById("login-pass").value;
-    try {
-      await signInWithEmailAndPassword(auth, email, pass);
-      modalLogin?.classList.add("hidden");
-    } catch (err) {
-      alert("Credenciales incorrectas o usuario no registrado.");
-    }
-  };
-}
-
-safeClick("btn-logout", () => {
-  signOut(auth).then(() => {
-    window.location.reload();
+    const msg = encodeURIComponent(
+      `🔐 *SOLICITUD DE RESTABLECIMIENTO DE CONTRASEÑA*\n` +
+      `*Sistema de Cambios - Bata Bolivia*\n\n` +
+      `👤 *Correo del Solicitante:* ${email}\n\n` +
+      `_Hola Daniel, solicito generar el correo de restablecimiento de contraseña en Firebase Console para este usuario._`
+    );
+    window.open(`https://wa.me/${SUPER_ADMIN_WHATSAPP}?text=${msg}`, "_blank");
   });
-});
+
+  safeClick("btn-edit-profile", () => {
+    if (!userData) return;
+    const pName = document.getElementById("prof-name");
+    const pPhone = document.getElementById("prof-phone");
+    if (pName) pName.value = userData.nombre || "";
+    if (pPhone) pPhone.value = userData.celular || "";
+    modalProfile?.classList.remove("hidden");
+  });
+
+  const formProfile = document.getElementById("form-update-profile");
+  if (formProfile) {
+    formProfile.onsubmit = async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("prof-name").value.trim();
+      const phone = document.getElementById("prof-phone").value.trim();
+      const photoFile = document.getElementById("prof-photo").files[0];
+
+      const updateData = { nombre: name, celular: phone };
+      if (photoFile) {
+        updateData.foto = await comprimirImagen(photoFile, 200, 0.7);
+      }
+
+      try {
+        await updateDoc(doc(db, "usuarios", currentUser.uid), updateData);
+        userData = { ...userData, ...updateData };
+        actualizarHeaderUsuario();
+        modalProfile?.classList.add("hidden");
+        alert("Perfil actualizado correctamente.");
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    };
+  }
+
+  const formRegister = document.getElementById("form-register");
+  if (formRegister) {
+    formRegister.onsubmit = async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("reg-name").value.trim();
+      const phone = document.getElementById("reg-phone").value.trim();
+      const email = document.getElementById("reg-email").value.trim();
+      const role = document.getElementById("reg-role").value;
+      const pass = document.getElementById("reg-pass").value;
+      const photoFile = document.getElementById("reg-photo").files[0];
+      const photoBase64 = photoFile ? await comprimirImagen(photoFile, 200, 0.7) : null;
+
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, email, pass);
+        await setDoc(doc(db, "usuarios", cred.user.uid), {
+          nombre: name,
+          celular: phone,
+          email: email,
+          rol: role,
+          foto: photoBase64,
+          fechaCreacion: serverTimestamp()
+        });
+        modalRegister?.classList.add("hidden");
+      } catch (err) {
+        alert("Error de registro: " + err.message);
+      }
+    };
+  }
+
+  const formLogin = document.getElementById("form-login");
+  if (formLogin) {
+    formLogin.onsubmit = async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("login-email").value.trim();
+      const pass = document.getElementById("login-pass").value;
+      try {
+        await signInWithEmailAndPassword(auth, email, pass);
+        modalLogin?.classList.add("hidden");
+      } catch (err) {
+        alert("Credenciales incorrectas o usuario no registrado.");
+      }
+    };
+  }
+
+  safeClick("btn-logout", () => {
+    signOut(auth).then(() => {
+      window.location.reload();
+    });
+  });
+
+  // Filtros de producción
+  const prodFilterSemana = document.getElementById("prod-filter-semana");
+  const prodFilterProyecto = document.getElementById("prod-filter-proyecto");
+  const prodFilterLinea = document.getElementById("prod-filter-linea");
+  const prodFilterEstado = document.getElementById("prod-filter-estado");
+  const btnLimpiarFiltrosProd = document.getElementById("btn-limpiar-filtros-prod");
+
+  if (prodFilterSemana) prodFilterSemana.onchange = renderProduccionView;
+  if (prodFilterProyecto) prodFilterProyecto.oninput = renderProduccionView;
+  if (prodFilterLinea) prodFilterLinea.onchange = renderProduccionView;
+  if (prodFilterEstado) prodFilterEstado.onchange = renderProduccionView;
+
+  if (btnLimpiarFiltrosProd) {
+    btnLimpiarFiltrosProd.onclick = () => {
+      if (prodFilterSemana) prodFilterSemana.value = "";
+      if (prodFilterProyecto) prodFilterProyecto.value = "";
+      if (prodFilterLinea) prodFilterLinea.value = "";
+      if (prodFilterEstado) prodFilterEstado.value = "";
+      renderProduccionView();
+    };
+  }
+
+  const formLoteProd = document.getElementById("form-nuevo-lote-prod");
+  if (formLoteProd) {
+    formLoteProd.onsubmit = async (e) => {
+      e.preventDefault();
+      const semana = document.getElementById("lote-semana").value;
+      const dia = document.getElementById("lote-dia").value;
+      const linea = document.getElementById("lote-linea").value;
+      const plan = document.getElementById("lote-plan").value.trim();
+      const proyecto = document.getElementById("lote-proyecto").value.trim().toUpperCase();
+      const articulo = document.getElementById("lote-articulo").value.trim();
+      const pares = parseInt(document.getElementById("lote-pares").value) || 0;
+      const estado = document.getElementById("lote-estado").value;
+      const alerta = document.getElementById("lote-alerta").value.trim();
+
+      try {
+        await addDoc(collection(db, "produccion_lotes"), {
+          semana,
+          dia,
+          linea,
+          plan,
+          proyecto,
+          articulo,
+          pares,
+          estado,
+          alerta,
+          fechaRegistro: new Date().toISOString(),
+          registradoPor: (userData && userData.nombre) || (currentUser && currentUser.email) || "Usuario",
+          timestamp: serverTimestamp()
+        });
+
+        formLoteProd.reset();
+        document.getElementById("modal-nuevo-lote-prod")?.classList.add("hidden");
+      } catch (err) {
+        alert("Error al registrar lote: " + err.message);
+      }
+    };
+  }
+
+  // Navegación lateral
+  safeClick("menu-btn-cambios", activarVistaCambios);
+  safeClick("menu-btn-informe", () => {
+    resetMenuStyles();
+    viewInforme?.classList.remove("hidden");
+    if (menuBtnInforme) menuBtnInforme.className = CLASE_ACTIVO_PASTILLA;
+    colFiltroSemanaInforme = "";
+    colFiltroProyectoInforme = "";
+    renderInformeView();
+  });
+  safeClick("menu-btn-entregas-todas", () => window.cambiarSubmenuEntrega("todas"));
+  safeClick("menu-btn-produccion-dash", () => {
+    resetMenuStyles();
+    viewProduccionDash?.classList.remove("hidden");
+    if (menuBtnProduccionDash) menuBtnProduccionDash.className = CLASE_ACTIVO_PASTILLA;
+    renderProduccionView();
+  });
+  safeClick("menu-btn-procurement", () => {
+    resetMenuStyles();
+    viewProcurement?.classList.remove("hidden");
+    if (menuBtnProcurement) menuBtnProcurement.className = CLASE_ACTIVO_PASTILLA;
+    renderProcurementView();
+  });
+  safeClick("menu-btn-tarjetas", () => {
+    resetMenuStyles();
+    viewTarjetas?.classList.remove("hidden");
+    if (menuBtnTarjetas) menuBtnTarjetas.className = CLASE_ACTIVO_PASTILLA;
+    initModuloTarjetas();
+  });
+  safeClick("menu-btn-usuarios", () => {
+    if (!esSuperAdmin()) { alert("Acceso denegado."); return; }
+    resetMenuStyles();
+    viewUsuarios?.classList.remove("hidden");
+    if (menuBtnUsuarios) menuBtnUsuarios.className = CLASE_ACTIVO_PASTILLA;
+    cargarPanelSuperAdmin();
+  });
+
+  safeClick("sub-btn-MATERIALES", () => window.cambiarSubmenuEntrega("MATERIALES"));
+  safeClick("sub-btn-GUIA", () => window.cambiarSubmenuEntrega("GUÍA DE PRODUCCIÓN"));
+  safeClick("sub-btn-CORTE", () => window.cambiarSubmenuEntrega("CORTE"));
+  safeClick("sub-btn-MUESTRA", () => window.cambiarSubmenuEntrega("MUESTRA DEFINITIVA"));
+  safeClick("sub-btn-DESBASTE", () => window.cambiarSubmenuEntrega("HOJA DE DESBASTE"));
+  safeClick("sub-btn-TIZADORES", () => window.cambiarSubmenuEntrega("TIZADORES"));
+}
 
 onAuthStateChanged(auth, async (user) => {
   if (user) {
@@ -713,6 +788,7 @@ onAuthStateChanged(auth, async (user) => {
     }
     actualizarHeaderUsuario();
     inicializarSemanas01a52();
+    inicializarEventosDOM();
     welcomeContainer?.classList.add("hidden");
     appContainer?.classList.remove("hidden");
     activarVistaCambios();
@@ -728,7 +804,7 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// Navegación
+// Navegación references
 const viewCambios = document.getElementById("view-cambios");
 const viewInforme = document.getElementById("view-informe");
 const viewEntregas = document.getElementById("view-entregas");
@@ -774,142 +850,168 @@ function activarVistaCambios() {
   if (menuBtnCambios) menuBtnCambios.className = CLASE_ACTIVO_PASTILLA;
 }
 
-safeClick("menu-btn-cambios", activarVistaCambios);
+// ==================== LÓGICA PRODUCCIÓN RENDERIZADO MATRIZ ====================
+function escucharProduccion() {
+  const q = collection(db, "produccion_lotes");
+  onSnapshot(q, (snapshot) => {
+    lotesProduccion = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    lotesProduccion.sort((a, b) => (b.fechaRegistro || "").localeCompare(a.fechaRegistro || ""));
+    renderProduccionView();
+  }, (err) => console.log("Aviso Firestore Producción:", err.message));
+}
 
-safeClick("menu-btn-informe", () => {
-  resetMenuStyles();
-  viewInforme?.classList.remove("hidden");
-  if (menuBtnInforme) menuBtnInforme.className = CLASE_ACTIVO_PASTILLA;
-  
-  colFiltroSemanaInforme = "";
-  colFiltroProyectoInforme = "";
-  const inSem = document.getElementById("col-filter-semana-informe");
-  const inProy = document.getElementById("col-filter-proyecto-informe");
-  if (inSem) inSem.value = "";
-  if (inProy) inProy.value = "";
-  
-  renderInformeView();
-});
+function renderProduccionView() {
+  const table = document.getElementById("tabla-matriz-produccion");
+  const empty = document.getElementById("produccion-empty-state");
+  if (!table) return;
 
-safeClick("menu-btn-entregas-todas", () => {
-  window.cambiarSubmenuEntrega("todas");
-});
+  const fSem = prodFilterSemana ? prodFilterSemana.value : "";
+  const fProy = prodFilterProyecto ? prodFilterProyecto.value.trim().toLowerCase() : "";
+  const fLin = prodFilterLinea ? prodFilterLinea.value : "";
+  const fEst = prodFilterEstado ? prodFilterEstado.value : "";
 
-safeClick("menu-btn-produccion-dash", () => {
-  resetMenuStyles();
-  viewProduccionDash?.classList.remove("hidden");
-  if (menuBtnProduccionDash) menuBtnProduccionDash.className = CLASE_ACTIVO_PASTILLA;
-  renderProduccionView();
-});
+  let lotesFiltrados = lotesProduccion.filter(l => {
+    const semMatch = !fSem || (l.semana || "") === fSem;
+    const proyMatch = !fProy || (l.proyecto || "").toLowerCase().includes(fProy) || (l.articulo || "").toLowerCase().includes(fProy) || (l.plan || "").toLowerCase().includes(fProy);
+    const linMatch = !fLin || (l.linea || "") === fLin;
+    const estMatch = !fEst || (l.estado || "") === fEst;
+    return semMatch && proyMatch && linMatch && estMatch;
+  });
 
-safeClick("menu-btn-procurement", () => {
-  resetMenuStyles();
-  viewProcurement?.classList.remove("hidden");
-  if (menuBtnProcurement) menuBtnProcurement.className = CLASE_ACTIVO_PASTILLA;
-  renderProcurementView();
-});
+  let paresCortado = 0;
+  let paresAparado = 0;
+  let paresArmado = 0;
+  let paresInyeccion = 0;
 
-safeClick("menu-btn-tarjetas", () => {
-  resetMenuStyles();
-  viewTarjetas?.classList.remove("hidden");
-  if (menuBtnTarjetas) menuBtnTarjetas.className = CLASE_ACTIVO_PASTILLA;
-  initModuloTarjetas();
-});
+  lotesFiltrados.forEach(lote => {
+    const pares = parseInt(lote.pares) || 0;
+    if (lote.estado === "CORTADO") paresCortado += pares;
+    else if (lote.estado === "APARADO") paresAparado += pares;
+    else if (lote.estado === "ARMADO") paresArmado += pares;
+    else if (lote.estado === "INYECCIÓN") paresInyeccion += pares;
+  });
 
-safeClick("menu-btn-usuarios", () => {
-  if (!esSuperAdmin()) {
-    alert("Acceso denegado.");
+  const totalPares = paresCortado + paresAparado + paresArmado + paresInyeccion;
+  const pctCortado = totalPares > 0 ? Math.round((paresCortado / totalPares) * 100) : 0;
+  const pctAparado = totalPares > 0 ? Math.round((paresAparado / totalPares) * 100) : 0;
+  const pctArmado = totalPares > 0 ? Math.round((paresArmado / totalPares) * 100) : 0;
+  const pctInyeccion = totalPares > 0 ? Math.round((paresInyeccion / totalPares) * 100) : 0;
+
+  const elTot = document.getElementById("prod-total-pares-kpi");
+  if (elTot) elTot.textContent = `${totalPares.toLocaleString()} Pares Totales`;
+
+  const setKpiBar = (idKpi, idPct, idBar, valPares, valPct) => {
+    const k = document.getElementById(idKpi);
+    const p = document.getElementById(idPct);
+    const b = document.getElementById(idBar);
+    if (k) k.textContent = `${valPares.toLocaleString()} pares`;
+    if (p) p.textContent = `${valPct}%`;
+    if (b) b.style.width = `${valPct}%`;
+  };
+
+  setKpiBar("kpi-pares-cortado", "pct-pares-cortado", "bar-pares-cortado", paresCortado, pctCortado);
+  setKpiBar("kpi-pares-aparado", "pct-pares-aparado", "bar-pares-aparado", paresAparado, pctAparado);
+  setKpiBar("kpi-pares-armado", "pct-pares-armado", "bar-pares-armado", paresArmado, pctArmado);
+  setKpiBar("kpi-pares-inyeccion", "pct-pares-inyeccion", "bar-pares-inyeccion", paresInyeccion, pctInyeccion);
+
+  if (lotesFiltrados.length === 0) {
+    empty?.classList.remove("hidden");
+    table.innerHTML = "";
     return;
   }
-  resetMenuStyles();
-  viewUsuarios?.classList.remove("hidden");
-  if (menuBtnUsuarios) menuBtnUsuarios.className = CLASE_ACTIVO_PASTILLA;
-  cargarPanelSuperAdmin();
-});
+  empty?.classList.add("hidden");
 
-// Submenús entregas
-safeClick("sub-btn-MATERIALES", () => window.cambiarSubmenuEntrega("MATERIALES"));
-safeClick("sub-btn-GUIA", () => window.cambiarSubmenuEntrega("GUÍA DE PRODUCCIÓN"));
-safeClick("sub-btn-CORTE", () => window.cambiarSubmenuEntrega("CORTE"));
-safeClick("sub-btn-MUESTRA", () => window.cambiarSubmenuEntrega("MUESTRA DEFINITIVA"));
-safeClick("sub-btn-DESBASTE", () => window.cambiarSubmenuEntrega("HOJA DE DESBASTE"));
-safeClick("sub-btn-TIZADORES", () => window.cambiarSubmenuEntrega("TIZADORES"));
+  let html = `
+    <thead>
+      <tr class="bg-gray-100 border-b border-gray-300 text-center font-bold text-gray-700 text-[11px]">
+        <th class="p-2.5 border-r border-gray-300 w-20">DEPTOS</th>
+  `;
 
-window.cambiarSubmenuEntrega = (categoria) => {
-  resetMenuStyles();
-  viewEntregas?.classList.remove("hidden");
-  categoriaEntregaActiva = categoria;
+  DIAS_SEMANA.forEach(dia => {
+    html += `
+      <th colspan="4" class="p-2 border-r border-gray-300 bg-gray-50">${dia}
+        <div class="grid grid-cols-4 font-normal text-[9px] text-gray-500 pt-1 border-t border-gray-200 mt-1">
+          <span class="border-r">PLAN</span>
+          <span class="border-r">ART</span>
+          <span class="border-r">PROY</span>
+          <span>PRS</span>
+        </div>
+      </th>
+    `;
+  });
 
-  const titulo = document.getElementById("entregas-vista-titulo");
-  const subtitulo = document.getElementById("entregas-vista-subtitulo");
-  const thFoto = document.getElementById("th-ent-foto");
-  const thArt = document.getElementById("th-ent-art");
-  const labelThProy = document.getElementById("label-th-proy");
-  const btnTextEntrega = document.getElementById("btn-text-nueva-entrega");
+  html += `
+        <th class="p-2.5 bg-gray-200 w-24">TOTAL PPTO</th>
+      </tr>
+    </thead>
+    <tbody>
+  `;
 
-  if (categoria === "todas") {
-    if (menuBtnEntregasTodas) menuBtnEntregasTodas.className = CLASE_ACTIVO_PASTILLA;
-    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-truck-ramp-box"></i><span>Control de Entregas (Todas)</span>`;
-    if (subtitulo) subtitulo.textContent = "Visualizador consolidado de todas las entregas físicas a departamentos.";
-    if (thFoto) thFoto.classList.remove("hidden");
-    if (thArt) thArt.classList.remove("hidden");
-    if (labelThProy) labelThProy.textContent = "Proyecto";
-    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Entrega";
-  } else if (categoria === "MATERIALES") {
-    const btn = document.getElementById("sub-btn-MATERIALES");
-    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
-    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-boxes-packing text-blue-600"></i><span>Entrega de Materiales</span>`;
-    if (subtitulo) subtitulo.textContent = "Insumos y materiales (Semana y Nombre). Destinos: Desarrollo de producto, Producción.";
-    if (thFoto) thFoto.classList.add("hidden");
-    if (thArt) thArt.classList.add("hidden");
-    if (labelThProy) labelThProy.textContent = "Nombre del Material";
-    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Material";
-  } else if (categoria === "GUÍA DE PRODUCCIÓN") {
-    const btn = document.getElementById("sub-btn-GUIA");
-    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
-    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-file-contract text-emerald-600"></i><span>Entrega de Guías de Producción</span>`;
-    if (subtitulo) subtitulo.textContent = "Entrega física de guías de producción. Destino exclusivo: Costos.";
-    if (thFoto) thFoto.classList.remove("hidden");
-    if (thArt) thArt.classList.remove("hidden");
-    if (labelThProy) labelThProy.textContent = "Proyecto";
-    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Guía";
-  } else if (categoria === "CORTE") {
-    const btn = document.getElementById("sub-btn-CORTE");
-    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
-    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-scissors text-amber-600"></i><span>Entrega de Cortes</span>`;
-    if (subtitulo) subtitulo.textContent = "Entrega de cortes. Destinos: Costos, Producción.";
-    if (thFoto) thFoto.classList.remove("hidden");
-    if (thArt) thArt.classList.remove("hidden");
-    if (labelThProy) labelThProy.textContent = "Proyecto";
-    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Corte";
-  } else if (categoria === "MUESTRA DEFINITIVA") {
-    const btn = document.getElementById("sub-btn-MUESTRA");
-    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
-    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-shoe-prints text-purple-600"></i><span>Entrega de Muestras Definitivas</span>`;
-    if (subtitulo) subtitulo.textContent = "Muestras definitivas con foto. Destinos: Producción, Planeamiento, Retail.";
-    if (thFoto) thFoto.classList.remove("hidden");
-    if (thArt) thArt.classList.remove("hidden");
-    if (labelThProy) labelThProy.textContent = "Proyecto";
-    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Muestra";
-  } else if (categoria === "HOJA DE DESBASTE") {
-    const btn = document.getElementById("sub-btn-DESBASTE");
-    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
-    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-layer-group text-cyan-600"></i><span>Entrega de Hoja de Desbaste</span>`;
-    if (subtitulo) subtitulo.textContent = "Entrega de especificaciones de desbaste. Destinos: Costos, Producción.";
-    if (thFoto) thFoto.classList.remove("hidden");
-    if (thArt) thArt.classList.remove("hidden");
-    if (labelThProy) labelThProy.textContent = "Proyecto";
-    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Desbaste";
-  } else if (categoria === "TIZADORES") {
-    const btn = document.getElementById("sub-btn-TIZADORES");
-    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
-    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-copy text-rose-600"></i><span>Entrega de Tizadores (Copias)</span>`;
-    if (subtitulo) subtitulo.textContent = "Entrega de tizadores a Producción con especificación de número de copias.";
-    if (thFoto) thFoto.classList.add("hidden");
-    if (thArt) thArt.classList.remove("hidden");
-    if (labelThProy) labelThProy.textContent = "Proyecto";
-    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Tizadores";
-  }
+  let granTotalPares = 0;
+  const lineasAProcesar = fLin ? [fLin] : DEPARTAMENTOS_LINEAS;
 
-  renderTablaEntregas();
-};
+  lineasAProcesar.forEach(linea => {
+    let totalLinea = 0;
+    let filasHTML = "";
+
+    for (let r = 0; r < 6; r++) {
+      filasHTML += `<tr class="border-b border-gray-200 text-center hover:bg-slate-50">`;
+      if (r === 0) {
+        filasHTML += `<td rowspan="6" class="p-2 border-r border-gray-300 font-black text-sm bg-gray-50 text-gray-900 align-middle">${linea}</td>`;
+      }
+
+      DIAS_SEMANA.forEach(dia => {
+        const lotesCelda = lotesFiltrados.filter(l => String(l.linea) === String(linea) && String(l.dia).toUpperCase() === dia);
+        const lote = lotesCelda[r];
+
+        if (lote) {
+          totalLinea += (parseInt(lote.pares) || 0);
+          const esAlerta = lote.alerta ? `title="Alerta: ${lote.alerta}" class="bg-amber-100 text-amber-900 font-bold relative group cursor-pointer"` : '';
+          const badgeAlerta = lote.alerta ? `<span class="absolute bottom-full left-1/2 transform -translate-x-1/2 bg-black text-white text-[9px] px-2 py-0.5 rounded shadow-lg hidden group-hover:block z-20 whitespace-nowrap">${lote.alerta}</span>` : '';
+          
+          filasHTML += `
+            <td class="p-1.5 border-r border-gray-200 font-mono text-[11px]">${lote.plan || '—'}</td>
+            <td class="p-1.5 border-r border-gray-200 font-mono text-[10px]">${lote.articulo || '—'}</td>
+            <td class="p-1.5 border-r border-gray-200 font-bold text-[11px] truncate max-w-[70px]" ${esAlerta}>${lote.proyecto || '—'}${badgeAlerta}</td>
+            <td class="p-1.5 border-r border-gray-300 font-black text-cyan-900 text-[11px] bg-cyan-50/40">${lote.pares ? parseInt(lote.pares).toLocaleString() : '—'}</td>
+          `;
+        } else {
+          filasHTML += `
+            <td class="p-1.5 border-r border-gray-200 text-gray-300">—</td>
+            <td class="p-1.5 border-r border-gray-200 text-gray-300">—</td>
+            <td class="p-1.5 border-r border-gray-200 text-gray-300">—</td>
+            <td class="p-1.5 border-r border-gray-300 text-gray-300 bg-gray-50/20">—</td>
+          `;
+        }
+      });
+
+      if (r === 0) {
+        filasHTML += `<td rowspan="6" class="p-2 font-black text-sm bg-gray-100 text-[#D61B28] align-middle" id="total-linea-${linea}">0</td>`;
+      }
+      filasHTML += `</tr>`;
+    }
+
+    html += filasHTML;
+    granTotalPares += totalLinea;
+  });
+
+  html += `
+    </tbody>
+    <tfoot>
+      <tr class="bg-gray-200 font-black text-xs text-gray-900 border-t-2 border-gray-400">
+        <td colspan="21" class="p-3 text-right">GRAN TOTAL PLANTA 330:</td>
+        <td class="p-3 text-center text-[#D61B28] text-sm">${granTotalPares.toLocaleString()}</td>
+      </tr>
+    </tfoot>
+  `;
+
+  table.innerHTML = html;
+
+  lineasAProcesar.forEach(linea => {
+    const totCell = document.getElementById(`total-linea-${linea}`);
+    if (totCell) {
+      const sum = lotesFiltrados.filter(l => String(l.linea) === String(linea)).reduce((acc, curr) => acc + (parseInt(curr.pares) || 0), 0);
+      totCell.textContent = sum.toLocaleString();
+    }
+  });
+}
