@@ -518,7 +518,7 @@
           </div>
         </section>
 
-        <!-- VISTA PRODUCCIÓN WORK PLANNER (ORDEN CORRECTO: PLAN, ART, PROY, PRS, ESTADO) -->
+        <!-- VISTA PRODUCCIÓN WORK PLANNER -->
         <section id="view-produccion" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -601,7 +601,7 @@
             </div>
           </div>
 
-          <!-- GRILLA ESTILO EXCEL CON ORDEN CORREGIDO Y ALINEADO PARA TODOS LOS DÍAS -->
+          <!-- GRILLA ESTILO EXCEL CON ORDEN CORREGIDO Y EXACTO -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-300 overflow-hidden">
             <div class="overflow-x-auto">
               <table id="tabla-export-excel" class="w-full text-left border-collapse text-xs border border-gray-300">
@@ -614,18 +614,19 @@
                     <th class="p-2.5 border border-gray-300 bg-slate-100" colspan="5">5. JUEVES</th>
                     <th class="p-2.5 border border-gray-300 bg-slate-50" colspan="5">6. VIERNES</th>
                     <th class="p-2.5 border border-gray-300 bg-gray-200 w-16" rowspan="2">7. TOT</th>
+                  </tr>
                   <tr class="bg-gray-50 border-b border-gray-300 text-center font-semibold text-gray-600 text-[9px]">
-  <!-- Lunes -->
-  <th class="p-1.5 border border-gray-300">PLAN</th><th class="p-1.5 border border-gray-300">ART</th><th class="p-1.5 border border-gray-300">PROY</th><th class="p-1.5 border border-gray-300">PRS</th><th class="p-1.5 border border-gray-300">ESTADO</th>
-  <!-- Martes -->
-  <th class="p-1.5 border border-gray-300">PLAN</th><th class="p-1.5 border border-gray-300">ART</th><th class="p-1.5 border border-gray-300">PROY</th><th class="p-1.5 border border-gray-300">PRS</th><th class="p-1.5 border border-gray-300">ESTADO</th>
-  <!-- Miércoles -->
-  <th class="p-1.5 border border-gray-300">PLAN</th><th class="p-1.5 border border-gray-300">ART</th><th class="p-1.5 border border-gray-300">PROY</th><th class="p-1.5 border border-gray-300">PRS</th><th class="p-1.5 border border-gray-300">ESTADO</th>
-  <!-- Jueves -->
-  <th class="p-1.5 border border-gray-300">PLAN</th><th class="p-1.5 border border-gray-300">ART</th><th class="p-1.5 border border-gray-300">PROY</th><th class="p-1.5 border border-gray-300">PRS</th><th class="p-1.5 border border-gray-300">ESTADO</th>
-  <!-- Viernes -->
-  <th class="p-1.5 border border-gray-300">PLAN</th><th class="p-1.5 border border-gray-300">ART</th><th class="p-1.5 border border-gray-300">PROY</th><th class="p-1.5 border border-gray-300">PRS</th><th class="p-1.5 border border-gray-300">ESTADO</th>
-</tr>
+                    <!-- Lunes (PLAN, ART, PROY, PRS, ESTADO) -->
+                    <th class="p-1.5 border border-gray-300">PLAN</th><th class="p-1.5 border border-gray-300">ART</th><th class="p-1.5 border border-gray-300">PROY</th><th class="p-1.5 border border-gray-300">PRS</th><th class="p-1.5 border border-gray-300">ESTADO</th>
+                    <!-- Martes (PLAN, ART, PROY, PRS, ESTADO) -->
+                    <th class="p-1.5 border border-gray-300">PLAN</th><th class="p-1.5 border border-gray-300">ART</th><th class="p-1.5 border border-gray-300">PROY</th><th class="p-1.5 border border-gray-300">PRS</th><th class="p-1.5 border border-gray-300">ESTADO</th>
+                    <!-- Miércoles (PLAN, ART, PROY, PRS, ESTADO) -->
+                    <th class="p-1.5 border border-gray-300">PLAN</th><th class="p-1.5 border border-gray-300">ART</th><th class="p-1.5 border border-gray-300">PROY</th><th class="p-1.5 border border-gray-300">PRS</th><th class="p-1.5 border border-gray-300">ESTADO</th>
+                    <!-- Jueves (PLAN, ART, PROY, PRS, ESTADO) -->
+                    <th class="p-1.5 border border-gray-300">PLAN</th><th class="p-1.5 border border-gray-300">ART</th><th class="p-1.5 border border-gray-300">PROY</th><th class="p-1.5 border border-gray-300">PRS</th><th class="p-1.5 border border-gray-300">ESTADO</th>
+                    <!-- Viernes (PLAN, ART, PROY, PRS, ESTADO) -->
+                    <th class="p-1.5 border border-gray-300">PLAN</th><th class="p-1.5 border border-gray-300">ART</th><th class="p-1.5 border border-gray-300">PROY</th><th class="p-1.5 border border-gray-300">PRS</th><th class="p-1.5 border border-gray-300">ESTADO</th>
+                  </tr>
                 </thead>
                 <tbody id="tabla-matriz-produccion" class="divide-y divide-gray-300"></tbody>
               </table>
@@ -1477,7 +1478,7 @@
   <!-- MODAL PERFIL -->
   <div id="modal-profile" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl relative text-xs">
-      <button type="button" id="close-profile" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+      <button type="button" id="close-profile" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
       <div class="text-center mb-4">
         <h3 class="font-bold text-sm text-[#D61B28]">Editar Mi Perfil</h3>
       </div>
