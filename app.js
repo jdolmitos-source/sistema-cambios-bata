@@ -917,7 +917,9 @@ function renderProduccionView() {
 
     const listaPlanes = Object.values(planesUnicos);
 
-    // Exactamente 6 filas por sección con 2 colores intercalados
+    // Exactamente 6 filas por sección con 2 colores intercalados y subtotal por sección al final
+    let sumaParesSeccion = 0;
+
     for (let i = 0; i < 6; i++) {
       const datosPlan = listaPlanes[i] || null;
       let totalFila = 0;
@@ -926,7 +928,6 @@ function renderProduccionView() {
 
       html += `<tr class="${colorBg} border-b border-gray-300 text-center">`;
 
-      // Sección combinada verticalmente en las 6 filas
       if (i === 0) {
         html += `<td rowspan="6" class="p-2 font-black font-mono border border-gray-300 bg-gray-100 text-gray-900 align-middle text-sm">${seccion}</td>`;
       }
@@ -936,6 +937,7 @@ function renderProduccionView() {
         if (loteDia) {
           const p = parseInt(loteDia.pares) || 0;
           totalFila += p;
+          sumaParesSeccion += p;
           const colorEstado = loteDia.estado === 'ENTREGADO' ? 'text-green-700 bg-green-50' : (loteDia.estado === 'APARADO' ? 'text-blue-700 bg-blue-50' : (loteDia.estado === 'ARMADO' ? 'text-purple-700 bg-purple-50' : 'text-amber-700 bg-amber-50'));
           html += `
             <td class="p-1 border border-gray-300 font-mono text-[10px] font-bold text-red-600">${loteDia.plan || '—'}</td>
@@ -966,6 +968,14 @@ function renderProduccionView() {
       html += `<td class="p-2 border border-gray-300 font-black text-xs bg-gray-100 text-[#D61B28] align-middle">${totalFila > 0 ? totalFila.toLocaleString() : '—'}</td>`;
       html += `</tr>`;
     }
+
+    // Fila de Subtotal por Sección / Línea
+    html += `
+      <tr class="bg-gray-200 font-black text-[11px] text-gray-800 border-b-2 border-gray-400 text-center">
+        <td colspan="26" class="p-1.5 text-right pr-4">SUBTOTAL SECCIÓN ${seccion}:</td>
+        <td class="p-1.5 border border-gray-300 text-[#D61B28]">${sumaParesSeccion > 0 ? sumaParesSeccion.toLocaleString() : '0'}</td>
+      </tr>
+    `;
   });
 
   table.innerHTML = html;
@@ -1456,12 +1466,12 @@ function renderTarjetasPreview() {
   const budRet = document.getElementById("card-costo-budret")?.value || "37.39%";
 
   const serie = document.getElementById("card-serie")?.value || "37-44";
-  const fecha = document.getElementById("card-fecha")?.value || "8/9/2026";
-  const materialCorte = (document.getElementById("card-material-corte")?.value || "DNE IMITACION 6D1G14").toUpperCase();
-  const forro = (document.getElementById("card-forro")?.value || "DNE FORRO PINTADO 9DFP").toUpperCase();
-  const plantInt = (document.getElementById("card-plant-int")?.value || "DNE FORRO PINTADO 9DFP").toUpperCase();
-  const modelista = (document.getElementById("card-tecnico")?.value || "JOHNNY GUTIERREZ").toUpperCase();
-  const construccion = (document.getElementById("card-construccion")?.value || "ARMADO").toUpperCase();
+  const fecha = document.getElementById("card-fecha")?.value || "9/9/2026";
+  const materialCorte = (document.getElementById("card-material-corte")?.value || "IMITACION").toUpperCase();
+  const forro = (document.getElementById("card-forro")?.value || "PIQUE NEGRO").toUpperCase();
+  const plantInt = (document.getElementById("card-plant-int")?.value || "PIQUE NEGRO / CRETONE").toUpperCase();
+  const modelista = (document.getElementById("card-tecnico")?.value || "CARLOS ARCE").toUpperCase();
+  const construccion = (document.getElementById("card-construccion")?.value || "TRUE MOC").toUpperCase();
   const suela = (document.getElementById("card-horma-suela")?.value || "QUIQUE").toUpperCase();
   const observaciones = document.getElementById("card-observaciones")?.value || "";
 
@@ -1474,11 +1484,11 @@ function renderTarjetasPreview() {
     : siluetaCalzadoHTML;
 
   const listaAImprimir = [];
-  for (let i = 1; i <= cCortes; i++) listaAImprimir.push({ color: "#80C342", etiqueta: "APROBACIONES (RETAIL)", esInvertida: true, recibePlantilla: true });
-  for (let i = 1; i <= cProd; i++) listaAImprimir.push({ color: "#80C342", etiqueta: "APROBACIONES (PRODUCCIÓN)", esInvertida: false, recibePlantilla: false });
-  for (let i = 1; i <= cVerdes; i++) listaAImprimir.push({ color: "#80C342", etiqueta: "APROBACIONES (RETAIL)", esInvertida: false, recibePlantilla: false });
-  for (let i = 1; i <= cAmarillas; i++) listaAImprimir.push({ color: "#FFF200", etiqueta: "APROBACIONES (PLANEAMIENTO)", esInvertida: false, recibePlantilla: false });
-  for (let i = 1; i <= cRosadas; i++) listaAImprimir.push({ color: "#E06D8A", etiqueta: "APROBACIONES (EXPORTACIÓN)", esInvertida: false, recibePlantilla: false });
+  for (let i = 1; i <= cCortes; i++) listaAImprimir.push({ color: "#FFFFFF", etiqueta: "CORTE (PRODUCCIÓN)", esInvertida: true, recibePlantilla: true });
+  for (let i = 1; i <= cProd; i++) listaAImprimir.push({ color: "#FFFFFF", etiqueta: "PRODUCCIÓN", esInvertida: false, recibePlantilla: false });
+  for (let i = 1; i <= cVerdes; i++) listaAImprimir.push({ color: "#80C342", etiqueta: "RETAIL", esInvertida: false, recibePlantilla: false });
+  for (let i = 1; i <= cAmarillas; i++) listaAImprimir.push({ color: "#FFF200", etiqueta: "PLANEAMIENTO", esInvertida: false, recibePlantilla: false });
+  for (let i = 1; i <= cRosadas; i++) listaAImprimir.push({ color: "#E06D8A", etiqueta: "EXPORTACIÓN", esInvertida: false, recibePlantilla: false });
 
   let tarjetasHTML = "";
   listaAImprimir.forEach((tarj) => {
@@ -1486,37 +1496,46 @@ function renderTarjetasPreview() {
 
     const panelDerechoFirmas = `
       <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:2px 4px; font-size:6px;">
-        <div style="font-size:6.5px; font-weight:900; text-align:center; color:#dc2626; text-transform:uppercase; border-bottom:1px solid #d1d5db; padding-bottom:1px;">
-          ${tarj.etiqueta}
+        <div style="font-size:6.5px; font-weight:900; text-align:center; color:#000; text-transform:uppercase; border-bottom:1px solid #000; padding-bottom:1px;">
+          APROBACIONES (${tarj.etiqueta})
         </div>
         <div style="display:flex; flex-direction:column; justify-content:space-around; flex:1; padding-top:2px;">
           <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-            <div style="border-bottom:1px solid #000; width:65%; height:12px;"></div>
-            <span style="font-size:5.5px; font-weight:bold;">P.D. CHIEF</span>
+            <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
+            <span style="font-size:5px; font-weight:bold;">P.D. CHIEF</span>
           </div>
           <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-            <div style="border-bottom:1px solid #000; width:65%; height:12px;"></div>
-            <span style="font-size:5.5px; font-weight:bold;">PURCHASING MANAGER</span>
+            <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
+            <span style="font-size:5px; font-weight:bold;">PURCHASING MANAGER</span>
           </div>
           <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-            <div style="border-bottom:1px solid #000; width:65%; height:12px;"></div>
-            <span style="font-size:5.5px; font-weight:bold;">MERCHANDISING MAN.</span>
+            <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
+            <span style="font-size:5px; font-weight:bold;">MERCHANDISING MAN.</span>
           </div>
           <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-            <div style="border-bottom:1px solid #000; width:65%; height:12px;"></div>
-            <span style="font-size:5.5px; font-weight:bold;">PRODUCTION MANAGER</span>
+            <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
+            <span style="font-size:5px; font-weight:bold;">PRODUCTION MANAGER</span>
           </div>
           <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-            <div style="border-bottom:1px solid #000; width:65%; height:12px;"></div>
-            <span style="font-size:5.5px; font-weight:bold;">COUNTRY MANAGER</span>
+            <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
+            <span style="font-size:5px; font-weight:bold;">COUNTRY MANAGER</span>
           </div>
-        </div>
-        <div style="border-top:1px dashed #9ca3af; padding-top:1px; margin-top:1px;">
-          <span style="font-weight:900; font-size:5.5px; color:#374151; display:block;">OBSERVACIONES:</span>
-          <span style="font-size:5px; color:#4b5563;">PRODUCCION</span>
         </div>
       </div>
     `;
+
+    const panelCentroObservaciones = `
+      <div class="shoe-panel" style="padding:4px; display:flex; flex-direction:column; justify-content:space-between; font-size:7px; border-right:1px solid #000;">
+        <div>
+          <span style="font-weight:900; color:#000; text-transform:uppercase; display:block; margin-bottom:1px;">OBSERVACIONES:</span>
+          <p style="font-size:6.5px; color:#000; font-style:italic; line-height:1.2;">${observaciones || 'Sin observaciones adicionales'}</p>
+        </div>
+        <div style="text-align:right; font-size:6px; color:#000; font-weight:bold;">BATA BOLIVIA PD</div>
+      </div>
+    `;
+
+    const centroHTML = tarj.esInvertida ? panelCentroObservaciones : panelDerechoFirmas;
+    const derechaHTML = tarj.esInvertida ? panelDerechoFirmas : panelCentroObservaciones;
 
     tarjetasHTML += `
       <div class="shoe-card-container" style="background:#fff; display:flex; font-size:7px; line-height:1.1; color:#000;">
@@ -1526,8 +1545,8 @@ function renderTarjetasPreview() {
             ${linea}
           </div>
           <div style="flex:1; display:flex; flex-direction:column; justify-content:space-between; padding:1px;">
-            <div style="font-size:8px; font-weight:900; color:#16a34a; text-align:center; border-bottom:1px solid #000; padding-bottom:1px;">
-              ${linea}
+            <div style="font-size:8px; font-weight:900; color:#dc2626; text-align:center; border-bottom:1px solid #000; padding-bottom:1px;">
+              MANUFACTURA BOLIVIANA S.A.
             </div>
             <div style="display:flex; flex:1; align-items:center;">
               <div style="width:52px; display:flex; flex-direction:column; justify-content:center; border-right:1px solid #000; padding-right:1px; height:100%;">
@@ -1536,49 +1555,23 @@ function renderTarjetasPreview() {
               </div>
               <div style="flex:1; height:100%;">
                 <table style="width:100%; height:100%; border-collapse:collapse; font-size:6px; font-weight:900;">
-                  <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; width:35%; text-align:center;">TEC:</td><td style="text-align:center; font-size:5.5px;">${modelista}</td></tr>
-                  <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; text-align:center;">CONTR:</td><td style="text-align:center;">${construccion}</td></tr>
-                  <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; text-align:center;">SUELA:</td><td style="text-align:center;">${suela}</td></tr>
+                  <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; width:35%; text-align:center;">ART:</td><td style="text-align:center; font-family:monospace; font-size:7px;">${articulo}</td></tr>
+                  <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; text-align:center;">MARCA:</td><td style="text-align:center;">${marca}</td></tr>
+                  <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; text-align:center;">SERIE:</td><td style="text-align:center;">${serie}</td></tr>
+                  <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; text-align:center;">CORTE:</td><td style="text-align:center; font-size:5px;">${materialCorte}</td></tr>
+                  <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; text-align:center;">FORRO:</td><td style="text-align:center; font-size:5px;">${forro}</td></tr>
+                  <tr><td style="border-right:1px solid #000; text-align:center;">PLANT:</td><td style="text-align:center; font-size:5px;">${plantInt}</td></tr>
                 </table>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- PANEL 2: TABLA TÉCNICA DE MATERIALES -->
-        <div class="shoe-panel" style="display:flex; flex-direction:column; border-right:1px solid #000; overflow:hidden;">
-          <div style="font-size:7px; font-weight:900; text-align:center; color:#dc2626; border-bottom:1px solid #000; padding-bottom:1px;">
-            MANUFACTURA BOLIVIANA S.A.
-          </div>
-          <div style="flex:1; display:flex;">
-            <table style="width:100%; height:100%; border-collapse:collapse; font-size:5.5px; font-weight:bold; text-align:center;">
-              <tr style="border-bottom:1px solid #000; background:#f9fafb;">
-                <td style="border-right:1px solid #000; padding:1px;">PLANT:</td>
-                <td style="border-right:1px solid #000; padding:1px;">FORRO:</td>
-                <td style="border-right:1px solid #000; padding:1px;">CORTE:</td>
-                <td style="border-right:1px solid #000; padding:1px;">SERIE:</td>
-                <td style="border-right:1px solid #000; padding:1px;">MARCA:</td>
-                <td style="padding:1px;">ART:</td>
-              </tr>
-              <tr style="border-bottom:1px solid #000;">
-                <td style="border-right:1px solid #000; padding:1px; font-size:5px;">${plantInt}</td>
-                <td style="border-right:1px solid #000; padding:1px; font-size:5px;">${forro}</td>
-                <td style="border-right:1px solid #000; padding:1px; font-size:5px;">${materialCorte}</td>
-                <td style="border-right:1px solid #000; padding:1px;">${serie}</td>
-                <td style="border-right:1px solid #000; padding:1px;">${marca}</td>
-                <td style="padding:1px; font-family:monospace; font-weight:900;">${articulo}</td>
-              </tr>
-            </table>
-          </div>
-          <div style="display:flex; border-top:1px solid #000; font-size:6px; font-weight:bold; padding:2px 4px; justify-content:space-between; background:#f9fafb;">
-            <span>PRECIO: ${precio}</span>
-            <span>MRG BUD: ${budRet}</span>
-            <span>MRG: ${margen}</span>
-          </div>
-        </div>
+        <!-- PANEL 2 -->
+        ${centroHTML}
 
-        <!-- PANEL 3: FIRMAS Y APROBACIONES -->
-        ${panelDerechoFirmas}
+        <!-- PANEL 3 -->
+        ${derechaHTML}
       </div>
     `;
   });
