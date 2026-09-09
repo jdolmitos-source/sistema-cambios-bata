@@ -46,6 +46,7 @@ let llegadasMateriales = [];
 let lotesProduccion = [];
 
 let categoriaEntregaActiva = "todas";
+let semanaProduccionSeleccionada = "SEM-37";
 
 // Filtros
 let colFiltroSemanaInforme = "";
@@ -55,12 +56,6 @@ let colFiltroProyectoEntregas = "";
 let colFiltroItemLlegada = "";
 let colFiltroNombreLlegada = "";
 let colFiltroSemanaLlegada = "";
-
-// Filtros Producción
-let prodFiltroSemana = "";
-let prodFiltroProyecto = "";
-let prodFiltroLinea = "";
-let prodFiltroEstado = "";
 
 // Memoria Tarjetas
 let croquisTarjetaBase64 = null;
@@ -147,7 +142,6 @@ function inicializarSemanas01a52() {
   selects.forEach(sel => {
     if (!sel) return;
     const valorActual = sel.value;
-    // mantener primera opción si es filtro
     const esFiltro = sel.id === "prod-filter-semana";
     sel.innerHTML = esFiltro ? '<option value="">Todas las Semanas (01-52)</option>' : '';
 
@@ -1307,7 +1301,7 @@ if (formEntrega) {
   };
 }
 
-// ==================== MÓDULO PRODUCCIÓN (DASHBOARD PROFESIONAL CON FILTROS 01-52) ====================
+// ==================== MÓDULO PRODUCCIÓN (GRILLA EXCEL 330 CON 7 COLUMNAS Y FILTROS) ====================
 function escucharProduccion() {
   const q = collection(db, "produccion_lotes");
   onSnapshot(q, (snapshot) => {
@@ -1339,11 +1333,13 @@ if (btnLimpiarFiltrosProd) {
   };
 }
 
+const DEPARTAMENTOS_LINEAS = ["251", "252", "254", "330", "332", "331"];
+const DIAS_SEMANA = ["LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES"];
+
 function renderProduccionView() {
-  const tbody = document.getElementById("table-produccion-body");
+  const table = document.getElementById("tabla-matriz-produccion");
   const empty = document.getElementById("produccion-empty-state");
-  if (!tbody) return;
-  tbody.innerHTML = "";
+  if (!table) return;
 
   const fSem = prodFilterSemana ? prodFilterSemana.value : "";
   const fProy = prodFilterProyecto ? prodFilterProyecto.value.trim().toLowerCase() : "";
@@ -1358,6 +1354,7 @@ function renderProduccionView() {
     return semMatch && proyMatch && linMatch && estMatch;
   });
 
+  // KPIs superiores
   let paresCortado = 0;
   let paresAparado = 0;
   let paresArmado = 0;
@@ -1372,7 +1369,6 @@ function renderProduccionView() {
   });
 
   const totalPares = paresCortado + paresAparado + paresArmado + paresInyeccion;
-
   const pctCortado = totalPares > 0 ? Math.round((paresCortado / totalPares) * 100) : 0;
   const pctAparado = totalPares > 0 ? Math.round((paresAparado / totalPares) * 100) : 0;
   const pctArmado = totalPares > 0 ? Math.round((paresArmado / totalPares) * 100) : 0;
@@ -1397,66 +1393,104 @@ function renderProduccionView() {
 
   if (lotesFiltrados.length === 0) {
     empty?.classList.remove("hidden");
+    table.innerHTML = "";
     return;
   }
   empty?.classList.add("hidden");
 
-  const esJefe = esJefeProduccion();
-  const puedeEliminar = esSuperAdmin() || esJefe;
+  // Renderizar la grilla estilo Excel de 7 columnas
+  let html = `
+    <thead>
+      <tr class="bg-gray-100 border-b border-gray-300 text-center font-bold text-gray-700 text-[11px]">
+        <th class="p-2.5 border-r border-gray-300 w-20">DEPTOS</th>
+  `;
 
-  lotesFiltrados.forEach(lote => {
-    const tr = document.createElement("tr");
-    tr.className = "hover:bg-gray-50/80 transition border-b border-gray-200 text-center";
-
-    let badgeColor = "bg-amber-100 text-amber-800 border-amber-300";
-    if (lote.estado === "APARADO") badgeColor = "bg-blue-100 text-blue-800 border-blue-300";
-    if (lote.estado === "ARMADO") badgeColor = "bg-purple-100 text-purple-800 border-purple-300";
-    if (lote.estado === "INYECCIÓN") badgeColor = "bg-emerald-100 text-emerald-800 border-emerald-300";
-
-    let celdaParesHTML = "";
-    if (esJefe) {
-      celdaParesHTML = `
-        <div class="flex items-center justify-center space-x-1">
-          <input type="number" min="1" id="in-pares-${lote.id}" value="${lote.pares}" class="w-16 px-1.5 py-0.5 border border-cyan-300 rounded font-bold text-center text-cyan-900">
-          <button onclick="window.guardarParesLote('${lote.id}')" title="Actualizar pares" class="bg-cyan-600 hover:bg-cyan-700 text-white p-1 rounded cursor-pointer">
-            <i class="fa-solid fa-floppy-disk text-[10px]"></i>
-          </button>
+  DIAS_SEMANA.forEach(dia => {
+    html += `
+      <th colspan="4" class="p-2 border-r border-gray-300 bg-gray-50">${dia}
+        <div class="grid grid-cols-4 font-normal text-[9px] text-gray-500 pt-1 border-t border-gray-200 mt-1">
+          <span class="border-r">PLAN</span>
+          <span class="border-r">ART</span>
+          <span class="border-r">PROY</span>
+          <span>PRS</span>
         </div>
-      `;
-    } else {
-      celdaParesHTML = `<span class="font-black text-cyan-900">${(parseInt(lote.pares) || 0).toLocaleString()}</span>`;
-    }
-
-    let celdaEstadoHTML = "";
-    if (esJefe) {
-      celdaEstadoHTML = `
-        <select onchange="window.actualizarEstadoLote('${lote.id}', this.value)" class="px-2 py-1 border border-gray-300 rounded text-xs font-bold bg-white text-gray-800">
-          <option value="CORTADO" ${lote.estado === 'CORTADO' ? 'selected' : ''}>CORTADO</option>
-          <option value="APARADO" ${lote.estado === 'APARADO' ? 'selected' : ''}>APARADO</option>
-          <option value="ARMADO" ${lote.estado === 'ARMADO' ? 'selected' : ''}>ARMADO</option>
-          <option value="INYECCIÓN" ${lote.estado === 'INYECCIÓN' ? 'selected' : ''}>INYECCIÓN</option>
-        </select>
-      `;
-    } else {
-      celdaEstadoHTML = `<span class="px-2 py-0.5 rounded border font-black text-[10px] ${badgeColor}">${lote.estado}</span>`;
-    }
-
-    let alertaHTML = lote.alerta ? `<span class="bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded text-[10px] border border-amber-300 block">${lote.alerta}</span>` : '<span class="text-gray-300">—</span>';
-    let accionesHTML = puedeEliminar ? `<button onclick="window.eliminarLoteProduccion('${lote.id}')" class="text-red-500 hover:text-red-700 text-xs p-1" title="Eliminar Lote"><i class="fa-solid fa-trash-can"></i></button>` : '—';
-
-    tr.innerHTML = `
-      <td class="p-3 font-bold text-gray-700 border-r border-gray-200 font-mono">${lote.semana || 'SEM-37'}</td>
-      <td class="p-3 font-black text-gray-900 border-r border-gray-200 bg-gray-50">${lote.linea || '330'}</td>
-      <td class="p-3 font-bold text-cyan-800 border-r border-gray-200">${lote.dia || 'LUNES'}</td>
-      <td class="p-3 font-mono font-bold text-gray-800 border-r border-gray-200">${lote.plan || '—'}</td>
-      <td class="p-3 font-mono text-gray-700 border-r border-gray-200">${lote.articulo}</td>
-      <td class="p-3 font-bold text-gray-800 border-r border-gray-200 text-left">${lote.proyecto}</td>
-      <td class="p-3 border-r border-gray-200">${celdaParesHTML}</td>
-      <td class="p-3 border-r border-gray-200">${celdaEstadoHTML}</td>
-      <td class="p-3 border-r border-gray-200 text-left">${alertaHTML}</td>
-      <td class="p-3">${accionesHTML}</td>
+      </th>
     `;
-    tbody.appendChild(tr);
+  });
+
+  html += `
+        <th class="p-2.5 bg-gray-200 w-24">TOTAL PPTO</th>
+      </tr>
+    </thead>
+    <tbody>
+  `;
+
+  let granTotalPares = 0;
+  const lineasAProcesar = fLin ? [fLin] : DEPARTAMENTOS_LINEAS;
+
+  lineasAProcesar.forEach(linea => {
+    let totalLinea = 0;
+    let filasHTML = "";
+
+    for (let r = 0; r < 6; r++) {
+      filasHTML += `<tr class="border-b border-gray-200 text-center hover:bg-slate-50">`;
+      if (r === 0) {
+        filasHTML += `<td rowspan="6" class="p-2 border-r border-gray-300 font-black text-sm bg-gray-50 text-gray-900 align-middle">${linea}</td>`;
+      }
+
+      DIAS_SEMANA.forEach(dia => {
+        const lotesCelda = lotesFiltrados.filter(l => String(l.linea) === String(linea) && String(l.dia).toUpperCase() === dia);
+        const lote = lotesCelda[r];
+
+        if (lote) {
+          totalLinea += (parseInt(lote.pares) || 0);
+          const esAlerta = lote.alerta ? `title="Alerta: ${lote.alerta}" class="bg-amber-100 text-amber-900 font-bold relative group cursor-pointer"` : '';
+          const badgeAlerta = lote.alerta ? `<span class="absolute bottom-full left-1/2 transform -translate-x-1/2 bg-black text-white text-[9px] px-2 py-0.5 rounded shadow-lg hidden group-hover:block z-20 whitespace-nowrap">${lote.alerta}</span>` : '';
+          
+          filasHTML += `
+            <td class="p-1.5 border-r border-gray-200 font-mono text-[11px]">${lote.plan || '—'}</td>
+            <td class="p-1.5 border-r border-gray-200 font-mono text-[10px]">${lote.articulo || '—'}</td>
+            <td class="p-1.5 border-r border-gray-200 font-bold text-[11px] truncate max-w-[70px]" ${esAlerta}>${lote.proyecto || '—'}${badgeAlerta}</td>
+            <td class="p-1.5 border-r border-gray-300 font-black text-cyan-900 text-[11px] bg-cyan-50/40">${lote.pares ? parseInt(lote.pares).toLocaleString() : '—'}</td>
+          `;
+        } else {
+          filasHTML += `
+            <td class="p-1.5 border-r border-gray-200 text-gray-300">—</td>
+            <td class="p-1.5 border-r border-gray-200 text-gray-300">—</td>
+            <td class="p-1.5 border-r border-gray-200 text-gray-300">—</td>
+            <td class="p-1.5 border-r border-gray-300 text-gray-300 bg-gray-50/20">—</td>
+          `;
+        }
+      });
+
+      if (r === 0) {
+        filasHTML += `<td rowspan="6" class="p-2 font-black text-sm bg-gray-100 text-[#D61B28] align-middle" id="total-linea-${linea}">0</td>`;
+      }
+      filasHTML += `</tr>`;
+    }
+
+    html += filasHTML;
+    granTotalPares += totalLinea;
+  });
+
+  html += `
+    </tbody>
+    <tfoot>
+      <tr class="bg-gray-200 font-black text-xs text-gray-900 border-t-2 border-gray-400">
+        <td colspan="21" class="p-3 text-right">GRAN TOTAL PLANTA 330:</td>
+        <td class="p-3 text-center text-[#D61B28] text-sm">${granTotalPares.toLocaleString()}</td>
+      </tr>
+    </tfoot>
+  `;
+
+  table.innerHTML = html;
+
+  lineasAProcesar.forEach(linea => {
+    const totCell = document.getElementById(`total-linea-${linea}`);
+    if (totCell) {
+      const sum = lotesFiltrados.filter(l => String(l.linea) === String(linea)).reduce((acc, curr) => acc + (parseInt(curr.pares) || 0), 0);
+      totCell.textContent = sum.toLocaleString();
+    }
   });
 }
 
