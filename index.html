@@ -518,7 +518,7 @@
           </div>
         </section>
 
-        <!-- VISTA PRODUCCIÓN WORK PLANNER (36 FILAS Y SECCIÓN AGRUPADA) -->
+        <!-- VISTA PRODUCCIÓN WORK PLANNER (36 FILAS Y ORDEN PLAN, ART, PROY, PRS, ESTADO) -->
         <section id="view-produccion" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -526,7 +526,7 @@
                 <i class="fa-solid fa-industry text-cyan-600"></i>
                 <span>Producción Work Planner (36 Filas Fijas)</span>
               </h2>
-              <p class="text-xs text-gray-400">Control de flujo diario con orden PLAN, ART, PROY, PRS, ESTADO.</p>
+              <p class="text-xs text-gray-400">Control de flujo diario con orden PLAN, ART, PROY, PRS, ESTADO y subtotal por sección.</p>
             </div>
             <div class="flex items-center space-x-2">
               <button type="button" onclick="window.eliminarTodosRegistrosProduccion()" class="bg-gray-600 hover:bg-gray-700 text-white font-bold text-xs px-3 py-2.5 rounded-xl shadow flex items-center space-x-1.5 transition cursor-pointer" title="Borrar todos los registros y empezar de 0">
@@ -601,7 +601,7 @@
             </div>
           </div>
 
-          <!-- GRILLA ESTILO EXCEL CON 36 FILAS Y 2 COLORES INTERCALADOS -->
+          <!-- GRILLA ESTILO EXCEL CON ORDEN PLAN, ART, PROY, PRS, ESTADO -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-300 overflow-hidden">
             <div class="overflow-x-auto">
               <table id="tabla-export-excel" class="w-full text-left border-collapse text-xs border border-gray-300">
