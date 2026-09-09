@@ -128,7 +128,7 @@
         <div>
           <div class="flex justify-between items-center mb-1">
             <label class="font-semibold text-gray-600">Contraseña</label>
-            <button type="button" id="btn-forgot-pass" class="text-[10px] text-[#D61B28] hover:underline font-semibold flex items-center space-x-1">
+            <button type="button" id="btn-forgot-pass" class="text-[10px] text-[#D61B28] hover:underline font-semibold flex items-center space-x-1" title="Solicitar reseteo por WhatsApp">
               <i class="fa-brands fa-whatsapp text-green-600 text-xs"></i>
               <span>¿Resetear por WhatsApp?</span>
             </button>
@@ -513,7 +513,7 @@
           </div>
         </section>
 
-        <!-- VISTA 4: MÓDULO PRODUCCIÓN (DASHBOARD PROFESIONAL CON FILTROS Y SEMANAS 01-52) -->
+        <!-- VISTA 4: MÓDULO PRODUCCIÓN (GRILLA EXCEL 330 CON 7 COLUMNAS Y FILTROS) -->
         <section id="view-produccion-dash" class="hidden space-y-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -521,7 +521,7 @@
                 <i class="fa-solid fa-industry text-cyan-600"></i>
                 <span>Programación de Planta - Departamento 330</span>
               </h2>
-              <p class="text-xs text-gray-400">Control por días, líneas de inyección y filtros avanzados de planta.</p>
+              <p class="text-xs text-gray-400">Matriz semanal por días (Lunes a Viernes), líneas (251 a 332) y totales de planta.</p>
             </div>
             <div class="flex items-center space-x-2">
               <button type="button" id="btn-open-nuevo-lote" onclick="window.abrirModalLoteProduccion()" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-1.5 transition cursor-pointer">
@@ -531,7 +531,7 @@
             </div>
           </div>
 
-          <!-- BARRAS DE PROGRESO NATIVAS -->
+          <!-- BARRAS DE PROGRESO NATIVAS (KPIs Superiores) -->
           <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4">
             <div class="flex justify-between items-center border-b border-gray-100 pb-2">
               <span class="font-bold text-xs text-gray-700 uppercase tracking-wider">Avance Consolidado de Pares por Estación</span>
@@ -589,17 +589,18 @@
             </div>
           </div>
 
-          <!-- TABLA TIPO GRILLA DIARIA CON FILTRADORES ACTIVOS -->
-          <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-            <div class="bg-gray-50 p-3 border-b border-gray-200 flex flex-wrap justify-between items-center gap-3 text-xs">
-              <span class="font-bold text-gray-700">Programación de Lotes y Alertas de Planta</span>
-              <!-- FILTRADORES -->
-              <div class="flex flex-wrap items-center gap-2">
-                <select id="prod-filter-semana" class="px-2.5 py-1.5 border border-gray-300 rounded-lg font-bold bg-white text-gray-700">
-                  <option value="">Todas las Semanas (01-52)</option>
+          <!-- GRILLA ESTILO EXCEL CON FILTROS SUPERIORES -->
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-300 overflow-hidden">
+            <div class="bg-gray-100 p-3.5 border-b border-gray-300 flex flex-wrap justify-between items-center gap-3 text-xs">
+              <div class="flex items-center space-x-2">
+                <span class="font-bold text-gray-800">Seleccionar Semana:</span>
+                <select id="prod-filter-semana" class="px-3 py-1.5 border border-gray-300 rounded-lg font-mono font-bold bg-white text-red-600 shadow-xs">
+                  <!-- Se poblará de SEM-01 a SEM-52 -->
                 </select>
-                <input type="text" id="prod-filter-proyecto" placeholder="Filtrar Proyecto..." class="px-2.5 py-1.5 border border-gray-300 rounded-lg bg-white w-28">
-                <select id="prod-filter-linea" class="px-2.5 py-1.5 border border-gray-300 rounded-lg font-mono bg-white">
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <input type="text" id="prod-filter-proyecto" placeholder="Filtrar Proyecto / Art..." class="px-2.5 py-1.5 border border-gray-300 rounded-lg bg-white w-32 font-medium">
+                <select id="prod-filter-linea" class="px-2.5 py-1.5 border border-gray-300 rounded-lg font-mono bg-white font-bold">
                   <option value="">Línea (Todas)</option>
                   <option value="330">330</option>
                   <option value="331">331</option>
@@ -618,23 +619,10 @@
                 <button type="button" id="btn-limpiar-filtros-prod" class="bg-gray-200 hover:bg-gray-300 px-3 py-1.5 rounded-lg font-bold text-gray-700 cursor-pointer">Limpiar</button>
               </div>
             </div>
+
             <div class="overflow-x-auto">
-              <table class="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr class="bg-gray-100/90 border-b border-gray-300 text-gray-700 font-bold text-center">
-                    <th class="p-3 border-r border-gray-300 w-20">Semana</th>
-                    <th class="p-3 border-r border-gray-300 w-16">Línea</th>
-                    <th class="p-3 border-r border-gray-300">Día</th>
-                    <th class="p-3 border-r border-gray-300">Plan / Orden</th>
-                    <th class="p-3 border-r border-gray-300">Artículo</th>
-                    <th class="p-3 border-r border-gray-300">Proyecto / Modelo</th>
-                    <th class="p-3 border-r border-gray-300">Pares</th>
-                    <th class="p-3 border-r border-gray-300">Estado Estación</th>
-                    <th class="p-3 border-r border-gray-300">Alerta / Nota</th>
-                    <th class="p-3 text-center">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody id="table-produccion-body" class="divide-y divide-gray-200"></tbody>
+              <table id="tabla-matriz-produccion" class="w-full text-left border-collapse text-xs">
+                <!-- Grilla dinámica con las 7 columnas y bloques por línea -->
               </table>
             </div>
             <div id="produccion-empty-state" class="hidden p-8 text-center text-gray-400 text-xs">
