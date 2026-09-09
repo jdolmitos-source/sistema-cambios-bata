@@ -1332,11 +1332,11 @@ if (formEntrega) {
   };
 }
 
-// ==================== MÓDULO TARJETAS (PD) - FORMATO CLÁSICO RESTAURADO ====================
+// ==================== MÓDULO TARJETAS (PD) - FORMATO CLÁSICO ORIGINAL ====================
 function initModuloTarjetas() {
   const inputFecha = document.getElementById("card-fecha");
   if (inputFecha && !inputFecha.value) {
-    inputFecha.value = new Date().toLocaleDateString("es-BO");
+    inputFecha.value = "9/9/2026";
   }
 
   const fileInput = document.getElementById("card-croquis-file");
@@ -1375,10 +1375,10 @@ function initModuloTarjetas() {
     if (cols.length >= 4) {
       document.getElementById("card-costo-articulo").value = cols[0] || "";
       document.getElementById("card-costo-linea").value = cols[2] || "";
-      document.getElementById("card-costo-marca").value = cols[3] || "BATA";
-      document.getElementById("card-costo-budret").value = cols[10] || "0.00%";
-      document.getElementById("card-costo-precio").value = cols[8] || "0.00";
-      document.getElementById("card-costo-margen").value = cols[9] || "0%";
+      document.getElementById("card-costo-marca").value = cols[3] || "TEENER";
+      document.getElementById("card-costo-budret").value = cols[10] || "37.39%";
+      document.getElementById("card-costo-precio").value = cols[8] || "259.00";
+      document.getElementById("card-costo-margen").value = cols[9] || "55.00%";
       renderTarjetasPreview();
     } else {
       alert("Columnas insuficientes. Pega directamente la fila copiada de Excel.");
@@ -1472,85 +1472,35 @@ function renderTarjetasPreview() {
   const modelista = (document.getElementById("card-tecnico")?.value || "CARLOS ARCE").toUpperCase();
   const construccion = (document.getElementById("card-construccion")?.value || "TRUE MOC").toUpperCase();
   const suela = (document.getElementById("card-horma-suela")?.value || "QUIQUE").toUpperCase();
-  const observaciones = document.getElementById("card-observaciones")?.value || "";
+  const observaciones = document.getElementById("card-observaciones")?.value || "Sin observaciones adicionales";
 
   const siluetaCalzadoHTML = croquisTarjetaBase64 
     ? `<img src="${croquisTarjetaBase64}" style="width:100%; height:32px; object-fit:contain; margin:auto;">`
     : `<div style="height:32px; display:flex; align-items:center; justify-content:center; font-size:8px; color:#999; border:1px dashed #ccc;">Croquis</div>`;
 
-  const siluetaPlantillaHTML = plantillaCorteTarjetaBase64 
-    ? `<img src="${plantillaCorteTarjetaBase64}" style="width:100%; height:32px; object-fit:contain; margin:auto;">`
-    : siluetaCalzadoHTML;
-
   const listaAImprimir = [];
-  for (let i = 1; i <= cCortes; i++) listaAImprimir.push({ color: "#FFFFFF", etiqueta: "CORTE (PRODUCCIÓN)", esInvertida: true, recibePlantilla: true });
-  for (let i = 1; i <= cProd; i++) listaAImprimir.push({ color: "#FFFFFF", etiqueta: "PRODUCCIÓN", esInvertida: false, recibePlantilla: false });
-  for (let i = 1; i <= cVerdes; i++) listaAImprimir.push({ color: "#80C342", etiqueta: "RETAIL", esInvertida: false, recibePlantilla: false });
-  for (let i = 1; i <= cAmarillas; i++) listaAImprimir.push({ color: "#FFF200", etiqueta: "PLANEAMIENTO", esInvertida: false, recibePlantilla: false });
-  for (let i = 1; i <= cRosadas; i++) listaAImprimir.push({ color: "#E06D8A", etiqueta: "EXPORTACIÓN", esInvertida: false, recibePlantilla: false });
+  for (let i = 1; i <= cCortes; i++) listaAImprimir.push({ etiqueta: "APROBACIONES (CORTE (PRODUCCIÓN))" });
+  for (let i = 1; i <= cProd; i++) listaAImprimir.push({ etiqueta: "APROBACIONES (PRODUCCIÓN)" });
+  for (let i = 1; i <= cVerdes; i++) listaAImprimir.push({ etiqueta: "APROBACIONES (RETAIL)" });
+  for (let i = 1; i <= cAmarillas; i++) listaAImprimir.push({ etiqueta: "APROBACIONES (PLANEAMIENTO)" });
+  for (let i = 1; i <= cRosadas; i++) listaAImprimir.push({ etiqueta: "APROBACIONES (EXPORTACIÓN)" });
 
   let tarjetasHTML = "";
   listaAImprimir.forEach((tarj) => {
-    const imagenIzquierdaHTML = tarj.recibePlantilla ? siluetaPlantillaHTML : siluetaCalzadoHTML;
-
-    const panelDerechoFirmas = `
-      <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:2px 4px; font-size:6px;">
-        <div style="font-size:6.5px; font-weight:900; text-align:center; color:#000; text-transform:uppercase; border-bottom:1px solid #000; padding-bottom:1px;">
-          APROBACIONES (${tarj.etiqueta})
-        </div>
-        <div style="display:flex; flex-direction:column; justify-content:space-around; flex:1; padding-top:2px;">
-          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-            <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
-            <span style="font-size:5.5px; font-weight:bold;">P.D. CHIEF</span>
-          </div>
-          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-            <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
-            <span style="font-size:5.5px; font-weight:bold;">PURCHASING MANAGER</span>
-          </div>
-          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-            <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
-            <span style="font-size:5.5px; font-weight:bold;">MERCHANDISING MAN.</span>
-          </div>
-          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-            <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
-            <span style="font-size:5.5px; font-weight:bold;">PRODUCTION MANAGER</span>
-          </div>
-          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-            <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
-            <span style="font-size:5.5px; font-weight:bold;">COUNTRY MANAGER</span>
-          </div>
-        </div>
-      </div>
-    `;
-
-    const panelCentroObservaciones = `
-      <div class="shoe-panel" style="padding:4px; display:flex; flex-direction:column; justify-content:space-between; font-size:7px; border-right:1px solid #000;">
-        <div>
-          <span style="font-weight:900; color:#000; text-transform:uppercase; display:block; margin-bottom:1px;">OBSERVACIONES:</span>
-          <p style="font-size:6.5px; color:#000; font-style:italic; line-height:1.2;">${observaciones || 'Sin observaciones adicionales'}</p>
-        </div>
-        <div style="text-align:right; font-size:6px; color:#000; font-weight:bold;">BATA BOLIVIA PD</div>
-      </div>
-    `;
-
-    const centroHTML = tarj.esInvertida ? panelCentroObservaciones : panelDerechoFirmas;
-    const derechaHTML = tarj.esInvertida ? panelDerechoFirmas : panelCentroObservaciones;
-
     tarjetasHTML += `
       <div class="shoe-card-container" style="background:#fff; display:flex; font-size:7px; line-height:1.1; color:#000;">
         <!-- PANEL 1: LENGÜETA Y ESPECIFICACIONES -->
         <div class="shoe-panel" style="display:flex; border-right:1px solid #000; overflow:hidden;">
-          <div class="lateral-tab" style="width:16px; border-right:1px solid #000; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:9px; writing-mode:vertical-rl; transform:rotate(180deg); background-color:${tarj.color} !important;">
+          <div class="lateral-tab" style="width:16px; border-right:1px solid #000; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:9px; writing-mode:vertical-rl; transform:rotate(180deg); background-color:#fff !important;">
             ${linea}
           </div>
           <div style="flex:1; display:flex; flex-direction:column; justify-content:space-between; padding:1px;">
-            <div style="font-size:8px; font-weight:900; color:#dc2626; text-align:center; border-bottom:1px solid #000; padding-bottom:1px;">
+            <div style="font-size:7.5px; font-weight:900; color:#dc2626; text-align:center; border-bottom:1px solid #000; padding-bottom:1px;">
               MANUFACTURA BOLIVIANA S.A.
             </div>
             <div style="display:flex; flex:1; align-items:center;">
-              <div style="width:52px; display:flex; flex-direction:column; justify-content:center; border-right:1px solid #000; padding-right:1px; height:100%;">
-                ${imagenIzquierdaHTML}
-                <span style="font-size:5px; font-weight:bold; text-align:center; margin-top:2px;">${fecha}</span>
+              <div style="width:45px; display:flex; flex-direction:column; justify-content:center; border-right:1px solid #000; padding-right:1px; height:100%;">
+                ${siluetaCalzadoHTML}
               </div>
               <div style="flex:1; height:100%;">
                 <table style="width:100%; height:100%; border-collapse:collapse; font-size:6px; font-weight:900;">
@@ -1563,14 +1513,53 @@ function renderTarjetasPreview() {
                 </table>
               </div>
             </div>
+            <div style="display:flex; border-top:1px solid #000; font-size:5.5px; font-weight:bold; padding:1px 2px; justify-content:space-between; background:#fff;">
+              <span>${fecha}</span>
+            </div>
+            <div style="display:flex; border-top:1px solid #000; font-size:5px; font-weight:800; padding:1px 0;">
+              <div style="width:50%; border-right:1px solid #000; padding-left:1px;">TEC: ${modelista}<br>CONTR: ${construccion}<br>SUELA: ${suela}</div>
+              <div style="width:50%; padding-left:2px;">PRECIO: ${precio}<br>MRG BUD: ${budRet}<br>MRG: ${margen}</div>
+            </div>
           </div>
         </div>
 
-        <!-- PANEL 2 -->
-        ${centroHTML}
+        <!-- PANEL 2: OBSERVACIONES -->
+        <div class="shoe-panel" style="padding:4px; display:flex; flex-direction:column; justify-content:space-between; font-size:7px; border-right:1px solid #000;">
+          <div>
+            <span style="font-weight:900; color:#000; text-transform:uppercase; display:block; margin-bottom:1px;">OBSERVACIONES:</span>
+            <p style="font-size:6.5px; color:#000; font-style:italic; line-height:1.2;">${observaciones}</p>
+          </div>
+          <div style="text-align:right; font-size:6px; color:#000; font-weight:bold;">BATA BOLIVIA PD</div>
+        </div>
 
-        <!-- PANEL 3 -->
-        ${derechaHTML}
+        <!-- PANEL 3: FIRMAS Y APROBACIONES -->
+        <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:2px 4px; font-size:6px;">
+          <div style="font-size:6.5px; font-weight:900; text-align:center; color:#000; text-transform:uppercase; border-bottom:1px solid #000; padding-bottom:1px;">
+            ${tarj.etiqueta}
+          </div>
+          <div style="display:flex; flex-direction:column; justify-content:space-around; flex:1; padding-top:2px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+              <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
+              <span style="font-size:5px; font-weight:bold;">P.D. CHIEF</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+              <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
+              <span style="font-size:5px; font-weight:bold;">PURCHASING MANAGER</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+              <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
+              <span style="font-size:5px; font-weight:bold;">MERCHANDISING MAN.</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+              <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
+              <span style="font-size:5px; font-weight:bold;">PRODUCTION MANAGER</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+              <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
+              <span style="font-size:5px; font-weight:bold;">COUNTRY MANAGER</span>
+            </div>
+          </div>
+        </div>
       </div>
     `;
   });
