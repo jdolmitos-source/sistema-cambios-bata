@@ -31,6 +31,7 @@ const firebaseConfig = {
 };
 
 const SUPER_ADMIN_EMAIL = "jd.olmitos@gmail.com";
+const SUPER_ADMIN_WHATSAPP = "59174812364";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -40,209 +41,447 @@ let currentUser = null;
 let userData = null;
 let solicitudes = [];
 let entregas = [];
-let lotesProduccion = [];
+let bloqueosMateriales = [];
+let llegadasMateriales = [];
+
 let categoriaEntregaActiva = "todas";
+
+// Filtros
+let colFiltroSemanaInforme = "";
+let colFiltroProyectoInforme = "";
+let colFiltroSemanaEntregas = "";
+let colFiltroProyectoEntregas = "";
+let colFiltroItemLlegada = "";
+let colFiltroNombreLlegada = "";
+let colFiltroSemanaLlegada = "";
+
+// Memoria Tarjetas
+let croquisTarjetaBase64 = null;
+let plantillaCorteTarjetaBase64 = null;
 
 const safeClick = (id, fn) => {
   const el = document.getElementById(id);
-  if (el) el.addEventListener("click", fn);
+  if (el) el.onclick = fn;
 };
 
-// ==================== INICIALIZACIÓN Y EVENT LISTENERS ====================
-document.addEventListener("DOMContentLoaded", () => {
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      currentUser = user;
-      await cargarDatosUsuario(user.uid);
-      mostrarDashboard();
-    } else {
-      currentUser = null;
-      userData = null;
-      mostrarBienvenida();
-    }
-  });
-
-  // Botones de Portada y Modales de Acceso
-  safeClick("btn-show-login", () => document.getElementById("modal-login")?.classList.remove("hidden"));
-  safeClick("close-login", () => document.getElementById("modal-login")?.classList.add("hidden"));
-  safeClick("btn-show-register", () => document.getElementById("modal-register")?.classList.remove("hidden"));
-  safeClick("close-register", () => document.getElementById("modal-register")?.classList.add("hidden"));
-
-  // Formulario Login
-  const formLogin = document.getElementById("form-login");
-  if (formLogin) {
-    formLogin.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const email = document.getElementById("login-email").value.trim();
-      const pass = document.getElementById("login-pass").value;
-      try {
-        await signInWithEmailAndPassword(auth, email, pass);
-        document.getElementById("modal-login")?.classList.add("hidden");
-      } catch (error) {
-        alert("Error al iniciar sesión: " + error.message);
-      }
-    });
+// Ojito contraseña
+window.togglePasswordVisibility = (inputId, eyeIconId) => {
+  const input = document.getElementById(inputId);
+  const icon = document.getElementById(eyeIconId);
+  if (!input || !icon) return;
+  if (input.type === "password") {
+    input.type = "text";
+    icon.classList.remove("fa-eye");
+    icon.classList.add("fa-eye-slash");
+  } else {
+    input.type = "password";
+    icon.classList.remove("fa-eye-slash");
+    icon.classList.add("fa-eye");
   }
+};
 
-  // Formulario Registro
-  const formRegister = document.getElementById("form-register");
-  if (formRegister) {
-    formRegister.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const name = document.getElementById("reg-name").value.trim();
-      const phone = document.getElementById("reg-phone").value.trim();
-      const email = document.getElementById("reg-email").value.trim();
-      const role = document.getElementById("reg-role").value;
-      const pass = document.getElementById("reg-pass").value;
-      const photoFile = document.getElementById("reg-photo").files[0];
+const comprimirImagen = (file, maxWidth = 600, calidad = 0.75) => new Promise((resolve) => {
+  if (!file) return resolve(null);
+  const reader = new FileReader();
+  reader.readAsDataURL(file);
+  reader.onload = (event) => {
+    const img = new Image();
+    img.src = event.target.result;
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      let width = img.width;
+      let height = img.height;
 
-      try {
-        const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
-        const cred = await createUserWithEmailAndPassword(auth, email, pass);
-        await setDoc(doc(db, "usuarios", cred.user.uid), {
-          nombre: name,
-          celular: phone,
-          email: email,
-          rol: role,
-          foto: fotoBase64 || "",
-          fechaRegistro: new Date().toISOString()
-        });
-        document.getElementById("modal-register")?.classList.add("hidden");
-        alert("¡Cuenta creada con éxito!");
-      } catch (error) {
-        alert("Error al registrarse: " + error.message);
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
       }
-    });
-  }
 
-  // Logout
-  safeClick("btn-logout", () => signOut(auth));
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, width, height);
 
-  // ==================== NAVEGACIÓN DEL MENÚ LATERAL ====================
-  safeClick("menu-btn-cambios", activarVistaCambios);
-
-  safeClick("menu-btn-informe", () => {
-    resetMenuStyles();
-    document.getElementById("view-informe")?.classList.remove("hidden");
-    renderInformeView();
-  });
-
-  safeClick("menu-btn-entregas-todas", () => cambiarSubmenuEntrega("todas"));
-
-  safeClick("menu-btn-produccion-dash", () => {
-    resetMenuStyles();
-    document.getElementById("view-produccion-dash")?.classList.remove("hidden");
-    renderProduccionView();
-  });
-
-  safeClick("menu-btn-procurement", () => {
-    resetMenuStyles();
-    document.getElementById("view-procurement")?.classList.remove("hidden");
-  });
-
-  safeClick("menu-btn-tarjetas", () => {
-    resetMenuStyles();
-    document.getElementById("view-tarjetas")?.classList.remove("hidden");
-  });
-
-  safeClick("menu-btn-usuarios", () => {
-    if (!esSuperAdmin()) {
-      alert("Acceso denegado.");
-      return;
-    }
-    resetMenuStyles();
-    document.getElementById("view-usuarios")?.classList.remove("hidden");
-    cargarPanelSuperAdmin();
-  });
-
-  // ==================== SUBMENÚS DE ENTREGAS ====================
-  safeClick("sub-btn-MATERIALES", () => cambiarSubmenuEntrega("MATERIALES"));
-  safeClick("sub-btn-GUIA", () => cambiarSubmenuEntrega("GUÍA DE PRODUCCIÓN"));
-  safeClick("sub-btn-CORTE", () => cambiarSubmenuEntrega("CORTE"));
-  safeClick("sub-btn-MUESTRA", () => cambiarSubmenuEntrega("MUESTRA DEFINITIVA"));
-  safeClick("sub-btn-DESBASTE", () => cambiarSubmenuEntrega("HOJA DE DESBASTE"));
-  safeClick("sub-btn-TIZADORES", () => cambiarSubmenuEntrega("TIZADORES"));
-
-  inicializarSemanas01a52();
-  escucharColecciones();
+      const base64Comprimido = canvas.toDataURL("image/jpeg", calidad);
+      resolve(base64Comprimido);
+    };
+    img.onerror = () => resolve(null);
+  };
+  reader.onerror = () => resolve(null);
 });
 
-// ==================== FUNCIONES DE NAVEGACIÓN Y ESTILOS ====================
-function resetMenuStyles() {
-  const vistas = [
-    "view-cambios", 
-    "view-informe", 
-    "view-entregas", 
-    "view-produccion-dash", 
-    "view-procurement", 
-    "view-tarjetas", 
-    "view-usuarios"
-  ];
-  vistas.forEach(id => {
-    document.getElementById(id)?.classList.add("hidden");
-  });
+function esSuperAdmin() {
+  if (!currentUser || !currentUser.email) return false;
+  return currentUser.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
 }
 
-function activarVistaCambios() {
-  resetMenuStyles();
-  document.getElementById("view-cambios")?.classList.remove("hidden");
+function esComprasAdmin() {
+  if (esSuperAdmin()) return true;
+  return userData && (userData.rol === "Compras Admin" || userData.rol === "Compras");
 }
 
-window.cambiarSubmenuEntrega = (categoria) => {
-  resetMenuStyles();
-  document.getElementById("view-entregas")?.classList.remove("hidden");
-  categoriaEntregaActiva = categoria;
-  renderTablaEntregas();
-};
+function esDesarrollo() {
+  if (esSuperAdmin()) return true;
+  return userData && (userData.rol || "").includes("Desarrollo");
+}
 
-// ==================== CARGA DE DATOS Y FIRESTORE ====================
-async function cargarDatosUsuario(uid) {
+// Modal WhatsApp
+async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro = null }) {
+  const modalWA = document.getElementById("modal-whatsapp");
+  const listContainer = document.getElementById("whatsapp-contacts-list");
+  if (!modalWA || !listContainer) return;
+  document.getElementById("wa-modal-title").textContent = titulo;
+  document.getElementById("wa-modal-desc").textContent = subtitulo;
+  listContainer.innerHTML = "";
+
+  const encodedMsg = encodeURIComponent(mensajeTexto);
+
   try {
-    const docRef = doc(db, "usuarios", uid);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      userData = docSnap.data();
-    } else {
-      userData = { nombre: currentUser.email, rol: "Usuario", celular: "" };
+    const usuariosSnap = await getDocs(collection(db, "usuarios"));
+    let count = 0;
+
+    usuariosSnap.forEach(d => {
+      const u = d.data();
+      const coincideRol = !rolFiltro || u.rol === rolFiltro || 
+        (rolFiltro === "Desarrollo de producto - Técnico" && (u.rol || "").includes("Técnico")) ||
+        (rolFiltro === "Compras" && ((u.rol || "").includes("Compras")));
+
+      if (u.celular && coincideRol) {
+        count++;
+        const item = document.createElement("a");
+        item.href = `https://wa.me/591${u.celular}?text=${encodedMsg}`;
+        item.target = "_blank";
+        item.className = "flex items-center justify-between p-2.5 bg-gray-50 hover:bg-green-50 rounded-xl border border-gray-200 transition text-gray-800";
+        item.innerHTML = `
+          <div>
+            <span class="font-bold">${u.nombre}</span>
+            <span class="text-[10px] text-gray-400 block">${u.rol} - +591 ${u.celular}</span>
+          </div>
+          <span class="bg-[#25D366] text-white px-2.5 py-1 rounded-lg font-bold text-[10px] flex items-center space-x-1">
+            <i class="fa-brands fa-whatsapp"></i>
+            <span>Enviar</span>
+          </span>
+        `;
+        listContainer.appendChild(item);
+      }
+    });
+
+    if (count === 0) {
+      listContainer.innerHTML = `<p class="p-3 text-center text-gray-400 text-xs">No hay contactos registrados con el rol de ${rolFiltro || 'ese departamento'}.</p>`;
     }
-    actualizarHeaderUsuario();
-  } catch (e) {
-    console.error("Error cargando usuario:", e);
+
+    modalWA.classList.remove("hidden");
+  } catch (error) {
+    console.error("Error al abrir WhatsApp:", error);
   }
 }
 
-function escucharColecciones() {
-  onSnapshot(collection(db, "solicitudes_cambios"), (snapshot) => {
-    solicitudes = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    solicitudes.sort((a, b) => (b.fechaCreacion || "").localeCompare(a.fechaCreacion || ""));
-    renderTablaCambios();
-    renderInformeView();
-    if (esSuperAdmin()) cargarPanelSuperAdmin();
+// ==================== FUNCIONES GLOBALES DE APERTURA (100% OPERATIVAS) ====================
+window.abrirModalCambio = () => {
+  document.getElementById("modal-new-change")?.classList.remove("hidden");
+};
+
+window.abrirModalMinuta = () => {
+  document.getElementById("modal-minuta")?.classList.remove("hidden");
+};
+
+// BOTÓN VERDE REGISTRAR ENTREGA (REPARADO Y BLINDADO)
+window.abrirModalEntrega = () => {
+  const selectTipo = document.getElementById("ent-tipo");
+  if (selectTipo) {
+    selectTipo.innerHTML = "";
+    if (categoriaEntregaActiva !== "todas") {
+      selectTipo.innerHTML += `<option value="${categoriaEntregaActiva}">${categoriaEntregaActiva}</option>`;
+    } else {
+      selectTipo.innerHTML += `<option value="GUÍA DE PRODUCCIÓN">GUÍA DE PRODUCCIÓN</option>`;
+      selectTipo.innerHTML += `<option value="CORTE">CORTE</option>`;
+      selectTipo.innerHTML += `<option value="MUESTRA DEFINITIVA">MUESTRA DEFINITIVA</option>`;
+      selectTipo.innerHTML += `<option value="MATERIALES">MATERIALES</option>`;
+      selectTipo.innerHTML += `<option value="HOJA DE DESBASTE">HOJA DE DESBASTE</option>`;
+      selectTipo.innerHTML += `<option value="TIZADORES">TIZADORES</option>`;
+    }
+  }
+  actualizarCamposSegunTipoEntrega();
+  document.getElementById("modal-nueva-entrega")?.classList.remove("hidden");
+};
+
+window.abrirModalBloqueo = () => {
+  document.getElementById("modal-nuevo-bloqueo")?.classList.remove("hidden");
+};
+
+window.abrirModalLlegada = () => {
+  document.getElementById("modal-nueva-llegada")?.classList.remove("hidden");
+};
+
+// ==================== REPORTES DE ENTREGAS ====================
+window.abrirReporteImpresoEntregas = () => {
+  const items = entregas.filter(item => (categoriaEntregaActiva === "todas") || 
+    ((item.tipo || "").toUpperCase().trim() === categoriaEntregaActiva.toUpperCase().trim()));
+  
+  if (items.length === 0) {
+    alert("No hay registros de entregas para generar el reporte impreso.");
+    return;
+  }
+
+  const contenedor = document.getElementById("contenido-impresion-entregas");
+  if (!contenedor) return;
+
+  let html = `
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse border border-gray-200 text-xs">
+        <thead class="bg-gray-100 font-bold">
+          <tr>
+            <th class="p-2 border text-center w-12">Foto</th>
+            <th class="p-2 border">Sem.</th>
+            <th class="p-2 border">Fecha/Hora</th>
+            <th class="p-2 border">Proyecto / Detalle</th>
+            <th class="p-2 border">Artículo</th>
+            <th class="p-2 border">Elemento Entregado</th>
+            <th class="p-2 border">Entregado Por</th>
+            <th class="p-2 border">Destino</th>
+            <th class="p-2 border text-center">Estado Recepción</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  items.forEach(it => {
+    const fotoPrint = it.foto 
+      ? `<img src="${it.foto}" style="width: 44px; height: 30px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; margin: auto;">`
+      : `<span style="color: #bbb;">—</span>`;
+
+    let elementoTexto = it.tipo;
+    if (it.copias) elementoTexto += ` (${it.copias} copias)`;
+    if (it.notas) elementoTexto += ` - ${it.notas}`;
+
+    html += `
+      <tr class="border-b">
+        <td class="p-1 border text-center">${fotoPrint}</td>
+        <td class="p-2 border font-bold font-mono">${it.semana || '—'}</td>
+        <td class="p-2 border whitespace-nowrap">${formatearFecha(it.fechaEntrega)}</td>
+        <td class="p-2 border font-bold text-gray-800">${it.proyecto || '—'}</td>
+        <td class="p-2 border font-mono">${it.articulo || '—'}</td>
+        <td class="p-2 border">${elementoTexto}</td>
+        <td class="p-2 border">${it.entregadoPorNombre} <span class="text-[10px] text-gray-400">(${it.entregadoPorRol})</span></td>
+        <td class="p-2 border font-bold">${it.destino}</td>
+        <td class="p-2 border text-center font-bold ${it.recibido ? 'text-green-600' : 'text-amber-600'}">
+          ${it.recibido ? 'Recibido' : 'En Tránsito'}
+        </td>
+      </tr>
+    `;
   });
 
-  onSnapshot(collection(db, "entregas_departamentos"), (snapshot) => {
-    entregas = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    entregas.sort((a, b) => (b.fechaEntrega || "").localeCompare(a.fechaEntrega || ""));
-    renderTablaEntregas();
-    if (esSuperAdmin()) cargarPanelSuperAdmin();
+  html += `
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  contenedor.innerHTML = html;
+  document.getElementById("modal-reporte-entregas-print")?.classList.remove("hidden");
+};
+
+window.abrirResumenTextoEntregas = () => {
+  const items = entregas.filter(item => (categoriaEntregaActiva === "todas") || 
+    ((item.tipo || "").toUpperCase().trim() === categoriaEntregaActiva.toUpperCase().trim()));
+  
+  if (items.length === 0) {
+    alert("No hay entregas registradas en esta categoría para generar el resumen.");
+    return;
+  }
+
+  let texto = `CONTROL DE ENTREGAS A DEPARTAMENTOS - BATA BOLIVIA\n`;
+  texto += `Categoría: ${categoriaEntregaActiva.toUpperCase()}\n`;
+  texto += `Fecha: ${new Date().toLocaleDateString("es-BO")}\n\n`;
+
+  items.forEach((it, idx) => {
+    let extra = it.copias ? ` (${it.copias} copias)` : '';
+    texto += `${idx + 1}. [Sem: ${it.semana}] ${it.proyecto.toUpperCase()} ${it.articulo ? '| Art: ' + it.articulo : ''}\n`;
+    texto += `   • Elemento: ${it.tipo}${extra}\n`;
+    texto += `   • Entregado por: ${it.entregadoPorNombre} (${it.entregadoPorRol}) -> Destino: ${it.destino}\n`;
+    texto += `   • Estado: ${it.recibido ? 'RECIBIDO' : 'EN TRÁNSITO'}\n\n`;
   });
 
-  onSnapshot(collection(db, "produccion_lotes"), (snapshot) => {
-    lotesProduccion = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderProduccionView();
+  const textarea = document.getElementById("texto-entregas-output");
+  if (textarea) textarea.value = texto;
+
+  safeClick("btn-copiar-texto-entregas", () => {
+    if (textarea) {
+      textarea.select();
+      navigator.clipboard.writeText(texto);
+      alert("Texto de entregas copiado al portapapeles.");
+    }
   });
+
+  safeClick("btn-enviar-correo-entregas", () => {
+    const asunto = encodeURIComponent(`Bata Bolivia - Control de Entregas (${categoriaEntregaActiva})`);
+    const cuerpo = encodeURIComponent(texto);
+    window.location.href = `mailto:?subject=${asunto}&body=${cuerpo}`;
+  });
+
+  safeClick("btn-enviar-wsp-entregas", () => {
+    const encoded = encodeURIComponent(texto);
+    window.open(`https://wa.me/?text=${encoded}`, "_blank");
+  });
+
+  document.getElementById("modal-entregas-texto")?.classList.remove("hidden");
+};
+
+// Controles y Modales Base
+const welcomeContainer = document.getElementById("welcome-container");
+const appContainer = document.getElementById("app-container");
+const modalLogin = document.getElementById("modal-login");
+const modalRegister = document.getElementById("modal-register");
+const modalProfile = document.getElementById("modal-profile");
+const modalMinuta = document.getElementById("modal-minuta");
+const modalResumen = document.getElementById("modal-resumen-reporte");
+const modalTextoWsp = document.getElementById("modal-texto-wsp");
+const modalNuevaEntrega = document.getElementById("modal-nueva-entrega");
+const modalReporteEntregasPrint = document.getElementById("modal-reporte-entregas-print");
+const modalEntregasTexto = document.getElementById("modal-entregas-texto");
+const modalVisorFoto = document.getElementById("modal-visor-foto");
+const modalNuevoBloqueo = document.getElementById("modal-nuevo-bloqueo");
+const modalNuevaLlegada = document.getElementById("modal-nueva-llegada");
+const modalReporteLlegadasPrint = document.getElementById("modal-reporte-llegadas-print");
+const modalImpresionTarjetas = document.getElementById("modal-impresion-tarjetas");
+const modalNewChange = document.getElementById("modal-new-change");
+
+safeClick("btn-close-whatsapp-modal", () => document.getElementById("modal-whatsapp")?.classList.add("hidden"));
+safeClick("btn-show-login", () => modalLogin?.classList.remove("hidden"));
+safeClick("btn-show-register", () => modalRegister?.classList.remove("hidden"));
+safeClick("close-login", () => modalLogin?.classList.add("hidden"));
+safeClick("close-register", () => modalRegister?.classList.add("hidden"));
+safeClick("close-profile", () => modalProfile?.classList.add("hidden"));
+safeClick("close-minuta", () => modalMinuta?.classList.add("hidden"));
+safeClick("close-modal-resumen", () => modalResumen?.classList.add("hidden"));
+safeClick("close-texto-wsp", () => modalTextoWsp?.classList.add("hidden"));
+safeClick("close-nueva-entrega", () => modalNuevaEntrega?.classList.add("hidden"));
+safeClick("cancel-nueva-entrega", () => modalNuevaEntrega?.classList.add("hidden"));
+safeClick("close-modal-entregas-print", () => modalReporteEntregasPrint?.classList.add("hidden"));
+safeClick("close-modal-entregas-texto", () => modalEntregasTexto?.classList.add("hidden"));
+safeClick("close-visor-foto", () => modalVisorFoto?.classList.add("hidden"));
+safeClick("close-nuevo-bloqueo", () => modalNuevoBloqueo?.classList.add("hidden"));
+safeClick("cancel-nuevo-bloqueo", () => modalNuevoBloqueo?.classList.add("hidden"));
+safeClick("close-nueva-llegada", () => modalNuevaLlegada?.classList.add("hidden"));
+safeClick("cancel-nueva-llegada", () => modalNuevaLlegada?.classList.add("hidden"));
+safeClick("close-modal-llegadas-print", () => modalReporteLlegadasPrint?.classList.add("hidden"));
+safeClick("close-modal-tarjetas", () => modalImpresionTarjetas?.classList.add("hidden"));
+safeClick("modal-btn-close", () => modalNewChange?.classList.add("hidden"));
+safeClick("modal-btn-cancel", () => modalNewChange?.classList.add("hidden"));
+
+safeClick("btn-reporte-entregas-pdf", window.abrirReporteImpresoEntregas);
+safeClick("btn-reporte-entregas-texto", window.abrirResumenTextoEntregas);
+
+window.verFotoGrande = (src, titulo) => {
+  if (!src) return;
+  const img = document.getElementById("visor-foto-img");
+  const tit = document.getElementById("visor-foto-titulo");
+  if (img) img.src = src;
+  if (tit) tit.textContent = titulo || "Visualización de Prototipo / Guía";
+  modalVisorFoto?.classList.remove("hidden");
+};
+
+safeClick("btn-forgot-pass", () => {
+  const email = document.getElementById("login-email")?.value.trim();
+  if (!email) {
+    alert("Por favor ingresa tu correo en la casilla antes de solicitar el reseteo.");
+    return;
+  }
+  const msg = encodeURIComponent(
+    `🔐 *SOLICITUD DE RESTABLECIMIENTO DE CONTRASEÑA*\n` +
+    `*Sistema de Cambios - Bata Bolivia*\n\n` +
+    `👤 *Correo del Solicitante:* ${email}\n\n` +
+    `_Hola Daniel, solicito generar el correo de restablecimiento de contraseña en Firebase Console para este usuario._`
+  );
+  window.open(`https://wa.me/${SUPER_ADMIN_WHATSAPP}?text=${msg}`, "_blank");
+});
+
+// Perfil
+safeClick("btn-edit-profile", () => {
+  if (!userData) return;
+  const pName = document.getElementById("prof-name");
+  const pPhone = document.getElementById("prof-phone");
+  if (pName) pName.value = userData.nombre || "";
+  if (pPhone) pPhone.value = userData.celular || "";
+  modalProfile?.classList.remove("hidden");
+});
+
+const formProfile = document.getElementById("form-update-profile");
+if (formProfile) {
+  formProfile.onsubmit = async (e) => {
+    e.preventDefault();
+    const name = document.getElementById("prof-name").value.trim();
+    const phone = document.getElementById("prof-phone").value.trim();
+    const photoFile = document.getElementById("prof-photo").files[0];
+
+    const updateData = { nombre: name, celular: phone };
+    if (photoFile) {
+      updateData.foto = await comprimirImagen(photoFile, 200, 0.7);
+    }
+
+    try {
+      await updateDoc(doc(db, "usuarios", currentUser.uid), updateData);
+      userData = { ...userData, ...updateData };
+      actualizarHeaderUsuario();
+      modalProfile?.classList.add("hidden");
+      alert("Perfil actualizado correctamente.");
+    } catch (err) {
+      alert("Error: " + err.message);
+    }
+  };
 }
 
-function mostrarDashboard() {
-  document.getElementById("welcome-container")?.classList.add("hidden");
-  document.getElementById("app-container")?.classList.remove("hidden");
-  activarVistaCambios();
+// Registro
+const formRegister = document.getElementById("form-register");
+if (formRegister) {
+  formRegister.onsubmit = async (e) => {
+    e.preventDefault();
+    const name = document.getElementById("reg-name").value.trim();
+    const phone = document.getElementById("reg-phone").value.trim();
+    const email = document.getElementById("reg-email").value.trim();
+    const role = document.getElementById("reg-role").value;
+    const pass = document.getElementById("reg-pass").value;
+    const photoFile = document.getElementById("reg-photo").files[0];
+    const photoBase64 = photoFile ? await comprimirImagen(photoFile, 200, 0.7) : null;
+
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, pass);
+      await setDoc(doc(db, "usuarios", cred.user.uid), {
+        nombre: name,
+        celular: phone,
+        email: email,
+        rol: role,
+        foto: photoBase64,
+        fechaCreacion: serverTimestamp()
+      });
+      modalRegister?.classList.add("hidden");
+    } catch (err) {
+      alert("Error de registro: " + err.message);
+    }
+  };
 }
 
-function mostrarBienvenida() {
-  document.getElementById("app-container")?.classList.add("hidden");
-  document.getElementById("welcome-container")?.classList.remove("hidden");
+// Login
+const formLogin = document.getElementById("form-login");
+if (formLogin) {
+  formLogin.onsubmit = async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("login-email").value.trim();
+    const pass = document.getElementById("login-pass").value;
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+      modalLogin?.classList.add("hidden");
+    } catch (err) {
+      alert("Credenciales incorrectas o usuario no registrado.");
+    }
+  };
 }
+
+safeClick("btn-logout", () => {
+  signOut(auth).then(() => {
+    window.location.reload();
+  });
+});
 
 function actualizarHeaderUsuario() {
   const esAdmin = esSuperAdmin();
@@ -263,165 +502,1282 @@ function actualizarHeaderUsuario() {
 
   const menuAdmin = document.getElementById("menu-btn-usuarios");
   if (menuAdmin) {
-    if (esAdmin) menuAdmin.classList.remove("hidden");
-    else menuAdmin.classList.add("hidden");
+    if (esAdmin) {
+      menuAdmin.classList.remove("hidden");
+    } else {
+      menuAdmin.classList.add("hidden");
+      if (!viewUsuarios?.classList.contains("hidden")) {
+        activarVistaCambios();
+      }
+    }
+  }
+
+  const esJefe = userData && userData.rol === "Desarrollo de producto - Jefe";
+  const btnMinutaHeader = document.getElementById("btn-open-minuta-header");
+  if (btnMinutaHeader) {
+    if (esJefe || esAdmin) {
+      btnMinutaHeader.classList.remove("hidden");
+    } else {
+      btnMinutaHeader.classList.add("hidden");
+    }
+  }
+
+  const secTarjetas = document.getElementById("section-menu-tarjetas");
+  if (secTarjetas) {
+    if (esDesarrollo() || esAdmin) {
+      secTarjetas.classList.remove("hidden");
+    } else {
+      secTarjetas.classList.add("hidden");
+    }
   }
 }
 
-function esSuperAdmin() {
-  if (!currentUser || !currentUser.email) return false;
-  return currentUser.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
-}
-
-function inicializarSemanas01a52() {
-  const selects = [
-    document.getElementById("prod-filter-semana"),
-    document.getElementById("lote-semana")
-  ];
-  selects.forEach(sel => {
-    if (!sel) return;
-    const esFiltro = sel.id === "prod-filter-semana";
-    sel.innerHTML = esFiltro ? '<option value="">Todas las Semanas (01-52)</option>' : '';
-    for (let i = 1; i <= 52; i++) {
-      const numStr = i < 10 ? `0${i}` : `${i}`;
-      sel.innerHTML += `<option value="SEM-${numStr}">Semana ${numStr}</option>`;
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    currentUser = user;
+    try {
+      const docSnap = await getDoc(doc(db, "usuarios", user.uid));
+      if (docSnap.exists()) {
+        userData = docSnap.data();
+      } else {
+        userData = {
+          nombre: esSuperAdmin() ? "Super Admin" : (user.email.split("@")[0]),
+          email: user.email,
+          rol: esSuperAdmin() ? "Super Admin" : "Desarrollo de producto",
+          celular: ""
+        };
+      }
+    } catch (e) {
+      console.error("Error al cargar perfil:", e);
+      userData = {
+        nombre: esSuperAdmin() ? "Super Admin" : (user.email.split("@")[0]),
+        email: user.email,
+        rol: esSuperAdmin() ? "Super Admin" : "Desarrollo de producto",
+        celular: ""
+      };
     }
+    actualizarHeaderUsuario();
+    welcomeContainer?.classList.add("hidden");
+    appContainer?.classList.remove("hidden");
+    activarVistaCambios();
+    escucharCambios();
+    escucharEntregas();
+    escucharProcurement();
+  } else {
+    currentUser = null;
+    userData = null;
+    welcomeContainer?.classList.remove("hidden");
+    appContainer?.classList.add("hidden");
+  }
+});
+
+// Navegación
+const viewCambios = document.getElementById("view-cambios");
+const viewInforme = document.getElementById("view-informe");
+const viewEntregas = document.getElementById("view-entregas");
+const viewProcurement = document.getElementById("view-procurement");
+const viewTarjetas = document.getElementById("view-tarjetas");
+const viewUsuarios = document.getElementById("view-usuarios");
+
+const menuBtnCambios = document.getElementById("menu-btn-cambios");
+const menuBtnInforme = document.getElementById("menu-btn-informe");
+const menuBtnEntregasTodas = document.getElementById("menu-btn-entregas-todas");
+const menuBtnProcurement = document.getElementById("menu-btn-procurement");
+const menuBtnTarjetas = document.getElementById("menu-btn-tarjetas");
+const menuBtnUsuarios = document.getElementById("menu-btn-usuarios");
+
+const CLASE_INACTIVO_PRINCIPAL = "sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white hover:bg-white/15 transition cursor-pointer";
+const CLASE_INACTIVO_SUB = "sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white/90 hover:bg-white/15 hover:text-white transition cursor-pointer pl-5";
+const CLASE_ACTIVO_PASTILLA = "sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-black text-xs bg-white text-[#D61B28] shadow-md transition cursor-pointer scale-[1.02]";
+const CLASE_ACTIVO_SUB_PASTILLA = "sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-black bg-white text-[#D61B28] shadow-md transition cursor-pointer pl-5 scale-[1.02]";
+
+function resetMenuStyles() {
+  [menuBtnCambios, menuBtnInforme, menuBtnEntregasTodas, menuBtnProcurement, menuBtnTarjetas, menuBtnUsuarios].forEach(b => {
+    if (b) b.className = CLASE_INACTIVO_PRINCIPAL;
   });
+
+  document.querySelectorAll(".sub-ent-btn").forEach(b => {
+    b.className = CLASE_INACTIVO_SUB;
+  });
+
+  viewCambios?.classList.add("hidden");
+  viewInforme?.classList.add("hidden");
+  viewEntregas?.classList.add("hidden");
+  viewProcurement?.classList.add("hidden");
+  viewTarjetas?.classList.add("hidden");
+  viewUsuarios?.classList.add("hidden");
 }
 
-function renderTablaCambios() {
-  const tbody = document.getElementById("table-cambios-body");
-  const empty = document.getElementById("table-empty-state");
-  if (!tbody) return;
+function activarVistaCambios() {
+  resetMenuStyles();
+  viewCambios?.classList.remove("hidden");
+  if (menuBtnCambios) menuBtnCambios.className = CLASE_ACTIVO_PASTILLA;
+}
 
-  if (solicitudes.length === 0) {
-    empty?.classList.remove("hidden");
-    tbody.innerHTML = "";
+safeClick("menu-btn-cambios", activarVistaCambios);
+
+safeClick("menu-btn-informe", () => {
+  resetMenuStyles();
+  viewInforme?.classList.remove("hidden");
+  if (menuBtnInforme) menuBtnInforme.className = CLASE_ACTIVO_PASTILLA;
+  
+  colFiltroSemanaInforme = "";
+  colFiltroProyectoInforme = "";
+  const inSem = document.getElementById("col-filter-semana-informe");
+  const inProy = document.getElementById("col-filter-proyecto-informe");
+  if (inSem) inSem.value = "";
+  if (inProy) inProy.value = "";
+  
+  renderInformeView();
+});
+
+safeClick("menu-btn-entregas-todas", () => {
+  window.cambiarSubmenuEntrega("todas");
+});
+
+safeClick("menu-btn-procurement", () => {
+  resetMenuStyles();
+  viewProcurement?.classList.remove("hidden");
+  if (menuBtnProcurement) menuBtnProcurement.className = CLASE_ACTIVO_PASTILLA;
+  renderProcurementView();
+});
+
+safeClick("menu-btn-tarjetas", () => {
+  resetMenuStyles();
+  viewTarjetas?.classList.remove("hidden");
+  if (menuBtnTarjetas) menuBtnTarjetas.className = CLASE_ACTIVO_PASTILLA;
+  initModuloTarjetas();
+});
+
+safeClick("menu-btn-usuarios", () => {
+  if (!esSuperAdmin()) {
+    alert("Acceso denegado.");
     return;
   }
-  empty?.classList.add("hidden");
+  resetMenuStyles();
+  viewUsuarios?.classList.remove("hidden");
+  if (menuBtnUsuarios) menuBtnUsuarios.className = CLASE_ACTIVO_PASTILLA;
+  cargarPanelSuperAdmin();
+});
 
-  let html = "";
-  solicitudes.forEach(s => {
-    const foto = s.foto ? `<img src="${s.foto}" class="w-10 h-10 object-cover rounded mx-auto border">` : '—';
-    html += `
-      <tr class="hover:bg-gray-50 border-b">
-        <td class="p-2 text-center">${foto}</td>
-        <td class="p-3 font-mono font-bold">${s.semana || '—'}</td>
-        <td class="p-3">${new Date(s.fechaCreacion || Date.now()).toLocaleDateString("es-BO")}</td>
-        <td class="p-3">${s.solicitanteNombre || 'Usuario'}</td>
-        <td class="p-3 font-bold">${s.proyecto || '—'}</td>
-        <td class="p-3 font-mono">${s.articulo || '—'}</td>
-        <td class="p-3">${s.boxCambio || '—'}</td>
-        <td class="p-3 text-center font-bold text-orange-600">${s.estado || 'Pendiente'}</td>
-        <td class="p-3 text-center">${s.fechaRealizado ? new Date(s.fechaRealizado).toLocaleDateString("es-BO") : '—'}</td>
-        <td class="p-3 text-center">
-          <input type="checkbox" ${s.validadoCostos ? 'checked disabled' : ''} class="accent-red-600 h-4 w-4">
-        </td>
-      </tr>
-    `;
-  });
-  tbody.innerHTML = html;
-}
+// Submenús entregas
+safeClick("sub-btn-MATERIALES", () => window.cambiarSubmenuEntrega("MATERIALES"));
+safeClick("sub-btn-GUIA", () => window.cambiarSubmenuEntrega("GUÍA DE PRODUCCIÓN"));
+safeClick("sub-btn-CORTE", () => window.cambiarSubmenuEntrega("CORTE"));
+safeClick("sub-btn-MUESTRA", () => window.cambiarSubmenuEntrega("MUESTRA DEFINITIVA"));
+safeClick("sub-btn-DESBASTE", () => window.cambiarSubmenuEntrega("HOJA DE DESBASTE"));
+safeClick("sub-btn-TIZADORES", () => window.cambiarSubmenuEntrega("TIZADORES"));
 
-function renderInformeView() {
-  const tbody = document.getElementById("table-informe-articulos-body");
-  if (!tbody) return;
-  let html = "";
-  solicitudes.forEach(s => {
-    html += `
-      <tr class="hover:bg-gray-50 border-b">
-        <td class="p-2 text-center"><input type="checkbox" checked class="chk-articulo-informe accent-red-600" value="${s.id}"></td>
-        <td class="p-2 text-center">${s.foto ? `<img src="${s.foto}" class="w-8 h-8 object-cover rounded mx-auto">` : '—'}</td>
-        <td class="p-2 font-mono font-bold">${s.semana || '—'}</td>
-        <td class="p-2 font-bold">${s.proyecto || '—'}</td>
-        <td class="p-2 font-mono">${s.articulo || '—'}</td>
-        <td class="p-2">${s.boxCambio || '—'}</td>
-        <td class="p-2 text-center font-bold">${s.estado || 'Pendiente'}</td>
-        <td class="p-2 text-center">${s.validadoCostos ? 'Validado' : 'Pendiente'}</td>
-      </tr>
-    `;
-  });
-  tbody.innerHTML = html;
+window.cambiarSubmenuEntrega = (categoria) => {
+  resetMenuStyles();
+  viewEntregas?.classList.remove("hidden");
+  categoriaEntregaActiva = categoria;
+
+  const titulo = document.getElementById("entregas-vista-titulo");
+  const subtitulo = document.getElementById("entregas-vista-subtitulo");
+  const thFoto = document.getElementById("th-ent-foto");
+  const thArt = document.getElementById("th-ent-art");
+  const labelThProy = document.getElementById("label-th-proy");
+  const btnTextEntrega = document.getElementById("btn-text-nueva-entrega");
+
+  if (categoria === "todas") {
+    if (menuBtnEntregasTodas) menuBtnEntregasTodas.className = CLASE_ACTIVO_PASTILLA;
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-truck-ramp-box"></i><span>Control de Entregas (Todas)</span>`;
+    if (subtitulo) subtitulo.textContent = "Visualizador consolidado de todas las entregas físicas a departamentos.";
+    if (thFoto) thFoto.classList.remove("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Entrega";
+  } else if (categoria === "MATERIALES") {
+    const btn = document.getElementById("sub-btn-MATERIALES");
+    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-boxes-packing text-blue-600"></i><span>Entrega de Materiales</span>`;
+    if (subtitulo) subtitulo.textContent = "Insumos y materiales (Semana y Nombre). Destinos: Desarrollo de producto, Producción.";
+    if (thFoto) thFoto.classList.add("hidden");
+    if (thArt) thArt.classList.add("hidden");
+    if (labelThProy) labelThProy.textContent = "Nombre del Material";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Material";
+  } else if (categoria === "GUÍA DE PRODUCCIÓN") {
+    const btn = document.getElementById("sub-btn-GUIA");
+    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-file-contract text-emerald-600"></i><span>Entrega de Guías de Producción</span>`;
+    if (subtitulo) subtitulo.textContent = "Entrega física de guías de producción. Destino exclusivo: Costos.";
+    if (thFoto) thFoto.classList.remove("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Guía";
+  } else if (categoria === "CORTE") {
+    const btn = document.getElementById("sub-btn-CORTE");
+    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-scissors text-amber-600"></i><span>Entrega de Cortes</span>`;
+    if (subtitulo) subtitulo.textContent = "Entrega de cortes. Destinos: Costos, Producción.";
+    if (thFoto) thFoto.classList.remove("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Corte";
+  } else if (categoria === "MUESTRA DEFINITIVA") {
+    const btn = document.getElementById("sub-btn-MUESTRA");
+    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-shoe-prints text-purple-600"></i><span>Entrega de Muestras Definitivas</span>`;
+    if (subtitulo) subtitulo.textContent = "Muestras definitivas con foto. Destinos: Producción, Planeamiento, Retail.";
+    if (thFoto) thFoto.classList.remove("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Muestra";
+  } else if (categoria === "HOJA DE DESBASTE") {
+    const btn = document.getElementById("sub-btn-DESBASTE");
+    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-layer-group text-cyan-600"></i><span>Entrega de Hoja de Desbaste</span>`;
+    if (subtitulo) subtitulo.textContent = "Entrega de especificaciones de desbaste. Destinos: Costos, Producción.";
+    if (thFoto) thFoto.classList.remove("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Desbaste";
+  } else if (categoria === "TIZADORES") {
+    const btn = document.getElementById("sub-btn-TIZADORES");
+    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-copy text-rose-600"></i><span>Entrega de Tizadores (Copias)</span>`;
+    if (subtitulo) subtitulo.textContent = "Entrega de tizadores a Producción con especificación de número de copias.";
+    if (thFoto) thFoto.classList.add("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Tizadores";
+  }
+
+  renderTablaEntregas();
+};
+
+// ==================== TABLA GENERAL DE ENTREGAS ====================
+function escucharEntregas() {
+  const q = collection(db, "entregas_departamentos");
+  onSnapshot(q, (snapshot) => {
+    entregas = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    entregas.sort((a, b) => (b.fechaEntrega || "").localeCompare(a.fechaEntrega || ""));
+    renderTablaEntregas();
+  }, (err) => console.error("Error al escuchar entregas:", err));
 }
 
 function renderTablaEntregas() {
   const tbody = document.getElementById("table-entregas-body");
+  const empty = document.getElementById("entregas-empty-state");
   if (!tbody) return;
-  let html = "";
-  entregas.forEach(e => {
-    html += `
-      <tr class="hover:bg-gray-50 border-b">
-        <td class="p-2 text-center">${e.foto ? `<img src="${e.foto}" class="w-8 h-8 object-cover rounded mx-auto">` : '—'}</td>
-        <td class="p-2 font-mono font-bold">${e.semana || '—'}</td>
-        <td class="p-2">${new Date(e.fechaEntrega || Date.now()).toLocaleDateString("es-BO")}</td>
-        <td class="p-2 font-bold">${e.proyecto || '—'}</td>
-        <td class="p-2 font-mono">${e.articulo || '—'}</td>
-        <td class="p-2">${e.tipo || '—'}</td>
-        <td class="p-2">${e.entregadoPorNombre || 'Usuario'}</td>
-        <td class="p-2 font-bold">${e.destino || '—'}</td>
-        <td class="p-2 text-center font-bold text-green-600">${e.recibido ? 'Recibido' : 'En Tránsito'}</td>
-      </tr>
+  tbody.innerHTML = "";
+
+  let entregasFiltradas = entregas.filter(item => {
+    const coincideCategoria = (categoriaEntregaActiva === "todas") || 
+      ((item.tipo || "").toUpperCase().trim() === categoriaEntregaActiva.toUpperCase().trim());
+    const semStr = (item.semana || "").toString().toLowerCase().trim();
+    const proyStr = (item.proyecto || "").toString().toLowerCase().trim();
+    const coincideSem = !colFiltroSemanaEntregas || semStr.includes(colFiltroSemanaEntregas);
+    const coincideProy = !colFiltroProyectoEntregas || proyStr.includes(colFiltroProyectoEntregas);
+    return coincideCategoria && coincideSem && coincideProy;
+  });
+
+  if (entregasFiltradas.length === 0) {
+    empty?.classList.remove("hidden");
+    return;
+  }
+  empty?.classList.add("hidden");
+
+  const esAdmin = esSuperAdmin();
+
+  entregasFiltradas.forEach(ent => {
+    const tr = document.createElement("tr");
+    tr.className = "hover:bg-gray-50/80 transition border-b border-gray-100";
+
+    const puedeConfirmar = (userData && userData.rol === ent.destino) || esAdmin;
+
+    let recepcionHTML = "";
+    if (ent.recibido) {
+      recepcionHTML = `
+        <span class="text-green-700 font-bold flex items-center justify-center space-x-1">
+          <i class="fa-solid fa-circle-check text-green-600"></i>
+          <span>Recibido</span>
+        </span>
+      `;
+    } else {
+      if (puedeConfirmar) {
+        recepcionHTML = `
+          <button onclick="window.confirmarRecepcionEntrega('${ent.id}', '${ent.tipo}', '${ent.proyecto}')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-2.5 py-1 rounded-lg border border-blue-200 transition cursor-pointer">
+            Confirmar Recepción
+          </button>
+        `;
+      } else {
+        recepcionHTML = `<span class="text-amber-600 font-semibold italic text-[11px]">En tránsito a ${ent.destino}</span>`;
+      }
+    }
+
+    const fotoHTML = ent.foto 
+      ? `<img src="${ent.foto}" onclick="window.verFotoGrande('${ent.foto}', '${ent.proyecto} - ${ent.articulo || ent.tipo}')" class="w-10 h-7 object-cover rounded border border-gray-200 shadow-xs cursor-pointer hover:opacity-80 transition mx-auto" title="Click para ampliar">`
+      : `<div class="w-10 h-7 rounded border border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-[10px] mx-auto"><i class="fa-regular fa-image"></i></div>`;
+
+    const tdFotoHTML = (categoriaEntregaActiva !== "MATERIALES" && categoriaEntregaActiva !== "TIZADORES") ? `<td class="p-2 border-r border-gray-100 text-center">${fotoHTML}</td>` : '';
+    const tdArticuloHTML = categoriaEntregaActiva !== "MATERIALES" ? `<td class="p-3 font-mono text-gray-700 border-r border-gray-100">${ent.articulo || '—'}</td>` : '';
+
+    let detalleExtra = "";
+    if (ent.copias) detalleExtra += `<span class="bg-rose-100 text-rose-800 font-bold text-[9px] px-1.5 py-0.2 rounded ml-1">${ent.copias} copias</span>`;
+    if (ent.notas) detalleExtra += `<p class="text-[10px] text-gray-400 mt-0.5">${ent.notas}</p>`;
+
+    tr.innerHTML = `
+      ${tdFotoHTML}
+      <td class="p-3 font-bold text-gray-700 border-r border-gray-100 font-mono">${ent.semana || '—'}</td>
+      <td class="p-3 text-gray-600 border-r border-gray-100 whitespace-nowrap">${formatearFecha(ent.fechaEntrega)}</td>
+      <td class="p-3 font-bold text-gray-800 border-r border-gray-100">${ent.proyecto || '—'}</td>
+      ${tdArticuloHTML}
+      <td class="p-3 border-r border-gray-100">
+        <span class="bg-red-50 text-[#D61B28] px-2 py-0.5 rounded font-bold text-[10px] border border-red-100">${ent.tipo}</span>
+        ${detalleExtra}
+      </td>
+      <td class="p-3 border-r border-gray-100 whitespace-nowrap">
+        <span class="font-bold text-gray-800 block">${ent.entregadoPorNombre}</span>
+        <span class="text-[10px] text-gray-400">${ent.entregadoPorRol}</span>
+      </td>
+      <td class="p-3 border-r border-gray-100 font-bold text-gray-700">${ent.destino}</td>
+      <td class="p-3 text-center whitespace-nowrap">${recepcionHTML}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+window.confirmarRecepcionEntrega = async (id, tipo, proyecto) => {
+  if (confirm(`¿Confirmar que has recibido físicamente "${tipo}" (${proyecto})?`)) {
+    await updateDoc(doc(db, "entregas_departamentos", id), {
+      recibido: true,
+      fechaRecepcion: new Date().toISOString(),
+      recibidoPorNombre: (userData && userData.nombre) || "Usuario"
+    });
+  }
+};
+
+// Escucha en tiempo real de Solicitudes
+function escucharCambios() {
+  const q = collection(db, "solicitudes_cambios");
+  onSnapshot(q, (snapshot) => {
+    const ahora = new Date();
+    solicitudes = snapshot.docs.map(docSnap => {
+      const data = docSnap.data();
+      const id = docSnap.id;
+
+      if (data.estado === "En proceso" && data.fechaCreacion) {
+        const fechaCrea = new Date(data.fechaCreacion);
+        const diferenciaDias = (ahora - fechaCrea) / (1000 * 60 * 60 * 24);
+        if (diferenciaDias >= 7) {
+          data.estado = "Retrasado";
+          updateDoc(doc(db, "solicitudes_cambios", id), { estado: "Retrasado" });
+        }
+      }
+
+      return { id, ...data };
+    });
+    solicitudes.sort((a, b) => (b.fechaCreacion || "").localeCompare(a.fechaCreacion || ""));
+    renderTabla();
+    if (!viewInforme?.classList.contains("hidden")) {
+      actualizarInformePorSemana();
+    }
+  });
+}
+
+function formatearFecha(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return d.toLocaleDateString("es-BO", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+// Render Tabla de Cambios Pública
+function renderTabla() {
+  const tbody = document.getElementById("table-cambios-body");
+  const empty = document.getElementById("table-empty-state");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  if (solicitudes.length === 0) {
+    empty?.classList.remove("hidden");
+    return;
+  }
+  empty?.classList.add("hidden");
+
+  const esAdmin = esSuperAdmin();
+  const esDesarrolloUsuario = esDesarrollo() || esAdmin;
+  const esCostos = (userData && userData.rol === "Costos") || esAdmin;
+
+  solicitudes.forEach((item) => {
+    const tr = document.createElement("tr");
+    tr.className = item.esMinuta 
+      ? "bg-amber-50/70 hover:bg-amber-100/70 transition border-b border-amber-200" 
+      : "hover:bg-gray-50/80 transition border-b border-gray-100";
+
+    let badgeMinuta = item.esMinuta 
+      ? `<span class="bg-amber-500 text-white font-black text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider block mb-1 w-fit shadow-xs">PLAN PILOTO</span>` 
+      : '';
+
+    let estadoHTML = "";
+    if (esDesarrolloUsuario) {
+      estadoHTML = `
+        <div class="flex items-center space-x-1.5">
+          <select id="sel-estado-${item.id}" class="border border-orange-200 text-orange-600 bg-orange-50 font-semibold rounded-lg px-2 py-1 text-xs focus:ring-1 focus:ring-[#D61B28]">
+            <option value="En proceso" ${item.estado === "En proceso" ? "selected" : ""}>En proceso</option>
+            <option value="Realizado" ${item.estado === "Realizado" ? "selected" : ""}>Realizado</option>
+            <option value="Retrasado" ${item.estado === "Retrasado" ? "selected" : ""}>Retrasado</option>
+          </select>
+          <button onclick="window.guardarCambioEstado('${item.id}', '${item.proyecto}', '${item.articulo}', '${item.semana || ''}')" title="Guardar y Notificar a Costos" class="bg-gray-100 hover:bg-[#D61B28] hover:text-white text-gray-600 p-1.5 rounded-lg text-xs transition cursor-pointer">
+            <i class="fa-solid fa-floppy-disk"></i>
+          </button>
+        </div>
+      `;
+    } else {
+      const estilo = item.estado === "Realizado" ? "border-green-200 text-green-700 bg-green-50" : (item.estado === "Retrasado" ? "border-red-200 text-red-700 bg-red-50" : "border-orange-200 text-orange-600 bg-orange-50");
+      estadoHTML = `<span class="border ${estilo} px-3 py-1 rounded-lg font-bold text-xs">${item.estado}</span>`;
+    }
+
+    const fechaRealizadoHTML = item.fechaRealizado 
+      ? `<span class="font-bold text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200">${formatearFecha(item.fechaRealizado)}</span>`
+      : `<span class="text-gray-300 text-[11px]">—</span>`;
+
+    let costosHTML = "";
+    if (item.estado === "Realizado") {
+      if (item.validadoCostos) {
+        costosHTML = `
+          <div class="flex items-center justify-center space-x-1 text-green-700 font-bold text-xs">
+            <i class="fa-solid fa-circle-check text-green-600"></i>
+            <span>Validado</span>
+            ${esAdmin ? `<button onclick="window.desbloquearValidacionCostos('${item.id}')" class="text-red-500 hover:text-red-700 text-[10px] ml-1 cursor-pointer" title="Desbloquear como Super Admin"><i class="fa-solid fa-unlock"></i></button>` : ''}
+          </div>
+        `;
+      } else {
+        costosHTML = `
+          <div class="flex items-center justify-center space-x-1">
+            <input type="checkbox" ${!esCostos ? "disabled title='Solo el usuario de Costos puede validar'" : ""} 
+                   onchange="window.confirmarValidacionCostos('${item.id}', '${item.proyecto}', '${item.articulo}', this)"
+                   class="h-4 w-4 accent-[#D61B28] rounded border-gray-300 cursor-${esCostos ? 'pointer' : 'not-allowed'}">
+            <span class="text-[11px] ${esCostos ? 'text-gray-600 font-semibold' : 'text-gray-300'}">Confirmar</span>
+          </div>
+        `;
+      }
+    } else {
+      costosHTML = `<input type="checkbox" disabled class="h-4 w-4 text-gray-300 rounded border-gray-200 opacity-40">`;
+    }
+
+    const fotoHTML = item.foto 
+      ? `<img src="${item.foto}" onclick="window.verFotoGrande('${item.foto}', '${item.proyecto} - ${item.articulo}')" class="w-10 h-7 object-cover rounded border border-gray-200 shadow-xs cursor-pointer hover:opacity-80 transition mx-auto" title="Click para ampliar">`
+      : `<div class="w-10 h-7 rounded border border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-[10px] mx-auto"><i class="fa-regular fa-image"></i></div>`;
+
+    tr.innerHTML = `
+      <td class="p-2 border-r border-gray-100 text-center">${fotoHTML}</td>
+      <td class="p-3 font-bold text-gray-700 border-r border-gray-100 font-mono">${item.semana || '—'}</td>
+      <td class="p-3 text-gray-600 border-r border-gray-100 whitespace-nowrap">${formatearFecha(item.fechaCreacion)}</td>
+      <td class="p-3 border-r border-gray-100 whitespace-nowrap">
+        <span class="font-bold text-gray-800 block">${item.solicitanteNombre || '—'}</span>
+        <span class="text-[10px] text-gray-400">${item.solicitanteRol || ''}</span>
+      </td>
+      <td class="p-3.5 font-bold text-gray-800 border-r border-gray-100">${badgeMinuta}${item.proyecto}</td>
+      <td class="p-3.5 font-mono text-gray-700 border-r border-gray-100">${item.articulo}</td>
+      <td class="p-3.5 text-gray-700 border-r border-gray-100 leading-relaxed">${item.boxCambio}</td>
+      <td class="p-3.5 text-center border-r border-gray-100 whitespace-nowrap">${estadoHTML}</td>
+      <td class="p-3.5 text-center border-r border-gray-100 whitespace-nowrap">${fechaRealizadoHTML}</td>
+      <td class="p-3.5 text-center whitespace-nowrap">${costosHTML}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Guardar Estado
+window.guardarCambioEstado = async (id, proyecto, articulo, semana) => {
+  const select = document.getElementById(`sel-estado-${id}`);
+  if (!select) return;
+  const nuevoEstado = select.value;
+
+  const updatePayload = { estado: nuevoEstado };
+  if (nuevoEstado === "Realizado") {
+    updatePayload.fechaRealizado = new Date().toISOString();
+  } else {
+    updatePayload.fechaRealizado = null;
+  }
+
+  await updateDoc(doc(db, "solicitudes_cambios", id), updatePayload);
+
+  if (nuevoEstado === "Realizado") {
+    abrirModalWhatsApp({
+      titulo: "Proyecto Realizado",
+      subtitulo: "Enviar alerta a los usuarios de Costos para su validación:",
+      mensajeTexto: `👟 *PROYECTO REALIZADO - REQUERIMIENTO DE COSTOS*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n✅ *Estado:* Realizado por Desarrollo de Producto (${(userData && userData.nombre) || 'Usuario'})\n\n_Por favor ingresar al sistema para validar los costos asociados._`,
+      rolFiltro: "Costos"
+    });
+  } else {
+    alert("Estado guardado correctamente.");
+  }
+};
+
+window.confirmarValidacionCostos = async (id, proyecto, articulo, checkboxElem) => {
+  const confirma = confirm(`¿Estás seguro de validar los costos del proyecto "${proyecto}"? Una vez confirmado quedará bloqueado.`);
+  if (!confirma) {
+    checkboxElem.checked = false;
+    return;
+  }
+
+  await updateDoc(doc(db, "solicitudes_cambios", id), {
+    validadoCostos: true,
+    fechaValidacionCostos: new Date().toISOString(),
+    validadorCostosNombre: (userData && userData.nombre) || "Costos"
+  });
+
+  abrirModalWhatsApp({
+    titulo: "Costos Validados",
+    subtitulo: "Enviar notificación al equipo de Calidad:",
+    mensajeTexto: `📋 *VALIDACIÓN DE COSTOS COMPLETADA - ALERTA CALIDAD*\n\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n💰 *Costos:* Validados por ${(userData && userData.nombre) || 'Costos'} (Costos)\n\n_El proyecto cuenta con validación técnica y económica lista para producción._`,
+    rolFiltro: "Calidad"
+  });
+};
+
+window.desbloquearValidacionCostos = async (id) => {
+  if (confirm("¿Desbloquear validación de costos? (Acción de Super Admin)")) {
+    await updateDoc(doc(db, "solicitudes_cambios", id), { validadoCostos: false });
+  }
+};
+
+// Solicitudes y Minutas
+const formMinuta = document.getElementById("form-minuta");
+if (formMinuta) {
+  formMinuta.onsubmit = async (e) => {
+    e.preventDefault();
+    const semana = document.getElementById("minuta-semana").value.trim();
+    const proyecto = document.getElementById("minuta-proyecto").value.trim();
+    const articulo = document.getElementById("minuta-articulo").value.trim();
+    const detalle = document.getElementById("minuta-box").value.trim();
+    const photoFile = document.getElementById("minuta-photo").files[0];
+
+    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
+
+    try {
+      await addDoc(collection(db, "solicitudes_cambios"), {
+        semana,
+        proyecto,
+        articulo,
+        foto: fotoBase64,
+        boxCambio: detalle,
+        esMinuta: true,
+        solicitanteNombre: (userData && userData.nombre) || "Jefe Desarrollo",
+        solicitanteRol: (userData && userData.rol) || "Desarrollo de producto - Jefe",
+        solicitanteId: currentUser.uid,
+        estado: "En proceso",
+        fechaRealizado: null,
+        validadoCostos: false,
+        fechaCreacion: new Date().toISOString(),
+        timestamp: serverTimestamp()
+      });
+
+      formMinuta.reset();
+      modalMinuta?.classList.add("hidden");
+
+      abrirModalWhatsApp({
+        titulo: "Minuta de Cambios Registrada",
+        subtitulo: "Enviar minuta a los Técnicos de Desarrollo:",
+        mensajeTexto: `📋 *MINUTA DE CAMBIOS - PLAN PILOTO*\n*Bata Bolivia / Desarrollo de Producto*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n👤 *Emitido por:* ${(userData && userData.nombre) || 'Jefe Desarrollo'}\n\n📝 *DETALLE DE CAMBIOS TÉCNICOS:*\n${detalle}\n\n_Registrado en el sistema para control de avance y realización._`,
+        rolFiltro: "Desarrollo de producto - Técnico"
+      });
+    } catch (err) {
+      alert("Error al guardar minuta: " + err.message);
+    }
+  };
+}
+
+const formNewChange = document.getElementById("form-new-change");
+if (formNewChange) {
+  formNewChange.onsubmit = async (e) => {
+    e.preventDefault();
+    const semana = document.getElementById("change-semana").value.trim();
+    const proyecto = document.getElementById("change-project").value.trim();
+    const articulo = document.getElementById("change-article").value.trim();
+    const boxCambio = document.getElementById("change-box").value.trim();
+    const photoFile = document.getElementById("change-photo").files[0];
+
+    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
+
+    try {
+      await addDoc(collection(db, "solicitudes_cambios"), {
+        semana,
+        proyecto,
+        articulo,
+        foto: fotoBase64,
+        boxCambio,
+        esMinuta: false,
+        solicitanteNombre: (userData && userData.nombre) || (currentUser && currentUser.email) || "Usuario",
+        solicitanteRol: (userData && userData.rol) || "Usuario",
+        solicitanteId: currentUser.uid,
+        estado: "En proceso",
+        fechaRealizado: null,
+        validadoCostos: false,
+        fechaCreacion: new Date().toISOString(),
+        timestamp: serverTimestamp()
+      });
+
+      formNewChange.reset();
+      modalNewChange?.classList.add("hidden");
+
+      abrirModalWhatsApp({
+        titulo: "Solicitud Registrada",
+        subtitulo: "Notificar solicitud creada al equipo:",
+        mensajeTexto: `👞 *NUEVA SOLICITUD DE CAMBIO - BATA BOLIVIA*\n\n📅 *Semana:* ${semana}\n📌 *Proyecto:* ${proyecto}\n🔢 *Artículo:* ${articulo}\n👤 *Solicitado por:* ${(userData && userData.nombre) || 'Usuario'} (${(userData && userData.rol) || ''})\n📝 *Cambio:* ${boxCambio}\n\n_Revisar en el Sistema de Gestión de Cambios Bata_`
+      });
+    } catch (err) {
+      alert("Error: " + err.message);
+    }
+  };
+}
+
+// Configuración de campos dinámicos en Entrega
+const selEntTipo = document.getElementById("ent-tipo");
+if (selEntTipo) selEntTipo.onchange = actualizarCamposSegunTipoEntrega;
+
+function actualizarCamposSegunTipoEntrega() {
+  const tipo = document.getElementById("ent-tipo")?.value || "";
+  const selectDestino = document.getElementById("ent-destino");
+  const boxArticulo = document.getElementById("box-field-articulo");
+  const labelProy = document.getElementById("label-field-proyecto");
+  const inputProy = document.getElementById("ent-proyecto");
+  const boxFoto = document.getElementById("box-field-foto");
+  const boxCopias = document.getElementById("box-field-copias");
+  const containerSingle = document.getElementById("container-destino-single");
+  const containerMultiple = document.getElementById("container-destino-multiple");
+
+  if (!selectDestino) return;
+  selectDestino.innerHTML = "";
+  boxCopias?.classList.add("hidden");
+  containerMultiple?.classList.add("hidden");
+  containerSingle?.classList.remove("hidden");
+  boxFoto?.classList.add("hidden");
+
+  if (tipo === "MATERIALES") {
+    if (labelProy) labelProy.textContent = "Nombre del Material / Insumo";
+    if (inputProy) inputProy.placeholder = "Ej: Badana Beige 1.2mm";
+    boxArticulo?.classList.add("hidden");
+    selectDestino.innerHTML += `<option value="Desarrollo de producto">Desarrollo de producto</option>`;
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+    return;
+  }
+
+  boxArticulo?.classList.remove("hidden");
+  if (labelProy) labelProy.textContent = "Nombre del Proyecto";
+  if (inputProy) inputProy.placeholder = "Ej: SKATER";
+
+  if (tipo === "GUÍA DE PRODUCCIÓN") {
+    boxFoto?.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
+  }
+  else if (tipo === "CORTE") {
+    boxFoto?.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+  }
+  else if (tipo === "MUESTRA DEFINITIVA") {
+    boxFoto?.classList.remove("hidden");
+    containerSingle?.classList.add("hidden");
+    containerMultiple?.classList.remove("hidden");
+  }
+  else if (tipo === "HOJA DE DESBASTE") {
+    boxFoto?.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+  }
+  else if (tipo === "TIZADORES") {
+    boxCopias?.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+  } else {
+    boxFoto?.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
+  }
+}
+
+// Formulario Entrega
+const formEntrega = document.getElementById("form-nueva-entrega");
+if (formEntrega) {
+  formEntrega.onsubmit = async (e) => {
+    e.preventDefault();
+    const semana = document.getElementById("ent-semana").value.trim();
+    const proyecto = document.getElementById("ent-proyecto").value.trim();
+    const articulo = document.getElementById("ent-articulo").value.trim();
+    const tipo = document.getElementById("ent-tipo").value;
+    const notas = document.getElementById("ent-notas").value.trim();
+    const copias = document.getElementById("ent-copias").value.trim();
+    const photoFile = document.getElementById("ent-photo").files[0];
+
+    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
+
+    try {
+      let destinosAEntregar = [];
+
+      if (tipo === "MUESTRA DEFINITIVA") {
+        destinosAEntregar = Array.from(document.querySelectorAll(".chk-muestras-dest:checked")).map(c => c.value);
+        if (destinosAEntregar.length === 0) {
+          alert("Selecciona al menos un departamento para la muestra definitiva.");
+          return;
+        }
+      } else {
+        destinosAEntregar = [document.getElementById("ent-destino").value];
+      }
+
+      const nombreUsuario = (userData && userData.nombre) || (currentUser && currentUser.email) || "Usuario";
+      const rolUsuario = (userData && userData.rol) || (esSuperAdmin() ? "Super Admin" : "Desarrollo de producto");
+
+      for (const destino of destinosAEntregar) {
+        await addDoc(collection(db, "entregas_departamentos"), {
+          semana,
+          proyecto,
+          articulo: tipo === "MATERIALES" ? "" : articulo,
+          tipo,
+          destino,
+          copias: tipo === "TIZADORES" ? (copias || "1") : null,
+          foto: fotoBase64,
+          notas,
+          entregadoPorNombre: nombreUsuario,
+          entregadoPorRol: rolUsuario,
+          entregadoPorId: currentUser ? currentUser.uid : null,
+          recibido: false,
+          fechaEntrega: new Date().toISOString(),
+          timestamp: serverTimestamp()
+        });
+      }
+
+      formEntrega.reset();
+      modalNuevaEntrega?.classList.add("hidden");
+
+      const destinosTexto = destinosAEntregar.join(", ");
+      let detalleCopias = (tipo === "TIZADORES" && copias) ? `📑 *Copias:* ${copias}\n` : '';
+
+      abrirModalWhatsApp({
+        titulo: "Entrega Registrada",
+        subtitulo: `Notificar recepción a los encargados de ${destinosTexto}:`,
+        mensajeTexto: `📦 ENTREGA REALIZADA - PD BOLIVIA\n\n📅 *Semana:* ${semana}\n📌 *Elemento:* ${tipo}\n🏷️ *Detalle/Proyecto:* ${proyecto}\n${articulo ? '🔢 *Artículo:* ' + articulo + '\n' : ''}${detalleCopias}👤 *Entregado por:* ${nombreUsuario} (${rolUsuario})\n🏢 *Destino:* ${destinosTexto}\n📝 *Notas:* ${notas || 'Sin notas adicionales'}\n\n_Favor de confirmar la recepción física en el sistema._`,
+        rolFiltro: destinosAEntregar.length === 1 ? destinosAEntregar[0] : null
+      });
+    } catch (err) {
+      alert("Error al registrar entrega: " + err.message);
+    }
+  };
+}
+
+// ==================== MÓDULO TARJETAS (PD) ====================
+function initModuloTarjetas() {
+  const inputFecha = document.getElementById("card-fecha");
+  if (inputFecha && !inputFecha.value) {
+    const hoy = new Date();
+    inputFecha.value = hoy.toLocaleDateString("es-BO");
+  }
+
+  const fileInput = document.getElementById("card-croquis-file");
+  if (fileInput) {
+    fileInput.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        croquisTarjetaBase64 = await comprimirImagen(file, 400, 0.8);
+        renderTarjetasPreview();
+      }
+    };
+  }
+
+  const fileInputPlantilla = document.getElementById("card-plantilla-img-file");
+  if (fileInputPlantilla) {
+    fileInputPlantilla.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        plantillaCorteTarjetaBase64 = await comprimirImagen(file, 400, 0.8);
+        renderTarjetasPreview();
+      }
+    };
+  }
+
+  safeClick("btn-quick-distribute", () => {
+    const raw = document.getElementById("input-quick-paste-row")?.value.trim() || "";
+    if (!raw) {
+      alert("Copia una fila de tu tabla de Excel y pégala en el campo.");
+      return;
+    }
+
+    let cols = raw.split("\t").map(c => c.trim()).filter(c => c !== "");
+    if (cols.length < 4) {
+      cols = raw.split(/\s{2,}/).map(c => c.trim()).filter(c => c !== "");
+    }
+
+    if (cols.length >= 4) {
+      const cArt = document.getElementById("card-costo-articulo");
+      const cLin = document.getElementById("card-costo-linea");
+      const cMar = document.getElementById("card-costo-marca");
+      const cBudRet = document.getElementById("card-costo-budret");
+      const cPre = document.getElementById("card-costo-precio");
+      const cMrg = document.getElementById("card-costo-margen");
+
+      if (cArt) cArt.value = cols[0] || "";
+      if (cLin) cLin.value = cols[2] || "";
+      if (cMar) cMar.value = cols[3] || "BATA";
+      if (cBudRet) cBudRet.value = cols[10] || "0.00%";
+      if (cPre) cPre.value = cols[8] || "0.00";
+      if (cMrg) cMrg.value = cols[9] || "0%";
+
+      renderTarjetasPreview();
+    } else {
+      alert("No se detectaron suficientes columnas. Pega directamente la fila copiada de Excel.");
+    }
+  });
+
+  ["count-card-corte", "count-card-prod", "count-card-verde", "count-card-amarilla", "count-card-rosada"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.oninput = renderTarjetasPreview;
+  });
+
+  [
+    "card-costo-articulo", "card-costo-linea", "card-costo-marca", "card-costo-budret", 
+    "card-costo-precio", "card-costo-margen", "card-serie", "card-fecha", "card-material-corte", 
+    "card-forro", "card-plant-int", "card-tecnico", "card-horma-suela", "card-construccion", "card-observaciones"
+  ].forEach(id => {
+    const elem = document.getElementById(id);
+    if (elem) elem.oninput = renderTarjetasPreview;
+  });
+
+  safeClick("btn-imprimir-tarjetas-action", () => {
+    const previewHTML = document.getElementById("contenedor-tarjetas-preview")?.innerHTML || "";
+    const hTarj = document.getElementById("hoja-impresion-tarjetas");
+    if (hTarj) hTarj.innerHTML = previewHTML;
+    modalImpresionTarjetas?.classList.remove("hidden");
+  });
+
+  safeClick("btn-ejecutar-print-tarjetas", () => {
+    const contenidoHTML = document.getElementById("contenedor-tarjetas-preview")?.innerHTML || "";
+    if (!contenidoHTML) return;
+
+    const ventanaPrint = window.open("", "_blank", "width=900,height=650");
+    if (!ventanaPrint) {
+      alert("Por favor permite las ventanas emergentes para imprimir las tarjetas.");
+      return;
+    }
+
+    ventanaPrint.document.open();
+    ventanaPrint.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Impresión de Tarjetas - Bata Bolivia</title>
+        <style>
+          @page {
+            size: letter portrait;
+            margin: 8mm;
+          }
+          * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          html, body {
+            margin: 0;
+            padding: 0;
+            background: #fff;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          }
+          .shoe-card-container {
+            width: 200mm !important;
+            height: 34mm !important;
+            max-height: 34mm !important;
+            border: 1px solid #000 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            display: flex;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            background: #fff;
+          }
+          .shoe-panel {
+            width: 66.66mm !important;
+            height: 100% !important;
+            box-sizing: border-box !important;
+          }
+          .lateral-tab {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+        </style>
+      </head>
+      <body>
+        <div style="display:flex; flex-direction:column; align-items:flex-start; margin:0; padding:0;">
+          ${contenidoHTML}
+        </div>
+      </body>
+      </html>
+    `);
+    ventanaPrint.document.close();
+
+    setTimeout(() => {
+      ventanaPrint.focus();
+      ventanaPrint.print();
+      ventanaPrint.close();
+    }, 250);
+  });
+
+  renderTarjetasPreview();
+}
+
+function renderTarjetasPreview() {
+  const container = document.getElementById("contenedor-tarjetas-preview");
+  if (!container) return;
+
+  const cCortes = parseInt(document.getElementById("count-card-corte")?.value) || 0;
+  const cProd = parseInt(document.getElementById("count-card-prod")?.value) || 0;
+  const cVerdes = parseInt(document.getElementById("count-card-verde")?.value) || 0;
+  const cAmarillas = parseInt(document.getElementById("count-card-amarilla")?.value) || 0;
+  const cRosadas = parseInt(document.getElementById("count-card-rosada")?.value) || 0;
+
+  const totalTarjetas = cCortes + cProd + cVerdes + cAmarillas + cRosadas;
+  const lblTotal = document.getElementById("label-total-tarjetas-count");
+  if (lblTotal) lblTotal.textContent = totalTarjetas;
+
+  const articulo = document.getElementById("card-costo-articulo")?.value || "34461836";
+  const linea = (document.getElementById("card-costo-linea")?.value || "QUIQUE").toUpperCase();
+  const marca = (document.getElementById("card-costo-marca")?.value || "TEENER").toUpperCase();
+  const precio = document.getElementById("card-costo-precio")?.value || "259.00";
+  const margen = document.getElementById("card-costo-margen")?.value || "55.00%";
+  const budRet = document.getElementById("card-costo-budret")?.value || "37.39%";
+
+  const serie = document.getElementById("card-serie")?.value || "37-44";
+  const fecha = document.getElementById("card-fecha")?.value || "4/9/2026";
+  const materialCorte = (document.getElementById("card-material-corte")?.value || "IMITACION").toUpperCase();
+  const forro = (document.getElementById("card-forro")?.value || "PIQUE NEGRO").toUpperCase();
+  const plantInt = (document.getElementById("card-plant-int")?.value || "PIQUE NEGRO / CRETONE").toUpperCase();
+  const modelista = (document.getElementById("card-tecnico")?.value || "CARLOS ARCE").toUpperCase();
+  const construccion = (document.getElementById("card-construccion")?.value || "TRUE MOC").toUpperCase();
+  const suela = (document.getElementById("card-horma-suela")?.value || "QUIQUE").toUpperCase();
+  const observaciones = document.getElementById("card-observaciones")?.value || "";
+
+  const siluetaCalzadoHTML = croquisTarjetaBase64 
+    ? `<img src="${croquisTarjetaBase64}" style="width:100%; height:30px; object-fit:contain; margin:auto;">`
+    : `<div style="height:30px; display:flex; align-items:center; justify-content:center; font-size:8px; color:#999; border:1px dashed #ccc; border-radius:4px;">Croquis</div>`;
+
+  const siluetaPlantillaHTML = plantillaCorteTarjetaBase64 
+    ? `<img src="${plantillaCorteTarjetaBase64}" style="width:100%; height:30px; object-fit:contain; margin:auto;">`
+    : siluetaCalzadoHTML;
+
+  const listaAImprimir = [];
+
+  for (let i = 1; i <= cCortes; i++) {
+    listaAImprimir.push({
+      color: "#FFFFFF",
+      etiqueta: cCortes === 1 ? "CORTE (PRODUCCIÓN)" : `CORTE #${i} (PRODUCCIÓN)`,
+      esInvertida: true,
+      recibePlantilla: true
+    });
+  }
+  for (let i = 1; i <= cProd; i++) {
+    listaAImprimir.push({
+      color: "#FFFFFF",
+      etiqueta: cProd === 1 ? "PRODUCCIÓN" : `PRODUCCIÓN #${i}`,
+      esInvertida: false,
+      recibePlantilla: false
+    });
+  }
+  for (let i = 1; i <= cVerdes; i++) {
+    listaAImprimir.push({
+      color: "#80C342",
+      etiqueta: `RETAIL ${cVerdes > 1 ? '#' + i : ''}`,
+      esInvertida: false,
+      recibePlantilla: false
+    });
+  }
+  for (let i = 1; i <= cAmarillas; i++) {
+    listaAImprimir.push({
+      color: "#FFF200",
+      etiqueta: `PLANEAMIENTO ${cAmarillas > 1 ? '#' + i : ''}`,
+      esInvertida: false,
+      recibePlantilla: false
+    });
+  }
+  for (let i = 1; i <= cRosadas; i++) {
+    listaAImprimir.push({
+      color: "#E06D8A",
+      etiqueta: `EXPORTACIÓN ${cRosadas > 1 ? '#' + i : ''}`,
+      esInvertida: false,
+      recibePlantilla: false
+    });
+  }
+
+  let tarjetasHTML = "";
+
+  listaAImprimir.forEach((tarj) => {
+    const imagenIzquierdaHTML = tarj.recibePlantilla ? siluetaPlantillaHTML : siluetaCalzadoHTML;
+
+    const bloqueFirmasHTML = `
+      <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:3px 5px; ${tarj.esInvertida ? '' : 'border-right:1px dashed #555;'} font-size:6.5px;">
+        <div style="font-size:7px; font-weight:900; text-align:center; color:#1f2937; text-transform:uppercase; border-bottom:1px solid #d1d5db; padding-bottom:1px;">
+          APROBACIONES (${tarj.etiqueta})
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; text-align:center; align-items:end; margin-top:1px;">
+          <div style="display:flex; flex-direction:column; justify-content:flex-end; height:12mm;">
+            <div style="border-bottom:1px solid #000; width:100%; margin-bottom:1px;"></div>
+            <span style="font-weight:bold; font-size:6px; display:block;">P.D. CHIEF</span>
+            <span style="font-size:5px; color:#9ca3af;">Fecha: ___/___/___</span>
+          </div>
+          <div style="display:flex; flex-direction:column; justify-content:flex-end; height:12mm;">
+            <div style="border-bottom:1px solid #000; width:100%; margin-bottom:1px;"></div>
+            <span style="font-weight:bold; font-size:6px; display:block;">MERCHANDISING MAN.</span>
+            <span style="font-size:5px; color:#9ca3af;">Fecha: ___/___/___</span>
+          </div>
+        </div>
+
+        <div style="text-align:center; width:65%; margin:0 auto; display:flex; flex-direction:column; justify-content:flex-end; height:10mm;">
+          <div style="border-bottom:1px solid #000; width:100%; margin-bottom:1px;"></div>
+          <span style="font-weight:bold; font-size:6px; display:block;">PURCHASING MANAGER</span>
+          <span style="font-size:5px; color:#9ca3af;">Fecha: ___/___/___</span>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; text-align:center; align-items:end;">
+          <div style="display:flex; flex-direction:column; justify-content:flex-end; height:10mm;">
+            <div style="border-bottom:1px solid #000; width:100%; margin-bottom:1px;"></div>
+            <span style="font-weight:bold; font-size:6px; display:block;">PRODUCTION MANAGER</span>
+            <span style="font-size:5px; color:#9ca3af;">Fecha: ___/___/___</span>
+          </div>
+          <div style="display:flex; flex-direction:column; justify-content:flex-end; height:10mm;">
+            <div style="border-bottom:1px solid #000; width:100%; margin-bottom:1px;"></div>
+            <span style="font-weight:bold; font-size:6px; display:block;">COUNTRY MANAGER</span>
+            <span style="font-size:5px; color:#9ca3af;">Fecha: ___/___/___</span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const bloqueObservacionesHTML = `
+      <div class="shoe-panel" style="padding:4px; display:flex; flex-direction:column; justify-content:space-between; font-size:7px; ${tarj.esInvertida ? 'border-right:1px dashed #555;' : ''}">
+        <div>
+          <span style="font-weight:900; color:#1f2937; text-transform:uppercase; display:block; margin-bottom:1px;">OBSERVACIONES:</span>
+          <p style="font-size:6.5px; color:#374151; font-style:italic; line-height:1.2;">${observaciones || 'Sin observaciones adicionales'}</p>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <div style="border-bottom:1px dotted #9ca3af; height:6px;"></div>
+          <div style="border-bottom:1px dotted #9ca3af; height:6px;"></div>
+          <div style="border-bottom:1px dotted #9ca3af; height:6px;"></div>
+          <div style="text-align:right; font-size:6px; color:#9ca3af; font-weight:bold; letter-spacing:0.1em;">BATA BOLIVIA PD</div>
+        </div>
+      </div>
+    `;
+
+    const centroHTML = tarj.esInvertida ? bloqueObservacionesHTML : bloqueFirmasHTML;
+    const derechaHTML = tarj.esInvertida ? bloqueFirmasHTML : bloqueObservacionesHTML;
+
+    tarjetasHTML += `
+      <div class="shoe-card-container" style="background:#fff; display:flex; font-size:7.5px; line-height:1.1; color:#000;">
+        <!-- PANEL 1: ESPECIFICACIONES CON 3 CAMPOS IZQ Y 3 CAMPOS DER EN LA BASE -->
+        <div class="shoe-panel" style="display:flex; border-right:1px dashed #555; overflow:hidden;">
+          <div class="lateral-tab" style="width:16px; border-right:1px solid #000; display:flex; align-items:center; justify-content:center; font-weight:900; letter-spacing:0.1em; font-size:9px; writing-mode:vertical-rl; transform:rotate(180deg); background-color:${tarj.color} !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;">
+            ${linea}
+          </div>
+          
+          <div style="flex:1; display:flex; flex-direction:column; justify-content:space-between; padding:1px;">
+            <div style="font-size:8px; font-weight:900; color:#dc2626; text-align:center; border-bottom:1px solid #000; padding-bottom:1px;">
+              MANUFACTURA BOLIVIANA S.A.
+            </div>
+
+            <div style="display:flex; flex:1;">
+              <div style="width:58px; display:flex; flex-direction:column; justify-content:space-between; border-right:1px solid #000; padding-right:1px;">
+                ${imagenIzquierdaHTML}
+                <span style="font-size:5px; font-weight:bold; text-align:center; overflow:hidden; white-space:nowrap;">${fecha}</span>
+              </div>
+
+              <!-- FILAS TÉCNICAS ADELGAZADAS A 3.2mm -->
+              <div style="flex:1;">
+                <table style="width:100%; height:100%; border-collapse:collapse; font-size:6.5px; font-weight:900;">
+                  <tr style="border-bottom:1px solid #000; height:3.2mm;">
+                    <td style="border-right:1px solid #000; width:38%; text-align:center; padding:0;">ART:</td>
+                    <td style="text-align:center; padding:0; font-size:7.5px; font-family:monospace;">${articulo}</td>
+                  </tr>
+                  <tr style="border-bottom:1px solid #000; height:3.2mm;">
+                    <td style="border-right:1px solid #000; text-align:center; padding:0;">MARCA:</td>
+                    <td style="text-align:center; padding:0;">${marca}</td>
+                  </tr>
+                  <tr style="border-bottom:1px solid #000; height:3.2mm;">
+                    <td style="border-right:1px solid #000; text-align:center; padding:0;">SERIE:</td>
+                    <td style="text-align:center; padding:0;">${serie}</td>
+                  </tr>
+                  <tr style="border-bottom:1px solid #000; height:3.2mm;">
+                    <td style="border-right:1px solid #000; width:38%; text-align:center; padding:0;">CORTE:</td>
+                    <td style="text-align:center; padding:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${materialCorte}</td>
+                  </tr>
+                  <tr style="border-bottom:1px solid #000; height:3.2mm;">
+                    <td style="border-right:1px solid #000; width:38%; text-align:center; padding:0;">FORRO:</td>
+                    <td style="text-align:center; padding:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${forro}</td>
+                  </tr>
+                  <tr style="height:3.2mm;">
+                    <td style="border-right:1px solid #000; width:38%; text-align:center; padding:0;">PLANT:</td>
+                    <td style="text-align:center; padding:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${plantInt}</td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+
+            <!-- BASE: 3 CAMPOS IZQUIERDA Y 3 CAMPOS DERECHA -->
+            <div style="display:flex; border-top:1px solid #000; font-size:5.5px; font-weight:800; padding:1px 0;">
+              <!-- 3 IZQUIERDA: MODELISTA, CONSTRUCCION, SUELA -->
+              <div style="width:50%; border-right:1px solid #000; padding-left:2px; display:flex; flex-direction:column; justify-content:space-around;">
+                <div>TEC: ${modelista}</div>
+                <div>CONTR: ${construccion}</div>
+                <div>SUELA: ${suela}</div>
+              </div>
+              <!-- 3 DERECHA: PRECIO, MARGEN BUD RET, MARGEN % -->
+              <div style="width:50%; padding-left:3px; display:flex; flex-direction:column; justify-content:space-around;">
+                <div>PRECIO: <b>${precio}</b></div>
+                <div>MRG BUD: <b>${budRet}</b></div>
+                <div>MRG: <b>${margen}</b></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANEL 2 -->
+        ${centroHTML}
+
+        <!-- PANEL 3 -->
+        ${derechaHTML}
+      </div>
     `;
   });
-  tbody.innerHTML = html;
+
+  container.innerHTML = tarjetasHTML;
 }
 
-function renderProduccionView() {
-  const table = document.getElementById("tabla-matriz-produccion");
-  if (!table) return;
-  table.innerHTML = `<tr><td class="p-4 text-center text-gray-500">Matriz de producción cargada correctamente.</td></tr>`;
-}
+// Panel Super Admin
+async function cargarPanelSuperAdmin() {
+  if (!esSuperAdmin()) return;
 
-function cargarPanelSuperAdmin() {
   const tbodyUsers = document.getElementById("table-users-body");
-  if (!tbodyUsers) return;
-  getDocs(collection(db, "usuarios")).then(snap => {
-    let html = "";
-    snap.forEach(d => {
-      const u = d.data();
-      html += `
-        <tr class="border-b">
-          <td class="p-2"><img src="${u.foto || 'https://via.placeholder.com/40'}" class="w-8 h-8 rounded-full object-cover"></td>
-          <td class="p-2 font-bold">${u.nombre}</td>
-          <td class="p-2">${u.email}</td>
-          <td class="p-2 font-mono">${u.celular || '—'}</td>
-          <td class="p-2 font-semibold text-[#D61B28]">${u.rol}</td>
-          <td class="p-2 text-center">Admin Mode</td>
-        </tr>
-      `;
-    });
-    tbodyUsers.innerHTML = html;
-  });
+  const tbodySols = document.getElementById("table-admin-solicitudes-body");
+  const tbodyEnts = document.getElementById("table-admin-entregas-body");
+
+  if (tbodyUsers) tbodyUsers.innerHTML = `<tr><td colspan="6" class="p-3 text-center text-gray-400">Cargando usuarios...</td></tr>`;
+
+  try {
+    const snap = await getDocs(collection(db, "usuarios"));
+    if (tbodyUsers) {
+      tbodyUsers.innerHTML = "";
+      snap.forEach(docU => {
+        const u = docU.data();
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-gray-50 border-b border-gray-100";
+        
+        const avatar = u.foto 
+          ? `<img src="${u.foto}" class="w-7 h-7 rounded-full object-cover">` 
+          : `<div class="w-7 h-7 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center"><i class="fa-solid fa-user text-[10px]"></i></div>`;
+
+        tr.innerHTML = `
+          <td class="p-3">${avatar}</td>
+          <td class="p-3 font-bold text-gray-800">${u.nombre || '—'}</td>
+          <td class="p-3 text-gray-600">${u.email || '—'}</td>
+          <td class="p-3 font-mono text-gray-600">${u.celular ? '+591 ' + u.celular : '<span class="text-red-400">Sin celular</span>'}</td>
+          <td class="p-3">
+            <select onchange="window.cambiarRolUsuario('${docU.id}', this.value)" class="border border-gray-300 rounded px-2 py-1 text-xs bg-white font-semibold text-gray-700 focus:ring-1 focus:ring-[#D61B28]">
+              <option value="Calidad" ${u.rol === 'Calidad' ? 'selected' : ''}>Calidad</option>
+              <option value="Costos" ${u.rol === 'Costos' ? 'selected' : ''}>Costos</option>
+              <option value="Compras" ${u.rol === 'Compras' ? 'selected' : ''}>Compras</option>
+              <option value="Compras Admin" ${u.rol === 'Compras Admin' ? 'selected' : ''}>Compras Admin</option>
+              <option value="Almacén" ${u.rol === 'Almacén' ? 'selected' : ''}>Almacén</option>
+              <option value="Producción" ${u.rol === 'Producción' ? 'selected' : ''}>Producción</option>
+              <option value="Planeamiento" ${u.rol === 'Planeamiento' ? 'selected' : ''}>Planeamiento</option>
+              <option value="Retail" ${u.rol === 'Retail' ? 'selected' : ''}>Retail</option>
+              <option value="Desarrollo de producto" ${u.rol === 'Desarrollo de producto' ? 'selected' : ''}>Desarrollo (General)</option>
+              <option value="Desarrollo de producto - Técnico" ${u.rol === 'Desarrollo de producto - Técnico' ? 'selected' : ''}>Desarrollo - Técnico (Modelista)</option>
+              <option value="Desarrollo de producto - Jefe" ${u.rol === 'Desarrollo de producto - Jefe' ? 'selected' : ''}>Desarrollo - Jefe</option>
+            </select>
+          </td>
+          <td class="p-3 text-center">
+            ${docU.id !== currentUser.uid ? `
+              <button onclick="window.eliminarUsuarioDoc('${docU.id}', '${u.nombre}')" class="text-red-600 hover:text-red-800 font-bold text-xs cursor-pointer">
+                <i class="fa-solid fa-trash"></i> Eliminar
+              </button>
+            ` : '<span class="text-gray-400 text-[10px] font-bold">Super Admin</span>'}
+          </td>
+        `;
+        tbodyUsers.appendChild(tr);
+      });
+    }
+
+    if (tbodySols) {
+      tbodySols.innerHTML = "";
+      if (solicitudes.length === 0) {
+        tbodySols.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400">No hay solicitudes registradas.</td></tr>`;
+      } else {
+        solicitudes.forEach(sol => {
+          const tr = document.createElement("tr");
+          tr.className = "hover:bg-gray-50 border-b border-gray-100";
+          tr.innerHTML = `
+            <td class="p-3 font-semibold text-gray-500 font-mono">${sol.semana || '—'}</td>
+            <td class="p-3 text-gray-600 whitespace-nowrap">${formatearFecha(sol.fechaCreacion)}</td>
+            <td class="p-3">
+              ${sol.esMinuta ? '<span class="bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded text-[10px]">MINUTA PILOTO</span>' : '<span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-[10px]">CAMBIO</span>'}
+            </td>
+            <td class="p-3 font-bold text-gray-800">${sol.proyecto}</td>
+            <td class="p-3 font-mono text-gray-700">${sol.articulo}</td>
+            <td class="p-3 text-gray-600">${sol.solicitanteNombre || '—'}</td>
+            <td class="p-3"><span class="px-2 py-0.5 rounded font-bold text-[10px] ${sol.estado === 'Realizado' ? 'bg-green-50 text-green-700' : (sol.estado === 'Retrasado' ? 'bg-red-50 text-red-700' : 'bg-orange-50 text-orange-700')}">${sol.estado}</span></td>
+            <td class="p-3 text-center">
+              <button onclick="window.eliminarSolicitudProyecto('${sol.id}', '${sol.proyecto}')" class="text-red-500 hover:text-red-700 p-1 rounded font-bold text-xs cursor-pointer">
+                <i class="fa-solid fa-trash-can"></i> Eliminar
+              </button>
+            </td>
+          `;
+          tbodySols.appendChild(tr);
+        });
+      }
+    }
+
+    if (tbodyEnts) {
+      tbodyEnts.innerHTML = "";
+      if (entregas.length === 0) {
+        tbodyEnts.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-400">No hay entregas registradas.</td></tr>`;
+      } else {
+        entregas.forEach(ent => {
+          const tr = document.createElement("tr");
+          tr.className = "hover:bg-gray-50 border-b border-gray-100";
+          tr.innerHTML = `
+            <td class="p-3 font-semibold text-gray-500 font-mono">${ent.semana || '—'}</td>
+            <td class="p-3 text-gray-600 whitespace-nowrap">${formatearFecha(ent.fechaEntrega)}</td>
+            <td class="p-3 font-semibold text-[#D61B28]">${ent.tipo}</td>
+            <td class="p-3 font-bold text-gray-800">${ent.proyecto} ${ent.copias ? '(' + ent.copias + ' copias)' : ''}</td>
+            <td class="p-3 font-mono text-gray-700">${ent.articulo || '—'}</td>
+            <td class="p-3 font-bold text-gray-700">${ent.destino}</td>
+            <td class="p-3 text-center">
+              <button onclick="window.eliminarEntregaDoc('${ent.id}', '${ent.tipo}', '${ent.proyecto}')" class="text-red-500 hover:text-red-700 p-1 rounded font-bold text-xs cursor-pointer">
+                <i class="fa-solid fa-trash-can"></i> Eliminar
+              </button>
+            </td>
+          `;
+          tbodyEnts.appendChild(tr);
+        });
+      }
+    }
+
+  } catch (error) {
+    console.error("Error al cargar panel Super Admin:", error);
+    if (tbodyUsers) tbodyUsers.innerHTML = `<tr><td colspan="6" class="p-3 text-center text-red-500">Error al cargar datos.</td></tr>`;
+  }
 }
 
-const comprimirImagen = (file, maxWidth = 600, calidad = 0.75) => new Promise((resolve) => {
-  if (!file) return resolve(null);
-  const reader = new FileReader();
-  reader.readAsDataURL(file);
-  reader.onload = (event) => {
-    const img = new Image();
-    img.src = event.target.result;
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      let width = img.width;
-      let height = img.height;
-      if (width > maxWidth) {
-        height = Math.round((height * maxWidth) / width);
-        width = maxWidth;
-      }
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL("image/jpeg", calidad));
-    };
-    img.onerror = () => resolve(null);
-  };
-  reader.onerror = () => resolve(null);
-});
+window.cambiarRolUsuario = async (userId, nuevoRol) => {
+  await updateDoc(doc(db, "usuarios", userId), { rol: nuevoRol });
+  alert("Rol asignado correctamente.");
+};
 
-// Exposición global para modales inline
-window.abrirModalCambio = () => document.getElementById("modal-new-change")?.classList.remove("hidden");
-window.abrirModalMinuta = () => document.getElementById("modal-minuta")?.classList.remove("hidden");
-window.abrirModalEntrega = () => document.getElementById("modal-nueva-entrega")?.classList.remove("hidden");
+window.eliminarUsuarioDoc = async (id, nombre) => {
+  if (confirm(`¿Eliminar al usuario ${nombre}?`)) {
+    await deleteDoc(doc(db, "usuarios", id));
+    cargarPanelSuperAdmin();
+  }
+};
+
+window.eliminarSolicitudProyecto = async (id, proyecto) => {
+  if (confirm(`¿Eliminar el registro "${proyecto}" permanentemente de la base de datos?`)) {
+    await deleteDoc(doc(db, "solicitudes_cambios", id));
+    cargarPanelSuperAdmin();
+  }
+};
+
+window.eliminarEntregaDoc = async (id, tipo, proyecto) => {
+  if (confirm(`¿Eliminar la entrega "${tipo}" del proyecto/material "${proyecto}" permanentemente?`)) {
+    await deleteDoc(doc(db, "entregas_departamentos", id));
+    cargarPanelSuperAdmin();
+  }
+};
