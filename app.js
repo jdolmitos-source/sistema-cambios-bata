@@ -1491,11 +1491,11 @@ function renderTarjetasPreview() {
     : `<div style="height:32px; display:flex; align-items:center; justify-content:center; font-size:8px; color:#999; border:1px dashed #ccc;">Croquis</div>`;
 
   const listaAImprimir = [];
-  for (let i = 1; i <= cCortes; i++) listaAImprimir.push({ color: "#FFFFFF", etiqueta: "APROBACIONES (CORTE (PRODUCCIÓN))", esCorte: true });
-  for (let i = 1; i <= cProd; i++) listaAImprimir.push({ color: "#FFFFFF", etiqueta: "APROBACIONES (PRODUCCIÓN)", esCorte: false });
-  for (let i = 1; i <= cVerdes; i++) listaAImprimir.push({ color: "#80C342", etiqueta: "APROBACIONES (RETAIL)", esCorte: false });
-  for (let i = 1; i <= cAmarillas; i++) listaAImprimir.push({ color: "#FFF200", etiqueta: "APROBACIONES (PLANEAMIENTO)", esCorte: false });
-  for (let i = 1; i <= cRosadas; i++) listaAImprimir.push({ color: "#E06D8A", etiqueta: "APROBACIONES (EXPORTACIÓN)", esCorte: false });
+  for (let i = 1; i <= cCortes; i++) listaAImprimir.push({ color: "#FFFFFF", esCorte: true });
+  for (let i = 1; i <= cProd; i++) listaAImprimir.push({ color: "#FFFFFF", esCorte: false });
+  for (let i = 1; i <= cVerdes; i++) listaAImprimir.push({ color: "#80C342", esCorte: false });
+  for (let i = 1; i <= cAmarillas; i++) listaAImprimir.push({ color: "#FFF200", esCorte: false });
+  for (let i = 1; i <= cRosadas; i++) listaAImprimir.push({ color: "#E06D8A", esCorte: false });
 
   let tarjetasHTML = "";
   listaAImprimir.forEach((tarj) => {
@@ -1534,38 +1534,43 @@ function renderTarjetasPreview() {
       </div>
     `;
 
+    // Módulo de Firmas idéntico a la imagen de la derecha ("APROBACIONES" y las 5 posiciones exactas con DATE: / /)
     const moduloFirmas = `
-      <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:2px 4px; font-size:6px; ${tarj.esCorte ? '' : 'border-right:1px solid #000;'}">
-        <div style="font-size:6.5px; font-weight:900; text-align:center; color:#000; text-transform:uppercase; border-bottom:1px solid #000; padding-bottom:1px;">
-          ${tarj.etiqueta}
+      <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:2px 4px; font-size:5.5px; ${tarj.esCorte ? '' : 'border-right:1px solid #000;'}">
+        <div style="font-size:7px; font-weight:900; text-align:center; color:#000; text-transform:uppercase; border-bottom:1px solid #000; padding-bottom:1px;">
+          APROBACIONES
         </div>
-        <div style="display:flex; flex-direction:column; justify-content:space-around; flex:1; padding-top:2px;">
-          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-            <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
-            <span style="font-size:5.5px; font-weight:bold;">P.D. CHIEF</span>
+        <div style="display:flex; flex-direction:column; justify-content:space-between; flex:1; padding-top:3px;">
+          <div style="display:flex; justify-content:space-between;">
+            <div>
+              <div style="border-bottom:1px solid #000; width:28mm; height:5px;"></div>
+              <span style="font-weight:bold; font-size:4.5px;">PD. CHIEF</span><br><span style="font-size:4px;">DATE: &nbsp; / &nbsp; / &nbsp;</span>
+            </div>
+            <div>
+              <div style="border-bottom:1px solid #000; width:28mm; height:5px;"></div>
+              <span style="font-weight:bold; font-size:4.5px;">MERCHANDISING MAN.</span><br><span style="font-size:4px;">DATE: &nbsp; / &nbsp; / &nbsp;</span>
+            </div>
           </div>
-          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-            <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
-            <span style="font-size:5.5px; font-weight:bold;">PURCHASING MANAGER</span>
+          <div style="text-align:center; margin: 1px 0;">
+            <div style="border-bottom:1px solid #000; width:30mm; height:5px; margin:auto;"></div>
+            <span style="font-weight:bold; font-size:4.5px;">PURCHASING MANAGER</span><br><span style="font-size:4px;">DATE: &nbsp; / &nbsp; / &nbsp;</span>
           </div>
-          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-            <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
-            <span style="font-size:5.5px; font-weight:bold;">MERCHANDISING MAN.</span>
-          </div>
-          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-            <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
-            <span style="font-size:5.5px; font-weight:bold;">PRODUCTION MANAGER</span>
-          </div>
-          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-            <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
-            <span style="font-size:5.5px; font-weight:bold;">COUNTRY MANAGER</span>
+          <div style="display:flex; justify-content:space-between;">
+            <div>
+              <div style="border-bottom:1px solid #000; width:28mm; height:5px;"></div>
+              <span style="font-weight:bold; font-size:4.5px;">PRODUCTION MANAGER</span><br><span style="font-size:4px;">DATE: &nbsp; / &nbsp; / &nbsp;</span>
+            </div>
+            <div>
+              <div style="border-bottom:1px solid #000; width:28mm; height:5px;"></div>
+              <span style="font-weight:bold; font-size:4.5px;">COUNTRY MANAGER</span><br><span style="font-size:4px;">DATE: &nbsp; / &nbsp; / &nbsp;</span>
+            </div>
           </div>
         </div>
       </div>
     `;
 
     const moduloObservaciones = `
-      <div class="shoe-panel" style="padding:4px; display:flex; flex-direction:column; justify-content:space-system; font-size:7px; border-right:1px solid #000;">
+      <div class="shoe-panel" style="padding:4px; display:flex; flex-direction:column; justify-content:space-between; font-size:7px; border-right:1px solid #000;">
         <div>
           <span style="font-weight:900; color:#000; text-transform:uppercase; display:block; margin-bottom:1px;">OBSERVACIONES:</span>
           <p style="font-size:6.5px; color:#000; font-style:italic; line-height:1.2;">${observaciones}</p>
