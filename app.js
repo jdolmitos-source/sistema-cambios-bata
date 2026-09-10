@@ -15,7 +15,8 @@ import {
   setDoc, 
   updateDoc, 
   deleteDoc, 
-  onSnapshot 
+  onSnapshot, 
+  serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -119,7 +120,6 @@ document.addEventListener("DOMContentLoaded", () => {
       escucharCambios();
       escucharEntregas();
       escucharProduccion();
-      escucharProcurement();
     } else {
       currentUser = null;
       userData = null;
@@ -128,7 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Botones Modales Generales
+  // Botones Modales Generales y Navegación
   safeClick("btn-show-login", () => document.getElementById("modal-login")?.classList.remove("hidden"));
   safeClick("close-login", () => document.getElementById("modal-login")?.classList.add("hidden"));
   safeClick("btn-show-register", () => document.getElementById("modal-register")?.classList.remove("hidden"));
@@ -164,12 +164,12 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  // Navegación lateral
+  // Menú lateral
   safeClick("menu-btn-cambios", activarVistaCambios);
   safeClick("menu-btn-informe", () => { resetMenuStyles(); document.getElementById("view-informe")?.classList.remove("hidden"); });
   safeClick("menu-btn-entregas-todas", () => window.cambiarSubmenuEntrega("todas"));
   safeClick("menu-btn-produccion", () => { resetMenuStyles(); document.getElementById("view-produccion")?.classList.remove("hidden"); renderProduccionView(); });
-  safeClick("menu-btn-procurement", () => { resetMenuStyles(); document.getElementById("view-procurement")?.classList.remove("hidden"); renderProcurementView(); });
+  safeClick("menu-btn-procurement", () => { resetMenuStyles(); document.getElementById("view-procurement")?.classList.remove("hidden"); });
   safeClick("menu-btn-tarjetas", () => { resetMenuStyles(); document.getElementById("view-tarjetas")?.classList.remove("hidden"); initModuloTarjetas(); });
   safeClick("menu-btn-usuarios", () => {
     if (!esSuperAdmin()) { alert("Acceso denegado."); return; }
@@ -579,17 +579,6 @@ safeClick("btn-limpiar-filtros-prod", () => {
   renderProduccionView();
 });
 
-// ==================== PROCUREMENT & ALMACÉN ====================
-function escucharProcurement() {
-  onSnapshot(collection(db, "bloqueos_materiales"), (snap) => {
-    bloqueosMateriales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  }, (e) => console.log("Aviso bloqueos:", e));
-
-  onSnapshot(collection(db, "llegadas_materiales"), (snap) => {
-    llegadasMateriales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  }, (e) => console.log("Aviso llegadas:", e));
-}
-
 // ==================== SUPER ADMIN ====================
 async function cargarPanelSuperAdmin() {
   if (!esSuperAdmin()) return;
@@ -613,7 +602,7 @@ async function cargarPanelSuperAdmin() {
   } catch (e) { console.error(e); }
 }
 
-// ==================== TARJETAS PD (CALIBRADAS SEGÚN NUEVA IMAGEN) ====================
+// ==================== TARJETAS PD (CALIBRADAS SEGÚN ÚLTIMA IMAGEN) ====================
 function initModuloTarjetas() {
   const inputFecha = document.getElementById("card-fecha");
   if (inputFecha && !inputFecha.value) inputFecha.value = "9/9/2026";
@@ -720,22 +709,22 @@ function renderTarjetasPreview() {
       </div>
     `;
 
-    // Módulo de Firmas actualizado con alineación a la derecha para Merchandising y Country, y espacio vertical añadido arriba
+    // Módulo de Firmas actualizado con alineación a la derecha y respiro vertical superior exacto a tu imagen
     const moduloFirmas = `
       <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:4px 3px 2px 3px; font-size:5.5px; ${tarj.esCorte ? '' : 'border-right:1px solid #000;'}">
         <div style="font-size:6.5px; font-weight:900; text-align:center; text-transform:uppercase; border-bottom:1px solid #000; padding-bottom:1px;">${tarj.etiqueta}</div>
-        <div style="display:flex; flex-direction:column; justify-content:space-between; flex:1; padding-top:4px;">
+        <div style="display:flex; flex-direction:column; justify-content:space-between; flex:1; padding-top:6px;">
           <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-            <div><div style="border-bottom:1px solid #000; width:30mm; height:7px;"></div><span style="font-weight:bold; font-size:5px;">PD. CHIEF</span><br><span style="font-size:4.5px;">DATE: / /</span></div>
-            <div style="text-align:right;"><div style="border-bottom:1px solid #000; width:30mm; height:7px; margin-left:auto;"></div><span style="font-weight:bold; font-size:5px;">MERCHANDISING MAN.</span><br><span style="font-size:4.5px;">DATE: / /</span></div>
+            <div><div style="border-bottom:1px solid #000; width:28mm; height:6px;"></div><span style="font-weight:bold; font-size:4.5px;">PD. CHIEF</span><br><span style="font-size:4px;">DATE: / /</span></div>
+            <div style="text-align:right;"><div style="border-bottom:1px solid #000; width:28mm; height:6px; margin-left:auto;"></div><span style="font-weight:bold; font-size:4.5px;">MERCHANDISING MAN.</span><br><span style="font-size:4px;">DATE: / /</span></div>
           </div>
-          <div style="text-align:center; margin: 2px 0;">
-            <div style="border-bottom:1px solid #000; width:35mm; height:7px; margin:auto;"></div>
-            <span style="font-weight:bold; font-size:5px;">PURCHASING MANAGER</span><br><span style="font-size:4.5px;">DATE: / /</span>
+          <div style="text-align:center; margin: 1px 0;">
+            <div style="border-bottom:1px solid #000; width:32mm; height:6px; margin:auto;"></div>
+            <span style="font-weight:bold; font-size:4.5px;">PURCHASING MANAGER</span><br><span style="font-size:4px;">DATE: / /</span>
           </div>
           <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-            <div><div style="border-bottom:1px solid #000; width:30mm; height:7px;"></div><span style="font-weight:bold; font-size:5px;">PRODUCTION MANAGER</span><br><span style="font-size:4.5px;">DATE: / /</span></div>
-            <div style="text-align:right;"><div style="border-bottom:1px solid #000; width:30mm; height:7px; margin-left:auto;"></div><span style="font-weight:bold; font-size:5px;">COUNTRY MANAGER</span><br><span style="font-size:4.5px;">DATE: / /</span></div>
+            <div><div style="border-bottom:1px solid #000; width:28mm; height:6px;"></div><span style="font-weight:bold; font-size:4.5px;">PRODUCTION MANAGER</span><br><span style="font-size:4px;">DATE: / /</span></div>
+            <div style="text-align:right;"><div style="border-bottom:1px solid #000; width:28mm; height:6px; margin-left:auto;"></div><span style="font-weight:bold; font-size:4.5px;">COUNTRY MANAGER</span><br><span style="font-size:4px;">DATE: / /</span></div>
           </div>
         </div>
       </div>
