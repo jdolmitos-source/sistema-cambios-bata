@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { 
   getAuth, 
+  createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   onAuthStateChanged, 
   signOut 
@@ -15,7 +16,8 @@ import {
   setDoc, 
   updateDoc, 
   deleteDoc, 
-  onSnapshot 
+  onSnapshot, 
+  serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -39,6 +41,8 @@ let currentUser = null;
 let userData = null;
 let solicitudes = [];
 let entregas = [];
+let bloqueosMateriales = [];
+let llegadasMateriales = [];
 let lotesProduccion = [];
 
 let categoriaEntregaActiva = "todas";
@@ -96,6 +100,11 @@ function esSuperAdmin() {
   return currentUser.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
 }
 
+function esDesarrollo() {
+  if (esSuperAdmin()) return true;
+  return userData && (userData.rol || "").includes("Desarrollo");
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -114,6 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
       escucharCambios();
       escucharEntregas();
       escucharProduccion();
+      escucharProcurement();
     } else {
       currentUser = null;
       userData = null;
@@ -145,12 +155,57 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
+  // Navegación lateral
   safeClick("menu-btn-cambios", activarVistaCambios);
   safeClick("menu-btn-informe", () => { resetMenuStyles(); document.getElementById("view-informe")?.classList.remove("hidden"); });
   safeClick("menu-btn-entregas-todas", () => window.cambiarSubmenuEntrega("todas"));
   safeClick("menu-btn-produccion", () => { resetMenuStyles(); document.getElementById("view-produccion")?.classList.remove("hidden"); renderProduccionView(); });
-  safeClick("menu-btn-procurement", () => { resetMenuStyles(); document.getElementById("view-procurement")?.classList.remove("hidden"); });
+  safeClick("menu-btn-procurement", () => { resetMenuStyles(); document.getElementById("view-procurement")?.classList.remove("hidden"); renderProcurementView(); });
   safeClick("menu-btn-tarjetas", () => { resetMenuStyles(); document.getElementById("view-tarjetas")?.classList.remove("hidden"); initModuloTarjetas(); });
+  safeClick("menu-btn-usuarios", () => {
+    if (!esSuperAdmin()) { alert("Acceso denegado."); return; }
+    resetMenuStyles();
+    document.getElementById("view-usuarios")?.classList.remove("hidden");
+    cargarPanelSuperAdmin();
+  });
+
+  safeClick("sub-btn-MATERIALES", () => window.cambiarSubmenuEntrega("MATERIALES"));
+  safeClick("sub-btn-GUIA", () => window.cambiarSubmenuEntrega("GUÍA DE PRODUCCIÓN"));
+  safeClick("sub-btn-CORTE", () => window.cambiarSubmenuEntrega("CORTE"));
+  safeClick("sub-btn-MUESTRA", () => window.cambiarSubmenuEntrega("MUESTRA DEFINITIVA"));
+  safeClick("sub-btn-DESBASTE", () => window.cambiarSubmenuEntrega("HOJA DE DESBASTE"));
+  safeClick("sub-btn-TIZADORES", () => window.cambiarSubmenuEntrega("TIZADORES"));
+
+  // Formulario Minuta
+  const formMinuta = document.getElementById("form-minuta");
+  if (formMinuta) {
+    formMinuta.onsubmit = async (e) => {
+      e.preventDefault();
+      const semana = document.getElementById("minuta-semana").value.trim();
+      const proyecto = document.getElementById("minuta-proyecto").value.trim();
+      const articulo = document.getElementById("minuta-articulo").value.trim();
+      const boxCambio = document.getElementById("minuta-box").value.trim();
+      const photoFile = document.getElementById("minuta-photo").files[0];
+      const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
+
+      try {
+        await addDoc(collection(db, "solicitudes_cambios"), {
+          semana, proyecto, articulo, boxCambio,
+          foto: fotoBase64,
+          estado: "En proceso",
+          esMinuta: true,
+          solicitanteNombre: (userData && userData.nombre) || "Jefe de Desarrollo",
+          fechaCreacion: new Date().toISOString(),
+          validadoCostos: false
+        });
+        formMinuta.reset();
+        document.getElementById("modal-minuta")?.classList.add("hidden");
+        alert("Minuta publicada con éxito.");
+      } catch (err) {
+        alert("Error al guardar minuta: " + err.message);
+      }
+    };
+  }
 });
 
 function resetMenuStyles() {
@@ -170,6 +225,18 @@ function actualizarHeaderUsuario() {
   const uRole = document.getElementById("user-display-role");
   if (uName) uName.textContent = (userData && userData.nombre) || (currentUser && currentUser.email) || "Usuario";
   if (uRole) uRole.textContent = esAdmin ? "SUPER ADMIN" : ((userData && userData.rol) || "Usuario");
+
+  const menuAdmin = document.getElementById("menu-btn-usuarios");
+  if (menuAdmin) {
+    if (esAdmin) menuAdmin.classList.remove("hidden");
+    else menuAdmin.classList.add("hidden");
+  }
+
+  const btnMinutaHeader = document.getElementById("btn-open-minuta-header");
+  if (btnMinutaHeader) {
+    if (esDesarrollo() || esAdmin) btnMinutaHeader.classList.remove("hidden");
+    else btnMinutaHeader.classList.add("hidden");
+  }
 }
 
 function inicializarSemanas01a52() {
@@ -187,7 +254,11 @@ function inicializarSemanas01a52() {
   });
 }
 
-// ==================== CAMBIOS ====================
+// ==================== CAMBIOS Y MINUTAS ====================
+window.abrirModalMinuta = () => {
+  document.getElementById("modal-minuta")?.classList.remove("hidden");
+};
+
 function escucharCambios() {
   onSnapshot(collection(db, "solicitudes_cambios"), (snapshot) => {
     solicitudes = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
@@ -333,12 +404,41 @@ function renderProduccionView() {
     labelSemanaGrande.textContent = fSem ? fSem.toUpperCase() : "TODAS LAS SEMANAS";
   }
 
+  // Filtrado estricto por semana activa si está seleccionada
   let filtrados = lotesProduccion.filter(l => {
-    const semMatch = !fSem || (l.semana || "") === fSem;
+    const semMatch = !fSem || (l.semana || "").trim().toLowerCase() === fSem.trim().toLowerCase();
     const proyMatch = !fProy || (l.proyecto || "").toLowerCase().includes(fProy) || (l.plan || "").toLowerCase().includes(fProy) || (l.articulo || "").toLowerCase().includes(fProy);
     const linMatch = !fLin || String(l.linea || "") === String(fLin);
     return semMatch && proyMatch && linMatch;
   });
+
+  // KPIs globales o de la semana seleccionada
+  let totCortado = 0, totAparado = 0, totArmado = 0, totInyeccion = 0, totEntregado = 0;
+  filtrados.forEach(l => {
+    const p = parseInt(l.pares) || 0;
+    if (l.estado === "CORTADO") totCortado += p;
+    else if (l.estado === "APARADO") totAparado += p;
+    else if (l.estado === "ARMADO") totArmado += p;
+    else if (l.estado === "INYECCIÓN") totInyeccion += p;
+    else if (l.estado === "ENTREGADO") totEntregado += p;
+  });
+
+  const grandTotal = totCortado + totAparado + totArmado + totInyeccion + totEntregado;
+  const setKpi = (idVal, idBar, val) => {
+    const vEl = document.getElementById(idVal);
+    const bEl = document.getElementById(idBar);
+    if (vEl) vEl.textContent = val.toLocaleString();
+    if (bEl && grandTotal > 0) bEl.style.width = `${Math.round((val / grandTotal) * 100)}%`;
+  };
+
+  const elTotKpi = document.getElementById("prod-total-pares-kpi");
+  if (elTotKpi) elTotKpi.textContent = `${grandTotal.toLocaleString()} Pares Totales`;
+
+  setKpi("kpi-cortado", "bar-cortado", totCortado);
+  setKpi("kpi-aparado", "bar-aparado", totAparado);
+  setKpi("kpi-armado", "bar-armado", totArmado);
+  setKpi("kpi-inyeccion", "bar-inyeccion", totInyeccion);
+  setKpi("kpi-entregado", "bar-entregado", totEntregado);
 
   const seccionesDisponibles = fLin ? [fLin] : ["330", "331", "332", "251", "252", "254"];
   const diasSemana = ["LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES"];
@@ -378,7 +478,14 @@ function renderProduccionView() {
           const p = parseInt(loteDia.pares) || 0;
           totalFila += p;
           sumaParesSeccion += p;
-          const colorEstado = loteDia.estado === 'ENTREGADO' ? 'text-green-700 bg-green-50' : 'text-amber-700 bg-amber-50';
+          // Colores fijos diferenciados sin repetición: Cortado (Amber), Aparado (Blue), Armado (Purple), Inyección (Cyan), Entregado (Green)
+          const estado = (loteDia.estado || "").toUpperCase();
+          let colorEstado = 'text-amber-700 bg-amber-50 border-amber-200';
+          if (estado === 'APARADO') colorEstado = 'text-blue-700 bg-blue-50 border-blue-200';
+          else if (estado === 'ARMADO') colorEstado = 'text-purple-700 bg-purple-50 border-purple-200';
+          else if (estado === 'INYECCIÓN') colorEstado = 'text-cyan-700 bg-cyan-50 border-cyan-200';
+          else if (estado === 'ENTREGADO') colorEstado = 'text-green-700 bg-green-50 border-green-200';
+
           html += `
             <td class="p-1 border border-gray-300 font-mono text-[10px] font-bold text-red-600">${loteDia.plan || '—'}</td>
             <td class="p-1 border border-gray-300 font-mono text-[10px]">${loteDia.articulo || '—'}</td>
@@ -386,11 +493,11 @@ function renderProduccionView() {
             <td class="p-1 border border-gray-300 font-black text-cyan-900 bg-cyan-50/30">${p.toLocaleString()}</td>
             <td class="p-1 border border-gray-300">
               <select onchange="window.actualizarEstadoDiaLote('${loteDia.id}', this.value)" class="text-[10px] font-bold rounded px-1 py-0.5 border ${colorEstado}">
-                <option value="CORTADO" ${loteDia.estado === 'CORTADO' ? 'selected' : ''}>CORTADO</option>
-                <option value="APARADO" ${loteDia.estado === 'APARADO' ? 'selected' : ''}>APARADO</option>
-                <option value="ARMADO" ${loteDia.estado === 'ARMADO' ? 'selected' : ''}>ARMADO</option>
-                <option value="INYECCIÓN" ${loteDia.estado === 'INYECCIÓN' ? 'selected' : ''}>INYECCIÓN</option>
-                <option value="ENTREGADO" ${loteDia.estado === 'ENTREGADO' ? 'selected' : ''}>ENTREGADO</option>
+                <option value="CORTADO" ${estado === 'CORTADO' ? 'selected' : ''}>CORTADO</option>
+                <option value="APARADO" ${estado === 'APARADO' ? 'selected' : ''}>APARADO</option>
+                <option value="ARMADO" ${estado === 'ARMADO' ? 'selected' : ''}>ARMADO</option>
+                <option value="INYECCIÓN" ${estado === 'INYECCIÓN' ? 'selected' : ''}>INYECCIÓN</option>
+                <option value="ENTREGADO" ${estado === 'ENTREGADO' ? 'selected' : ''}>ENTREGADO</option>
               </select>
             </td>
           `;
@@ -435,7 +542,18 @@ safeClick("btn-limpiar-filtros-prod", () => {
   renderProduccionView();
 });
 
-// ==================== TARJETAS PD ====================
+// ==================== PROCUREMENT & ALMACÉN ====================
+function escucharProcurement() {
+  onSnapshot(collection(db, "bloqueos_materiales"), (snap) => {
+    bloqueosMateriales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  }, (e) => console.log("Aviso bloqueos:", e));
+
+  onSnapshot(collection(db, "llegadas_materiales"), (snap) => {
+    llegadasMateriales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  }, (e) => console.log("Aviso llegadas:", e));
+}
+
+// ==================== TARJETAS PD (LAYOUT COMPACTO SIN DESBORDAMIENTO) ====================
 function initModuloTarjetas() {
   const inputFecha = document.getElementById("card-fecha");
   if (inputFecha && !inputFecha.value) inputFecha.value = "9/9/2026";
@@ -486,6 +604,10 @@ function renderTarjetasPreview() {
   const cAmarillas = parseInt(document.getElementById("count-card-amarilla")?.value) || 0;
   const cRosadas = parseInt(document.getElementById("count-card-rosada")?.value) || 0;
 
+  const totalTarjetas = cCortes + cProd + cVerdes + cAmarillas + cRosadas;
+  const lblTotal = document.getElementById("label-total-tarjetas-count");
+  if (lblTotal) lblTotal.textContent = totalTarjetas;
+
   const articulo = document.getElementById("card-costo-articulo")?.value || "34461836";
   const linea = (document.getElementById("card-costo-linea")?.value || "QUIQUE").toUpperCase();
   const marca = (document.getElementById("card-costo-marca")?.value || "TEENER").toUpperCase();
@@ -502,7 +624,7 @@ function renderTarjetasPreview() {
   const suela = (document.getElementById("card-horma-suela")?.value || "QUIQUE").toUpperCase();
   const observaciones = document.getElementById("card-observaciones")?.value || "Sin observaciones adicionales";
 
-  const siluetaCalzadoHTML = `<div style="height:32px; display:flex; align-items:center; justify-content:center; font-size:8px; color:#999; border:1px dashed #ccc;">Croquis</div>`;
+  const siluetaCalzadoHTML = `<div style="height:28px; display:flex; align-items:center; justify-content:center; font-size:7px; color:#999; border:1px dashed #ccc;">Croquis</div>`;
 
   const listaAImprimir = [];
   for (let i = 1; i <= cCortes; i++) listaAImprimir.push({ color: "#FFFFFF", etiqueta: "APROBACIONES", esCorte: true });
@@ -513,58 +635,62 @@ function renderTarjetasPreview() {
 
   let tarjetasHTML = "";
   listaAImprimir.forEach((tarj) => {
+    // Módulo 1: Información Técnica Compacto para evitar desbordes
     const moduloInfo = `
       <div class="shoe-panel" style="display:flex; border-right:1px solid #000; overflow:hidden;">
-        <div class="lateral-tab" style="width:16px; border-right:1px solid #000; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:9px; writing-mode:vertical-rl; transform:rotate(180deg); background-color:${tarj.color} !important;">
+        <div class="lateral-tab" style="width:14px; border-right:1px solid #000; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:8px; writing-mode:vertical-rl; transform:rotate(180deg); background-color:${tarj.color} !important;">
           ${linea}
         </div>
         <div style="flex:1; display:flex; flex-direction:column; justify-content:space-between; padding:1px;">
-          <div style="font-size:7.5px; font-weight:900; color:#dc2626; text-align:center; border-bottom:1px solid #000;">MANUFACTURA BOLIVIANA S.A.</div>
+          <div style="font-size:7px; font-weight:900; color:#dc2626; text-align:center; border-bottom:1px solid #000;">MANUFACTURA BOLIVIANA S.A.</div>
           <div style="display:flex; flex:1; align-items:center;">
-            <div style="width:45px; display:flex; justify-content:center; border-right:1px solid #000; height:100%;">${siluetaCalzadoHTML}</div>
+            <div style="width:40px; display:flex; justify-content:center; border-right:1px solid #000; height:100%;">${siluetaCalzadoHTML}</div>
             <div style="flex:1; height:100%;">
-              <table style="width:100%; height:100%; border-collapse:collapse; font-size:6px; font-weight:900;">
-                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; text-align:center;">ART:</td><td style="text-align:center; font-family:monospace; font-size:7px;">${articulo}</td></tr>
+              <table style="width:100%; height:100%; border-collapse:collapse; font-size:5.5px; font-weight:900;">
+                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; text-align:center;">ART:</td><td style="text-align:center; font-family:monospace; font-size:6.5px;">${articulo}</td></tr>
                 <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; text-align:center;">MARCA:</td><td style="text-align:center;">${marca}</td></tr>
                 <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; text-align:center;">SERIE:</td><td style="text-align:center;">${serie}</td></tr>
-                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; text-align:center;">CORTE:</td><td style="text-align:center; font-size:5px;">${materialCorte}</td></tr>
-                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; text-align:center;">FORRO:</td><td style="text-align:center; font-size:5px;">${forro}</td></tr>
-                <tr><td style="border-right:1px solid #000; text-align:center;">PLANT:</td><td style="text-align:center; font-size:5px;">${plantInt}</td></tr>
+                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; text-align:center;">CORTE:</td><td style="text-align:center; font-size:4.5px;">${materialCorte}</td></tr>
+                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; text-align:center;">FORRO:</td><td style="text-align:center; font-size:4.5px;">${forro}</td></tr>
+                <tr><td style="border-right:1px solid #000; text-align:center;">PLANT:</td><td style="text-align:center; font-size:4.5px;">${plantInt}</td></tr>
               </table>
             </div>
           </div>
-          <div style="display:flex; border-top:1px solid #000; font-size:5.5px; font-weight:bold; padding:1px 2px; justify-content:space-between;"><span>${fecha}</span></div>
+          <div style="display:flex; border-top:1px solid #000; font-size:5px; font-weight:bold; padding:1px; justify-content:space-between;"><span>${fecha}</span></div>
         </div>
       </div>
     `;
 
+    // Módulo 2: Firmas con fuentes y separadores calibrados a la imagen de referencia exactos
     const moduloFirmas = `
-      <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:2px 4px; font-size:6px; ${tarj.esCorte ? '' : 'border-right:1px solid #000;'}">
-        <div style="font-size:7px; font-weight:900; text-align:center; text-transform:uppercase; border-bottom:1px solid #000; padding-bottom:1px;">${tarj.etiqueta}</div>
-        <div style="display:flex; flex-direction:column; justify-content:space-around; flex:1; font-size:5.5px;">
+      <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:2px 3px; font-size:5.5px; ${tarj.esCorte ? '' : 'border-right:1px solid #000;'}">
+        <div style="font-size:6.5px; font-weight:900; text-align:center; text-transform:uppercase; border-bottom:1px solid #000; padding-bottom:1px;">${tarj.etiqueta}</div>
+        <div style="display:flex; flex-direction:column; justify-content:space-around; flex:1;">
           <div style="display:flex; justify-content:space-between;">
-            <div><div style="border-bottom:1px solid #000; width:55mm; height:8px;"></div><span style="font-weight:bold;">PD. CHIEF</span><br>DATE: &nbsp; / &nbsp; / &nbsp;</div>
-            <div><div style="border-bottom:1px solid #000; width:55mm; height:8px;"></div><span style="font-weight:bold;">PD. CHIEF</span><br>DATE: &nbsp; / &nbsp; / &nbsp;</div>
+            <div><div style="border-bottom:1px solid #000; width:31mm; height:7px;"></div><span style="font-weight:bold; font-size:5px;">PD. CHIEF</span><br><span style="font-size:4.5px;">DATE: / /</span></div>
+            <div><div style="border-bottom:1px solid #000; width:31mm; height:7px;"></div><span style="font-weight:bold; font-size:5px;">PD. CHIEF</span><br><span style="font-size:4.5px;">DATE: / /</span></div>
           </div>
-          <div style="text-align:center; margin-top:2px;">
-            <div style="border-bottom:1px solid #000; width:55mm; height:8px; margin:auto;"></div>
-            <span style="font-weight:bold;">PURCHASING MANAGER</span><br>DATE: &nbsp; / &nbsp; / &nbsp;
+          <div style="text-align:center;">
+            <div style="border-bottom:1px solid #000; width:35mm; height:7px; margin:auto;"></div>
+            <span style="font-weight:bold; font-size:5px;">PURCHASING MANAGER</span><br><span style="font-size:4.5px;">DATE: / /</span>
           </div>
-          <div style="display:flex; justify-content:space-between; margin-top:2px;">
-            <div><div style="border-bottom:1px solid #000; width:55mm; height:8px;"></div><span style="font-weight:bold;">PRODUCTION MANAGER</span><br>DATE: &nbsp; / &nbsp; / &nbsp;</div>
-            <div><div style="border-bottom:1px solid #000; width:55mm; height:8px;"></div><span style="font-weight:bold;">COUNTRY MANAGER</span><br>DATE: &nbsp; / &nbsp; / &nbsp;</div>
+          <div style="display:flex; justify-content:space-between;">
+            <div><div style="border-bottom:1px solid #000; width:31mm; height:7px;"></div><span style="font-weight:bold; font-size:5px;">PRODUCTION MANAGER</span><br><span style="font-size:4.5px;">DATE: / /</span></div>
+            <div><div style="border-bottom:1px solid #000; width:31mm; height:7px;"></div><span style="font-weight:bold; font-size:5px;">COUNTRY MANAGER</span><br><span style="font-size:4.5px;">DATE: / /</span></div>
           </div>
         </div>
       </div>
     `;
 
+    // Módulo 3: Observaciones
     const moduloObservaciones = `
-      <div class="shoe-panel" style="padding:4px; display:flex; flex-direction:column; justify-content:space-between; font-size:7px; border-right:1px solid #000;">
-        <div><span style="font-weight:900; text-transform:uppercase; display:block;">OBSERVACIONES:</span><p style="font-size:6.5px; font-style:italic;">${observaciones}</p></div>
-        <div style="text-align:right; font-size:6px; font-weight:bold;">BATA BOLIVIA PD</div>
+      <div class="shoe-panel" style="padding:4px; display:flex; flex-direction:column; justify-content:space-between; font-size:6.5px; border-right:1px solid #000;">
+        <div><span style="font-weight:900; text-transform:uppercase; display:block;">OBSERVACIONES:</span><p style="font-size:6px; font-style:italic;">${observaciones}</p></div>
+        <div style="text-align:right; font-size:5.5px; font-weight:bold;">BATA BOLIVIA PD</div>
       </div>
     `;
 
+    // Orden de módulos: Corte = 1, 3, 2 / Demás = 1, 2, 3
     const panelCentro = tarj.esCorte ? moduloObservaciones : moduloFirmas;
     const panelDerecha = tarj.esCorte ? moduloFirmas : moduloObservaciones;
 
