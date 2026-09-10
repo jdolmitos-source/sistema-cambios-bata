@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { 
   getAuth, 
-  createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   onAuthStateChanged, 
   signOut 
@@ -16,8 +15,7 @@ import {
   setDoc, 
   updateDoc, 
   deleteDoc, 
-  onSnapshot, 
-  serverTimestamp 
+  onSnapshot 
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -139,6 +137,7 @@ document.addEventListener("DOMContentLoaded", () => {
   safeClick("btn-logout", () => signOut(auth).then(() => window.location.reload()));
   safeClick("close-visor-foto", () => document.getElementById("modal-visor-foto")?.classList.add("hidden"));
   safeClick("btn-close-whatsapp-modal", () => document.getElementById("modal-whatsapp")?.classList.add("hidden"));
+  safeClick("close-minuta", () => document.getElementById("modal-minuta")?.classList.add("hidden"));
 
   const formLogin = document.getElementById("form-login");
   if (formLogin) {
@@ -404,7 +403,6 @@ function renderProduccionView() {
     labelSemanaGrande.textContent = fSem ? fSem.toUpperCase() : "TODAS LAS SEMANAS";
   }
 
-  // Filtrado estricto por semana activa si está seleccionada
   let filtrados = lotesProduccion.filter(l => {
     const semMatch = !fSem || (l.semana || "").trim().toLowerCase() === fSem.trim().toLowerCase();
     const proyMatch = !fProy || (l.proyecto || "").toLowerCase().includes(fProy) || (l.plan || "").toLowerCase().includes(fProy) || (l.articulo || "").toLowerCase().includes(fProy);
@@ -412,7 +410,6 @@ function renderProduccionView() {
     return semMatch && proyMatch && linMatch;
   });
 
-  // KPIs globales o de la semana seleccionada
   let totCortado = 0, totAparado = 0, totArmado = 0, totInyeccion = 0, totEntregado = 0;
   filtrados.forEach(l => {
     const p = parseInt(l.pares) || 0;
@@ -478,7 +475,6 @@ function renderProduccionView() {
           const p = parseInt(loteDia.pares) || 0;
           totalFila += p;
           sumaParesSeccion += p;
-          // Colores fijos diferenciados sin repetición: Cortado (Amber), Aparado (Blue), Armado (Purple), Inyección (Cyan), Entregado (Green)
           const estado = (loteDia.estado || "").toUpperCase();
           let colorEstado = 'text-amber-700 bg-amber-50 border-amber-200';
           if (estado === 'APARADO') colorEstado = 'text-blue-700 bg-blue-50 border-blue-200';
@@ -553,7 +549,30 @@ function escucharProcurement() {
   }, (e) => console.log("Aviso llegadas:", e));
 }
 
-// ==================== TARJETAS PD (LAYOUT COMPACTO SIN DESBORDAMIENTO) ====================
+// ==================== SUPER ADMIN ====================
+async function cargarPanelSuperAdmin() {
+  if (!esSuperAdmin()) return;
+  const tbodyUsers = document.getElementById("table-users-body");
+  try {
+    const snap = await getDocs(collection(db, "usuarios"));
+    if (tbodyUsers) {
+      tbodyUsers.innerHTML = "";
+      snap.forEach(docU => {
+        const u = docU.data();
+        const tr = document.createElement("tr");
+        tr.className = "border-b";
+        tr.innerHTML = `
+          <td class="p-3 font-bold">${u.nombre || '—'}</td>
+          <td class="p-3">${u.email || '—'}</td>
+          <td class="p-3 font-semibold text-[#D61B28]">${u.rol}</td>
+        `;
+        tbodyUsers.appendChild(tr);
+      });
+    }
+  } catch (e) { console.error(e); }
+}
+
+// ==================== TARJETAS PD (CALIBRADAS SEGÚN NUEVA IMAGEN) ====================
 function initModuloTarjetas() {
   const inputFecha = document.getElementById("card-fecha");
   if (inputFecha && !inputFecha.value) inputFecha.value = "9/9/2026";
@@ -635,7 +654,6 @@ function renderTarjetasPreview() {
 
   let tarjetasHTML = "";
   listaAImprimir.forEach((tarj) => {
-    // Módulo 1: Información Técnica Compacto para evitar desbordes
     const moduloInfo = `
       <div class="shoe-panel" style="display:flex; border-right:1px solid #000; overflow:hidden;">
         <div class="lateral-tab" style="width:14px; border-right:1px solid #000; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:8px; writing-mode:vertical-rl; transform:rotate(180deg); background-color:${tarj.color} !important;">
@@ -661,14 +679,14 @@ function renderTarjetasPreview() {
       </div>
     `;
 
-    // Módulo 2: Firmas con fuentes y separadores calibrados a la imagen de referencia exactos
+    // Módulo de Firmas calibrado exactamente a la nueva imagen (PD. CHIEF | MERCHANDISING MAN. / PURCHASING MANAGER / PRODUCTION MANAGER | COUNTRY MANAGER)
     const moduloFirmas = `
       <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:2px 3px; font-size:5.5px; ${tarj.esCorte ? '' : 'border-right:1px solid #000;'}">
         <div style="font-size:6.5px; font-weight:900; text-align:center; text-transform:uppercase; border-bottom:1px solid #000; padding-bottom:1px;">${tarj.etiqueta}</div>
         <div style="display:flex; flex-direction:column; justify-content:space-around; flex:1;">
           <div style="display:flex; justify-content:space-between;">
             <div><div style="border-bottom:1px solid #000; width:31mm; height:7px;"></div><span style="font-weight:bold; font-size:5px;">PD. CHIEF</span><br><span style="font-size:4.5px;">DATE: / /</span></div>
-            <div><div style="border-bottom:1px solid #000; width:31mm; height:7px;"></div><span style="font-weight:bold; font-size:5px;">PD. CHIEF</span><br><span style="font-size:4.5px;">DATE: / /</span></div>
+            <div><div style="border-bottom:1px solid #000; width:31mm; height:7px;"></div><span style="font-weight:bold; font-size:5px;">MERCHANDISING MAN.</span><br><span style="font-size:4.5px;">DATE: / /</span></div>
           </div>
           <div style="text-align:center;">
             <div style="border-bottom:1px solid #000; width:35mm; height:7px; margin:auto;"></div>
@@ -682,7 +700,6 @@ function renderTarjetasPreview() {
       </div>
     `;
 
-    // Módulo 3: Observaciones
     const moduloObservaciones = `
       <div class="shoe-panel" style="padding:4px; display:flex; flex-direction:column; justify-content:space-between; font-size:6.5px; border-right:1px solid #000;">
         <div><span style="font-weight:900; text-transform:uppercase; display:block;">OBSERVACIONES:</span><p style="font-size:6px; font-style:italic;">${observaciones}</p></div>
@@ -690,7 +707,6 @@ function renderTarjetasPreview() {
       </div>
     `;
 
-    // Orden de módulos: Corte = 1, 3, 2 / Demás = 1, 2, 3
     const panelCentro = tarj.esCorte ? moduloObservaciones : moduloFirmas;
     const panelDerecha = tarj.esCorte ? moduloFirmas : moduloObservaciones;
 
