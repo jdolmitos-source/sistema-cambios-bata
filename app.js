@@ -40,6 +40,8 @@ let currentUser = null;
 let userData = null;
 let solicitudes = [];
 let entregas = [];
+let bloqueosMateriales = [];
+let llegadasMateriales = [];
 let lotesProduccion = [];
 
 let categoriaEntregaActiva = "todas";
@@ -120,6 +122,7 @@ document.addEventListener("DOMContentLoaded", () => {
       escucharCambios();
       escucharEntregas();
       escucharProduccion();
+      escucharProcurement();
     } else {
       currentUser = null;
       userData = null;
@@ -164,7 +167,7 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  // Menú lateral
+  // Navegación lateral
   safeClick("menu-btn-cambios", activarVistaCambios);
   safeClick("menu-btn-informe", () => { resetMenuStyles(); document.getElementById("view-informe")?.classList.remove("hidden"); });
   safeClick("menu-btn-entregas-todas", () => window.cambiarSubmenuEntrega("todas"));
@@ -342,6 +345,41 @@ function renderTablaCambios() {
 }
 
 // ==================== ENTREGAS ====================
+window.abrirModalEntrega = () => {
+  const selectTipo = document.getElementById("ent-tipo");
+  if (selectTipo) {
+    selectTipo.innerHTML = "";
+    if (categoriaEntregaActiva !== "todas") {
+      selectTipo.innerHTML += `<option value="${categoriaEntregaActiva}">${categoriaEntregaActiva}</option>`;
+    } else {
+      selectTipo.innerHTML += `<option value="GUÍA DE PRODUCCIÓN">GUÍA DE PRODUCCIÓN</option>`;
+      selectTipo.innerHTML += `<option value="CORTE">CORTE</option>`;
+      selectTipo.innerHTML += `<option value="MUESTRA DEFINITIVA">MUESTRA DEFINITIVA</option>`;
+      selectTipo.innerHTML += `<option value="MATERIALES">MATERIALES</option>`;
+      selectTipo.innerHTML += `<option value="HOJA DE DESBASTE">HOJA DE DESBASTE</option>`;
+      selectTipo.innerHTML += `<option value="TIZADORES">TIZADORES</option>`;
+    }
+  }
+  actualizarCamposSegunTipoEntrega();
+  document.getElementById("modal-nueva-entrega")?.classList.remove("hidden");
+};
+
+function actualizarCamposSegunTipoEntrega() {
+  const tipo = document.getElementById("ent-tipo")?.value || "";
+  const selectDestino = document.getElementById("ent-destino");
+  if (!selectDestino) return;
+  selectDestino.innerHTML = "";
+  if (tipo === "MATERIALES") {
+    selectDestino.innerHTML += `<option value="Desarrollo de producto">Desarrollo de producto</option>`;
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+  } else if (tipo === "GUÍA DE PRODUCCIÓN" || tipo === "HOJA DE DESBASTE") {
+    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
+  } else {
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
+  }
+}
+
 function escucharEntregas() {
   onSnapshot(collection(db, "entregas_departamentos"), (snapshot) => {
     entregas = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -430,6 +468,10 @@ function escucharProduccion() {
     renderProduccionView();
   }, (err) => console.log("Error producción:", err));
 }
+
+window.abrirModalLoteProduccion = () => {
+  document.getElementById("modal-nuevo-lote-prod")?.classList.remove("hidden");
+};
 
 function renderProduccionView() {
   const table = document.getElementById("tabla-matriz-produccion");
@@ -579,6 +621,19 @@ safeClick("btn-limpiar-filtros-prod", () => {
   renderProduccionView();
 });
 
+// ==================== PROCUREMENT & ALMACÉN ====================
+function escucharProcurement() {
+  onSnapshot(collection(db, "bloqueos_materiales"), (snap) => {
+    bloqueosMateriales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  }, (e) => console.log("Aviso bloqueos:", e));
+
+  onSnapshot(collection(db, "llegadas_materiales"), (snap) => {
+    llegadasMateriales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  }, (e) => console.log("Aviso llegadas:", e));
+}
+
+function renderProcurementView() {}
+
 // ==================== SUPER ADMIN ====================
 async function cargarPanelSuperAdmin() {
   if (!esSuperAdmin()) return;
@@ -709,17 +764,17 @@ function renderTarjetasPreview() {
       </div>
     `;
 
-    // Módulo de Firmas actualizado con alineación a la derecha y respiro vertical superior exacto a tu imagen
+    // Módulo de Firmas actualizado exactamente a tu última imagen (Merchandising Man. a la derecha con más espacio central para Purchasing Manager, y con respiro vertical superior)
     const moduloFirmas = `
       <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:4px 3px 2px 3px; font-size:5.5px; ${tarj.esCorte ? '' : 'border-right:1px solid #000;'}">
         <div style="font-size:6.5px; font-weight:900; text-align:center; text-transform:uppercase; border-bottom:1px solid #000; padding-bottom:1px;">${tarj.etiqueta}</div>
         <div style="display:flex; flex-direction:column; justify-content:space-between; flex:1; padding-top:6px;">
           <div style="display:flex; justify-content:space-between; align-items:flex-start;">
             <div><div style="border-bottom:1px solid #000; width:28mm; height:6px;"></div><span style="font-weight:bold; font-size:4.5px;">PD. CHIEF</span><br><span style="font-size:4px;">DATE: / /</span></div>
-            <div style="text-align:right;"><div style="border-bottom:1px solid #000; width:28mm; height:6px; margin-left:auto;"></div><span style="font-weight:bold; font-size:4.5px;">MERCHANDISING MAN.</span><br><span style="font-size:4px;">DATE: / /</span></div>
+            <div style="text-align:right;"><div style="border-bottom:1px solid #000; width:31mm; height:6px; margin-left:auto;"></div><span style="font-weight:bold; font-size:4.5px;">MERCHANDISING MAN.</span><br><span style="font-size:4px;">DATE: / /</span></div>
           </div>
           <div style="text-align:center; margin: 1px 0;">
-            <div style="border-bottom:1px solid #000; width:32mm; height:6px; margin:auto;"></div>
+            <div style="border-bottom:1px solid #000; width:34mm; height:6px; margin:auto;"></div>
             <span style="font-weight:bold; font-size:4.5px;">PURCHASING MANAGER</span><br><span style="font-size:4px;">DATE: / /</span>
           </div>
           <div style="display:flex; justify-content:space-between; align-items:flex-end;">
