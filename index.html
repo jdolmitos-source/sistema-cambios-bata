@@ -236,84 +236,88 @@
     </header>
 
     <div class="flex flex-1 relative z-10">
-      <aside class="w-64 bg-[#D61B28] p-4 space-y-2 select-none shadow-xl border-r border-red-800">
-        <button type="button" id="menu-btn-cambios" class="sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white transition cursor-pointer">
-          <i class="fa-solid fa-arrow-right-arrow-left"></i>
-          <span>Cambios</span>
-        </button>
-
-        <button type="button" id="menu-btn-informe" class="sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white transition cursor-pointer">
-          <i class="fa-regular fa-file-lines text-sm"></i>
-          <span>Informe</span>
-        </button>
-
-        <!-- SUBMENÚS ENTREGAS -->
-        <div class="pt-3 border-t border-white/20 space-y-1">
-          <div class="px-3 text-[10px] font-black text-white/70 uppercase tracking-widest mb-1.5">Módulos de Entregas</div>
-          
-          <button type="button" id="menu-btn-entregas-todas" class="sidebar-btn sub-ent-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl font-bold text-xs text-white transition cursor-pointer">
-            <i class="fa-solid fa-truck-ramp-box text-sm text-amber-300"></i>
-            <span>Entregas (Todas)</span>
+      <aside class="w-72 bg-[#D61B28] p-4 flex flex-col justify-between select-none shadow-xl border-r border-red-800">
+        <div class="space-y-2">
+          <!-- Botón Cambios (Siempre visible) -->
+          <button type="button" id="menu-btn-cambios" class="sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white transition cursor-pointer">
+            <i class="fa-solid fa-arrow-right-arrow-left"></i>
+            <span>Cambios</span>
           </button>
 
-          <button type="button" id="sub-btn-MATERIALES" class="sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition cursor-pointer pl-5">
-            <span class="w-2 h-2 rounded-full bg-blue-400 ring-2 ring-white/20"></span>
-            <span>Entrega Materiales</span>
+          <button type="button" id="menu-btn-informe" class="sidebar-btn hidden w-full items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white transition cursor-pointer">
+            <i class="fa-regular fa-file-lines text-sm"></i>
+            <span>Informe</span>
           </button>
 
-          <button type="button" id="sub-btn-GUIA" class="sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition cursor-pointer pl-5">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-white/20"></span>
-            <span>Guías de Producción</span>
-          </button>
+          <!-- BLOQUE ENTREGAS -->
+          <div id="bloque-menu-entregas" class="sidebar-section-item pt-3 border-t border-white/20 space-y-1">
+            <div class="px-3 text-[10px] font-black text-white/70 uppercase tracking-widest mb-1.5">Módulos de Entregas</div>
+            
+            <button type="button" id="menu-btn-entregas-todas" class="sidebar-btn sub-ent-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl font-bold text-xs text-white transition cursor-pointer">
+              <i class="fa-solid fa-truck-ramp-box text-sm text-amber-300"></i>
+              <span>Entregas (Todas)</span>
+            </button>
 
-          <button type="button" id="sub-btn-CORTE" class="sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition cursor-pointer pl-5">
-            <span class="w-2 h-2 rounded-full bg-amber-400 ring-2 ring-white/20"></span>
-            <span>Entrega de Cortes</span>
-          </button>
+            <button type="button" id="sub-btn-MATERIALES" class="sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition cursor-pointer pl-5">
+              <span class="w-2 h-2 rounded-full bg-blue-400 ring-2 ring-white/20"></span>
+              <span>Entrega Materiales</span>
+            </button>
 
-          <button type="button" id="sub-btn-MUESTRA" class="sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition cursor-pointer pl-5">
-            <span class="w-2 h-2 rounded-full bg-purple-300 ring-2 ring-white/20"></span>
-            <span>Muestras Definitivas</span>
-          </button>
+            <button type="button" id="sub-btn-GUIA" class="sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition cursor-pointer pl-5">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-white/20"></span>
+              <span>Guías de Producción</span>
+            </button>
 
-          <button type="button" id="sub-btn-DESBASTE" class="sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition cursor-pointer pl-5">
-            <span class="w-2 h-2 rounded-full bg-cyan-300 ring-2 ring-white/20"></span>
-            <span>Hoja de Desbaste</span>
-          </button>
+            <button type="button" id="sub-btn-CORTE" class="sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition cursor-pointer pl-5">
+              <span class="w-2 h-2 rounded-full bg-amber-400 ring-2 ring-white/20"></span>
+              <span>Entrega de Cortes</span>
+            </button>
 
-          <button type="button" id="sub-btn-TIZADORES" class="sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition cursor-pointer pl-5">
-            <span class="w-2 h-2 rounded-full bg-rose-300 ring-2 ring-white/20"></span>
-            <span>Tizadores (Copias)</span>
-          </button>
+            <button type="button" id="sub-btn-MUESTRA" class="sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition cursor-pointer pl-5">
+              <span class="w-2 h-2 rounded-full bg-purple-300 ring-2 ring-white/20"></span>
+              <span>Muestras Definitivas</span>
+            </button>
+
+            <button type="button" id="sub-btn-DESBASTE" class="sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition cursor-pointer pl-5">
+              <span class="w-2 h-2 rounded-full bg-cyan-300 ring-2 ring-white/20"></span>
+              <span>Hoja de Desbaste</span>
+            </button>
+
+            <button type="button" id="sub-btn-TIZADORES" class="sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition cursor-pointer pl-5">
+              <span class="w-2 h-2 rounded-full bg-rose-300 ring-2 ring-white/20"></span>
+              <span>Tizadores (Copias)</span>
+            </button>
+          </div>
+
+          <!-- BLOQUE PRODUCCIÓN -->
+          <div id="bloque-menu-produccion" class="sidebar-section-item pt-3 border-t border-white/20 space-y-1">
+            <div class="px-3 text-[10px] font-black text-white/70 uppercase tracking-widest mb-1.5">Planta de Fabricación</div>
+            <button type="button" id="menu-btn-produccion" class="sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white transition cursor-pointer">
+              <i class="fa-solid fa-industry text-sm text-cyan-300"></i>
+              <span>Producción Work Planner</span>
+            </button>
+          </div>
+
+          <!-- BLOQUE COMPRAS & ALMACÉN -->
+          <div id="bloque-menu-compras" class="sidebar-section-item pt-3 border-t border-white/20 space-y-1">
+            <div class="px-3 text-[10px] font-black text-white/70 uppercase tracking-widest mb-1.5">Cadena de Suministro</div>
+            <button type="button" id="menu-btn-procurement" class="sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white transition cursor-pointer">
+              <i class="fa-solid fa-boxes-stacked text-sm text-yellow-300"></i>
+              <span>Compras & Almacén</span>
+            </button>
+          </div>
+
+          <!-- BLOQUE TARJETAS PD -->
+          <div id="bloque-menu-tarjetas" class="sidebar-section-item pt-3 border-t border-white/20 space-y-1">
+            <div class="px-3 text-[10px] font-black text-white/70 uppercase tracking-widest mb-1.5">Modelaje y Muestras</div>
+            <button type="button" id="menu-btn-tarjetas" class="sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white transition cursor-pointer">
+              <i class="fa-solid fa-id-card text-sm text-emerald-300"></i>
+              <span>Tarjetas de Muestra (PD)</span>
+            </button>
+          </div>
         </div>
 
-        <!-- MÓDULO PRODUCCIÓN WORK PLANNER -->
-        <div class="pt-3 border-t border-white/20 space-y-1">
-          <div class="px-3 text-[10px] font-black text-white/70 uppercase tracking-widest mb-1.5">Planta de Fabricación</div>
-          <button type="button" id="menu-btn-produccion" class="sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white transition cursor-pointer">
-            <i class="fa-solid fa-industry text-sm text-cyan-300"></i>
-            <span>Producción Work Planner</span>
-          </button>
-        </div>
-
-        <!-- CADENA DE SUMINISTRO -->
-        <div class="pt-3 border-t border-white/20 space-y-1">
-          <div class="px-3 text-[10px] font-black text-white/70 uppercase tracking-widest mb-1.5">Cadena de Suministro</div>
-          <button type="button" id="menu-btn-procurement" class="sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white transition cursor-pointer">
-            <i class="fa-solid fa-boxes-stacked text-sm text-yellow-300"></i>
-            <span>Compras & Almacén</span>
-          </button>
-        </div>
-
-        <!-- MÓDULO TARJETAS (PD) -->
-        <div id="section-menu-tarjetas" class="pt-3 border-t border-white/20 space-y-1">
-          <div class="px-3 text-[10px] font-black text-white/70 uppercase tracking-widest mb-1.5">Modelaje y Muestras</div>
-          <button type="button" id="menu-btn-tarjetas" class="sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white transition cursor-pointer">
-            <i class="fa-solid fa-id-card text-sm text-emerald-300"></i>
-            <span>Tarjetas de Muestra (PD)</span>
-          </button>
-        </div>
-
+        <!-- BOTÓN SUPER ADMIN ABAJO -->
         <div class="pt-3 border-t border-white/20">
           <button type="button" id="menu-btn-usuarios" class="sidebar-btn w-full hidden flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white transition cursor-pointer">
             <i class="fa-solid fa-user-shield text-amber-300 text-sm"></i>
@@ -321,7 +325,6 @@
           </button>
         </div>
       </aside>
-
       <main class="flex-1 p-6 md:p-8 overflow-y-auto">
         <!-- VISTA 1: CAMBIOS -->
         <section id="view-cambios" class="space-y-6">
