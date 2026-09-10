@@ -1180,7 +1180,7 @@ function renderTabla() {
       <td class="p-3 border-r whitespace-nowrap"><span class="font-bold block">${item.solicitanteNombre || '—'}</span></td>
       <td class="p-3.5 font-bold border-r">${badgeMinuta}${item.proyecto}</td>
       <td class="p-3.5 font-mono border-r">${item.articulo}</td>
-      <td class="p-3.5 border-r">${item.boxCambio}</td>
+      <td class="p-3.5 font-r">${item.boxCambio}</td>
       <td class="p-3.5 text-center border-r whitespace-nowrap">${estadoHTML}</td>
       <td class="p-3.5 text-center border-r whitespace-nowrap">${fechaRealizadoHTML}</td>
       <td class="p-3.5 text-center whitespace-nowrap">${costosHTML}</td>
@@ -1341,10 +1341,7 @@ if (formEntrega) {
   };
 }
 
-// Procurement placeholder
-function escucharProcurement() {}
-
-// ==================== MÓDULO TARJETAS (PD) ====================
+// ==================== MÓDULO TARJETAS (PD) - DISEÑO EXACTO IMAGEN DERECHA ====================
 function initModuloTarjetas() {
   const inputFecha = document.getElementById("card-fecha");
   if (inputFecha && !inputFecha.value) {
@@ -1534,7 +1531,7 @@ function renderTarjetasPreview() {
       </div>
     `;
 
-    // Módulo de Firmas idéntico a la imagen de la derecha ("APROBACIONES" y las 5 posiciones exactas con DATE: / /)
+    // Módulo de Firmas exacto a la imagen de la derecha (APROBACIONES arriba, 4 esquinas + centro con DATE: / /)
     const moduloFirmas = `
       <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:2px 4px; font-size:5.5px; ${tarj.esCorte ? '' : 'border-right:1px solid #000;'}">
         <div style="font-size:7px; font-weight:900; text-align:center; color:#000; text-transform:uppercase; border-bottom:1px solid #000; padding-bottom:1px;">
