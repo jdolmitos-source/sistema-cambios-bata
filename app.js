@@ -1531,13 +1531,13 @@ function renderTarjetasPreview() {
       </div>
     `;
 
-    // Módulo de Firmas ajustado con el bloque superior (Chief y Merchandising) más abajo y espaciado exacto a la imagen de la derecha
+    // Módulo de Firmas con el paddingTop calibrado exactamente para que Chief y Merchandising bajen a la altura correcta
     const moduloFirmas = `
       <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:2px 4px; font-size:5.5px; ${tarj.esCorte ? '' : 'border-right:1px solid #000;'}">
         <div style="font-size:7px; font-weight:900; text-align:center; color:#000; text-transform:uppercase; border-bottom:1px solid #000; padding-bottom:1px;">
           APROBACIONES
         </div>
-        <div style="display:flex; flex-direction:column; justify-content:space-between; flex:1; padding-top:6px;">
+        <div style="display:flex; flex-direction:column; justify-content:space-between; flex:1; padding-top:9px; padding-bottom:2px;">
           <div style="display:flex; justify-content:space-between;">
             <div>
               <div style="border-bottom:1px solid #000; width:28mm; height:5px;"></div>
@@ -1548,7 +1548,7 @@ function renderTarjetasPreview() {
               <span style="font-weight:bold; font-size:4.5px;">MERCHANDISING MAN.</span><br><span style="font-size:4px;">DATE: &nbsp; / &nbsp; / &nbsp;</span>
             </div>
           </div>
-          <div style="text-align:center; margin: 2px 0;">
+          <div style="text-align:center; margin: 1px 0;">
             <div style="border-bottom:1px solid #000; width:30mm; height:5px; margin:auto;"></div>
             <span style="font-weight:bold; font-size:4.5px;">PURCHASING MANAGER</span><br><span style="font-size:4px;">DATE: &nbsp; / &nbsp; / &nbsp;</span>
           </div>
