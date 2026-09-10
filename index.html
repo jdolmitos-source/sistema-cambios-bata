@@ -536,15 +536,15 @@
                     <th class="p-2.5 border border-gray-300 bg-gray-200 w-16" rowspan="2">7. TOT</th>
                   </tr>
                   <tr class="bg-gray-50 border-b border-gray-300 text-center font-semibold text-gray-600 text-[9px]">
-                    <!-- Lunes (PLAN, ART, PROY, PRS, ESTADO) -->
+                    <!-- Lunes -->
                     <th class="p-1.5 border border-gray-300">PLAN</th><th class="p-1.5 border border-gray-300">ART</th><th class="p-1.5 border border-gray-300">PROY</th><th class="p-1.5 border border-gray-300">PRS</th><th class="p-1.5 border border-gray-300">ESTADO</th>
-                    <!-- Martes (PLAN, ART, PROY, PRS, ESTADO) -->
+                    <!-- Martes -->
                     <th class="p-1.5 border border-gray-300">PLAN</th><th class="p-1.5 border border-gray-300">ART</th><th class="p-1.5 border border-gray-300">PROY</th><th class="p-1.5 border border-gray-300">PRS</th><th class="p-1.5 border border-gray-300">ESTADO</th>
-                    <!-- Miércoles (PLAN, ART, PROY, PRS, ESTADO) -->
+                    <!-- Miércoles -->
                     <th class="p-1.5 border border-gray-300">PLAN</th><th class="p-1.5 border border-gray-300">ART</th><th class="p-1.5 border border-gray-300">PROY</th><th class="p-1.5 border border-gray-300">PRS</th><th class="p-1.5 border border-gray-300">ESTADO</th>
-                    <!-- Jueves (PLAN, ART, PROY, PRS, ESTADO) -->
+                    <!-- Jueves -->
                     <th class="p-1.5 border border-gray-300">PLAN</th><th class="p-1.5 border border-gray-300">ART</th><th class="p-1.5 border border-gray-300">PROY</th><th class="p-1.5 border border-gray-300">PRS</th><th class="p-1.5 border border-gray-300">ESTADO</th>
-                    <!-- Viernes (PLAN, ART, PROY, PRS, ESTADO) -->
+                    <!-- Viernes -->
                     <th class="p-1.5 border border-gray-300">PLAN</th><th class="p-1.5 border border-gray-300">ART</th><th class="p-1.5 border border-gray-300">PROY</th><th class="p-1.5 border border-gray-300">PRS</th><th class="p-1.5 border border-gray-300">ESTADO</th>
                   </tr>
                 </thead>
@@ -724,6 +724,59 @@
     <div class="bg-white rounded-3xl p-4 relative max-w-2xl flex flex-col items-center">
       <button type="button" id="close-visor-foto" class="absolute top-3 right-3 text-gray-500 font-bold p-2">✕</button>
       <img id="visor-foto-img" src="" class="max-w-full h-auto rounded-xl">
+    </div>
+  </div>
+
+  <!-- MODAL: MINUTA -->
+  <div id="modal-minuta" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl relative text-xs">
+      <button type="button" id="close-minuta" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+      <h3 class="font-bold text-sm text-amber-700 mb-3">Generar Minuta de Cambios</h3>
+      <form id="form-minuta" class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="block font-semibold mb-1">Semana</label><input type="text" id="minuta-semana" required class="w-full px-3 py-2 border rounded-xl font-mono"></div>
+          <div><label class="block font-semibold mb-1">Proyecto</label><input type="text" id="minuta-proyecto" required class="w-full px-3 py-2 border rounded-xl"></div>
+        </div>
+        <div><label class="block font-semibold mb-1">Artículo Afectado</label><input type="text" id="minuta-articulo" required class="w-full px-3 py-2 border rounded-xl font-mono"></div>
+        <div><label class="block font-semibold mb-1">Foto (Opcional)</label><input type="file" id="minuta-photo" accept="image/*" class="w-full text-xs"></div>
+        <div><label class="block font-semibold mb-1">Cambios Técnicos</label><textarea id="minuta-box" rows="3" required class="w-full px-3 py-2 border rounded-xl"></textarea></div>
+        <button type="submit" class="w-full bg-amber-600 text-white font-bold py-2.5 rounded-xl cursor-pointer">Publicar Minuta</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: NUEVA SOLICITUD DE CAMBIO -->
+  <div id="modal-new-change" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden p-6 text-xs">
+      <button type="button" id="modal-btn-close" class="absolute top-4 right-4 text-gray-400 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+      <h3 class="font-bold text-sm text-[#D61B28] mb-3">Nueva Solicitud de Cambio</h3>
+      <form id="form-new-change" class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="block font-bold mb-1">Semana</label><input type="text" id="change-semana" required class="w-full px-3 py-2 border rounded-lg font-mono"></div>
+          <div><label class="block font-bold mb-1">Proyecto</label><input type="text" id="change-project" required class="w-full px-3 py-2 border rounded-lg"></div>
+        </div>
+        <div><label class="block font-bold mb-1">Artículo</label><input type="text" id="change-article" required class="w-full px-3 py-2 border rounded-lg font-mono"></div>
+        <div><label class="block font-bold mb-1">Foto</label><input type="file" id="change-photo" accept="image/*" class="w-full text-xs"></div>
+        <div><label class="block font-bold mb-1">Descripción del Cambio</label><textarea id="change-box" rows="3" required class="w-full px-3 py-2 border rounded-lg"></textarea></div>
+        <div class="pt-2 flex justify-end space-x-2">
+          <button type="button" id="modal-btn-cancel" class="px-4 py-2 border rounded-lg font-bold">Cancelar</button>
+          <button type="submit" class="px-5 py-2 bg-[#D61B28] text-white rounded-lg font-bold">Guardar Solicitud</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: IMPRESIÓN DE TARJETAS -->
+  <div id="modal-impresion-tarjetas" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-5xl rounded-3xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+      <div class="border-b pb-3 mb-4 flex justify-between items-center no-print">
+        <h3 class="font-bold text-sm text-[#D61B28]">Impresión de Tarjetas</h3>
+        <div class="flex items-center space-x-2">
+          <button type="button" onclick="window.print()" class="bg-[#D61B28] text-white font-bold px-4 py-2 rounded-xl text-xs cursor-pointer">Imprimir</button>
+          <button type="button" id="close-modal-tarjetas" class="p-2 text-gray-400 cursor-pointer">✕</button>
+        </div>
+      </div>
+      <div id="hoja-impresion-tarjetas" class="flex flex-col items-center p-0 m-0"></div>
     </div>
   </div>
 
