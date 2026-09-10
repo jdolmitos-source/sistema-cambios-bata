@@ -546,54 +546,43 @@ function actualizarHeaderUsuario() {
   aplicarPermisosRol();
 }
 
-// Control estricto de visibilidad por rol en el menú lateral
+// Control estricto de visibilidad por rol en el menú lateral de forma fluida
 function aplicarPermisosRol() {
   if (esSuperAdmin()) {
-    // Super admin ve todo
-    document.querySelectorAll("aside > button, aside > div").forEach(el => el.style.display = "block");
+    document.querySelectorAll("aside .sidebar-section-item").forEach(el => el.classList.remove("hidden"));
+    document.getElementById("menu-btn-usuarios")?.classList.remove("hidden");
     return;
   }
 
   const rol = (userData && userData.rol) || "";
 
-  const btnCambios = document.getElementById("menu-btn-cambios")?.parentElement || document.getElementById("menu-btn-cambios");
-  const btnInforme = document.getElementById("menu-btn-informe");
-  const bloqueEntregas = document.getElementById("menu-btn-entregas-todas")?.closest(".pt-3");
-  const bloqueProd = document.getElementById("menu-btn-produccion")?.closest(".pt-3");
-  const bloqueCompras = document.getElementById("menu-btn-procurement")?.closest(".pt-3");
-  const bloqueTarjetas = document.getElementById("section-menu-tarjetas");
+  const bloqueEntregas = document.getElementById("bloque-menu-entregas");
+  const bloqueProd = document.getElementById("bloque-menu-produccion");
+  const bloqueCompras = document.getElementById("bloque-menu-compras");
+  const bloqueTarjetas = document.getElementById("bloque-menu-tarjetas");
 
-  // Ocultar todo por defecto
-  if (btnInforme) btnInforme.style.display = "none";
-  if (bloqueEntregas) bloqueEntregas.style.display = "none";
-  if (bloqueProd) bloqueProd.style.display = "none";
-  if (bloqueCompras) bloqueCompras.style.display = "none";
-  if (bloqueTarjetas) bloqueTarjetas.style.display = "none";
-  
-  // Cambios siempre visible para todos los roles autorizados
-  if (btnCambios) btnCambios.style.display = "flex";
+  // Ocultar todos los bloques por defecto
+  if (bloqueEntregas) bloqueEntregas.classList.add("hidden");
+  if (bloqueProd) bloqueProd.classList.add("hidden");
+  if (bloqueCompras) bloqueCompras.classList.add("hidden");
+  if (bloqueTarjetas) bloqueTarjetas.classList.add("hidden");
 
-  // Reglas específicas por rol solicitado:
+  // Mostrar según el rol solicitado:
   if (rol.includes("Desarrollo")) {
-    // Desarrollo: ve entregas, tarjetas y cambios
-    if (bloqueEntregas) bloqueEntregas.style.display = "block";
-    if (bloqueTarjetas) bloqueTarjetas.style.display = "block";
+    if (bloqueEntregas) bloqueEntregas.classList.remove("hidden");
+    if (bloqueTarjetas) bloqueTarjetas.classList.remove("hidden");
   } else if (rol.includes("Compras")) {
-    // Compras: ve compras, entrega de material y cambios
-    if (bloqueCompras) bloqueCompras.style.display = "block";
-    if (bloqueEntregas) bloqueEntregas.style.display = "block"; // Incluye entrega de material
+    if (bloqueCompras) bloqueCompras.classList.remove("hidden");
+    if (bloqueEntregas) bloqueEntregas.classList.remove("hidden");
   } else if (rol === "Planeamiento") {
-    // Planeamiento: ve prod., entregas y cambios
-    if (bloqueProd) bloqueProd.style.display = "block";
-    if (bloqueEntregas) bloqueEntregas.style.display = "block";
+    if (bloqueProd) bloqueProd.classList.remove("hidden");
+    if (bloqueEntregas) bloqueEntregas.classList.remove("hidden");
   } else if (rol === "Producción") {
-    // Producción: ve prod, entregas, compras y cambios
-    if (bloqueProd) bloqueProd.style.display = "block";
-    if (bloqueEntregas) bloqueEntregas.style.display = "block";
-    if (bloqueCompras) bloqueCompras.style.display = "block";
+    if (bloqueProd) bloqueProd.classList.remove("hidden");
+    if (bloqueEntregas) bloqueEntregas.classList.remove("hidden");
+    if (bloqueCompras) bloqueCompras.classList.remove("hidden");
   } else if (rol === "Costos") {
-    // Costos: ve entregas y cambios
-    if (bloqueEntregas) bloqueEntregas.style.display = "block";
+    if (bloqueEntregas) bloqueEntregas.classList.remove("hidden");
   }
 }
 
