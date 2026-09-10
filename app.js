@@ -853,7 +853,6 @@ window.exportarExcelProduccion = () => {
 
 function renderProduccionView() {
   const table = document.getElementById("tabla-matriz-produccion");
-  const empty = document.getElementById("produccion-empty-state");
   const labelSemanaGrande = document.getElementById("label-semana-grande");
   if (!table) return;
 
@@ -872,7 +871,6 @@ function renderProduccionView() {
     return semMatch && proyMatch && linMatch;
   });
 
-  // KPIs
   let totCortado = 0, totAparado = 0, totArmado = 0, totInyeccion = 0, totEntregado = 0;
   filtrados.forEach(l => {
     const p = parseInt(l.pares) || 0;
@@ -939,11 +937,13 @@ function renderProduccionView() {
           totalFila += p;
           sumaParesSeccion += p;
           const estado = (loteDia.estado || "").toUpperCase();
-          let colorEstado = 'text-amber-700 bg-amber-50 border-amber-200';
-          if (estado === 'APARADO') colorEstado = 'text-blue-700 bg-blue-50 border-blue-200';
-          else if (estado === 'ARMADO') colorEstado = 'text-purple-700 bg-purple-50 border-purple-200';
-          else if (estado === 'INYECCIÓN') colorEstado = 'text-cyan-700 bg-cyan-50 border-cyan-200';
-          else if (estado === 'ENTREGADO') colorEstado = 'text-green-700 bg-green-50 border-green-200';
+          
+          // Colores unificados idénticos a los KPIs de la Imagen 1 (Sin repeticiones)
+          let colorEstado = 'text-amber-800 bg-amber-100 border-amber-300'; // Cortado (Ámbar)
+          if (estado === 'APARADO') colorEstado = 'text-blue-800 bg-blue-100 border-blue-300'; // Aparado (Azul)
+          else if (estado === 'ARMADO') colorEstado = 'text-purple-800 bg-purple-100 border-purple-300'; // Armado (Morado)
+          else if (estado === 'INYECCIÓN') colorEstado = 'text-emerald-800 bg-emerald-100 border-emerald-300'; // Inyección (Turquesa/Esmeralda)
+          else if (estado === 'ENTREGADO') colorEstado = 'text-green-900 bg-green-200 border-green-400'; // Entregado (Verde fuerte)
 
           html += `
             <td class="p-1 border border-gray-300 font-mono text-[10px] font-bold text-red-600">${loteDia.plan || '—'}</td>
@@ -951,7 +951,7 @@ function renderProduccionView() {
             <td class="p-1 border border-gray-300 font-bold text-[10px] truncate max-w-[65px]">${loteDia.proyecto || '—'}</td>
             <td class="p-1 border border-gray-300 font-black text-cyan-900 bg-cyan-50/30">${p.toLocaleString()}</td>
             <td class="p-1 border border-gray-300">
-              <select onchange="window.actualizarEstadoDiaLote('${loteDia.id}', this.value)" class="text-[10px] font-bold rounded px-1 py-0.5 border ${colorEstado}">
+              <select onchange="window.actualizarEstadoDiaLote('${loteDia.id}', this.value)" class="text-[10px] font-bold rounded px-1.5 py-0.5 border shadow-xs ${colorEstado}">
                 <option value="CORTADO" ${estado === 'CORTADO' ? 'selected' : ''}>CORTADO</option>
                 <option value="APARADO" ${estado === 'APARADO' ? 'selected' : ''}>APARADO</option>
                 <option value="ARMADO" ${estado === 'ARMADO' ? 'selected' : ''}>ARMADO</option>
@@ -975,7 +975,6 @@ function renderProduccionView() {
       html += `</tr>`;
     }
 
-    // Fila de Subtotal por Sección
     html += `
       <tr class="bg-gray-200 font-black text-[11px] text-gray-800 border-b-2 border-gray-400 text-center">
         <td colspan="26" class="p-1.5 text-right pr-4">SUBTOTAL SECCIÓN ${seccion}:</td>
