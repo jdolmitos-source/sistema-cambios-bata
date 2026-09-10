@@ -39,8 +39,6 @@ let currentUser = null;
 let userData = null;
 let solicitudes = [];
 let entregas = [];
-let bloqueosMateriales = [];
-let llegadasMateriales = [];
 let lotesProduccion = [];
 
 let categoriaEntregaActiva = "todas";
@@ -130,6 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // Botones Modales Generales
   safeClick("btn-show-login", () => document.getElementById("modal-login")?.classList.remove("hidden"));
   safeClick("close-login", () => document.getElementById("modal-login")?.classList.add("hidden"));
   safeClick("btn-show-register", () => document.getElementById("modal-register")?.classList.remove("hidden"));
@@ -138,6 +137,17 @@ document.addEventListener("DOMContentLoaded", () => {
   safeClick("close-visor-foto", () => document.getElementById("modal-visor-foto")?.classList.add("hidden"));
   safeClick("btn-close-whatsapp-modal", () => document.getElementById("modal-whatsapp")?.classList.add("hidden"));
   safeClick("close-minuta", () => document.getElementById("modal-minuta")?.classList.add("hidden"));
+  safeClick("close-nueva-entrega", () => document.getElementById("modal-nueva-entrega")?.classList.add("hidden"));
+  safeClick("cancel-nueva-entrega", () => document.getElementById("modal-nueva-entrega")?.classList.add("hidden"));
+  safeClick("close-nuevo-lote-prod", () => document.getElementById("modal-nuevo-lote-prod")?.classList.add("hidden"));
+  safeClick("cancel-nuevo-lote-prod", () => document.getElementById("modal-nuevo-lote-prod")?.classList.add("hidden"));
+  safeClick("modal-btn-close", () => document.getElementById("modal-new-change")?.classList.add("hidden"));
+  safeClick("modal-btn-cancel", () => document.getElementById("modal-new-change")?.classList.add("hidden"));
+
+  // Disparadores de modales de creación
+  safeClick("btn-open-new-change", () => document.getElementById("modal-new-change")?.classList.remove("hidden"));
+  safeClick("btn-open-minuta-header", () => document.getElementById("modal-minuta")?.classList.remove("hidden"));
+  safeClick("btn-open-nueva-entrega", () => window.abrirModalEntrega());
 
   const formLogin = document.getElementById("form-login");
   if (formLogin) {
@@ -174,6 +184,37 @@ document.addEventListener("DOMContentLoaded", () => {
   safeClick("sub-btn-MUESTRA", () => window.cambiarSubmenuEntrega("MUESTRA DEFINITIVA"));
   safeClick("sub-btn-DESBASTE", () => window.cambiarSubmenuEntrega("HOJA DE DESBASTE"));
   safeClick("sub-btn-TIZADORES", () => window.cambiarSubmenuEntrega("TIZADORES"));
+
+  // Formulario Solicitud de Cambio
+  const formNewChange = document.getElementById("form-new-change");
+  if (formNewChange) {
+    formNewChange.onsubmit = async (e) => {
+      e.preventDefault();
+      const semana = document.getElementById("change-semana").value.trim();
+      const proyecto = document.getElementById("change-project").value.trim();
+      const articulo = document.getElementById("change-article").value.trim();
+      const boxCambio = document.getElementById("change-box").value.trim();
+      const photoFile = document.getElementById("change-photo").files[0];
+      const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
+
+      try {
+        await addDoc(collection(db, "solicitudes_cambios"), {
+          semana, proyecto, articulo, boxCambio,
+          foto: fotoBase64,
+          estado: "En proceso",
+          esMinuta: false,
+          solicitanteNombre: (userData && userData.nombre) || "Usuario",
+          fechaCreacion: new Date().toISOString(),
+          validadoCostos: false
+        });
+        formNewChange.reset();
+        document.getElementById("modal-new-change")?.classList.add("hidden");
+        alert("Solicitud de cambio creada con éxito.");
+      } catch (err) {
+        alert("Error al crear solicitud: " + err.message);
+      }
+    };
+  }
 
   // Formulario Minuta
   const formMinuta = document.getElementById("form-minuta");
@@ -679,22 +720,22 @@ function renderTarjetasPreview() {
       </div>
     `;
 
-    // Módulo de Firmas calibrado exactamente a la nueva imagen (PD. CHIEF | MERCHANDISING MAN. / PURCHASING MANAGER / PRODUCTION MANAGER | COUNTRY MANAGER)
+    // Módulo de Firmas actualizado con alineación a la derecha para Merchandising y Country, y espacio vertical añadido arriba
     const moduloFirmas = `
-      <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:2px 3px; font-size:5.5px; ${tarj.esCorte ? '' : 'border-right:1px solid #000;'}">
+      <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:4px 3px 2px 3px; font-size:5.5px; ${tarj.esCorte ? '' : 'border-right:1px solid #000;'}">
         <div style="font-size:6.5px; font-weight:900; text-align:center; text-transform:uppercase; border-bottom:1px solid #000; padding-bottom:1px;">${tarj.etiqueta}</div>
-        <div style="display:flex; flex-direction:column; justify-content:space-around; flex:1;">
-          <div style="display:flex; justify-content:space-between;">
-            <div><div style="border-bottom:1px solid #000; width:31mm; height:7px;"></div><span style="font-weight:bold; font-size:5px;">PD. CHIEF</span><br><span style="font-size:4.5px;">DATE: / /</span></div>
-            <div><div style="border-bottom:1px solid #000; width:31mm; height:7px;"></div><span style="font-weight:bold; font-size:5px;">MERCHANDISING MAN.</span><br><span style="font-size:4.5px;">DATE: / /</span></div>
+        <div style="display:flex; flex-direction:column; justify-content:space-between; flex:1; padding-top:4px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div><div style="border-bottom:1px solid #000; width:30mm; height:7px;"></div><span style="font-weight:bold; font-size:5px;">PD. CHIEF</span><br><span style="font-size:4.5px;">DATE: / /</span></div>
+            <div style="text-align:right;"><div style="border-bottom:1px solid #000; width:30mm; height:7px; margin-left:auto;"></div><span style="font-weight:bold; font-size:5px;">MERCHANDISING MAN.</span><br><span style="font-size:4.5px;">DATE: / /</span></div>
           </div>
-          <div style="text-align:center;">
+          <div style="text-align:center; margin: 2px 0;">
             <div style="border-bottom:1px solid #000; width:35mm; height:7px; margin:auto;"></div>
             <span style="font-weight:bold; font-size:5px;">PURCHASING MANAGER</span><br><span style="font-size:4.5px;">DATE: / /</span>
           </div>
-          <div style="display:flex; justify-content:space-between;">
-            <div><div style="border-bottom:1px solid #000; width:31mm; height:7px;"></div><span style="font-weight:bold; font-size:5px;">PRODUCTION MANAGER</span><br><span style="font-size:4.5px;">DATE: / /</span></div>
-            <div><div style="border-bottom:1px solid #000; width:31mm; height:7px;"></div><span style="font-weight:bold; font-size:5px;">COUNTRY MANAGER</span><br><span style="font-size:4.5px;">DATE: / /</span></div>
+          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+            <div><div style="border-bottom:1px solid #000; width:30mm; height:7px;"></div><span style="font-weight:bold; font-size:5px;">PRODUCTION MANAGER</span><br><span style="font-size:4.5px;">DATE: / /</span></div>
+            <div style="text-align:right;"><div style="border-bottom:1px solid #000; width:30mm; height:7px; margin-left:auto;"></div><span style="font-weight:bold; font-size:5px;">COUNTRY MANAGER</span><br><span style="font-size:4.5px;">DATE: / /</span></div>
           </div>
         </div>
       </div>
