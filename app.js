@@ -903,12 +903,6 @@ function renderProduccionView() {
   setKpi("kpi-inyeccion", "bar-inyeccion", totInyeccion);
   setKpi("kpi-entregado", "bar-entregado", totEntregado);
 
-  setKpi("kpi-cortado", "bar-cortado", totCortado);
-  setKpi("kpi-aparado", "bar-aparado", totAparado);
-  setKpi("kpi-armado", "bar-armado", totArmado);
-  setKpi("kpi-inyeccion", "bar-inyeccion", totInyeccion);
-  setKpi("kpi-entregado", "bar-entregado", totEntregado);
-
   const seccionesDisponibles = fLin ? [fLin] : ["330", "331", "332", "251", "252", "254"];
   const diasSemana = ["LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES"];
 
@@ -947,11 +941,13 @@ function renderProduccionView() {
           const p = parseInt(loteDia.pares) || 0;
           totalFila += p;
           sumaParesSeccion += p;
-          let colorEstado = 'text-amber-700 bg-amber-50 border-amber-200'; // CORTADO (Ámbar)
-if (loteDia.estado === 'APARADO') colorEstado = 'text-blue-700 bg-blue-50 border-blue-200';
-else if (loteDia.estado === 'ARMADO') colorEstado = 'text-purple-700 bg-purple-50 border-purple-200';
-else if (loteDia.estado === 'INYECCIÓN') colorEstado = 'text-orange-700 bg-orange-50 border-orange-200'; // INYECCIÓN (Naranja)
-else if (loteDia.estado === 'ENTREGADO') colorEstado = 'text-green-700 bg-green-50 border-green-200';
+          let colorEstado = 'text-amber-700 bg-amber-50 border-amber-200';
+          if (loteDia.estado === 'APARADO') colorEstado = 'text-blue-700 bg-blue-50 border-blue-200';
+          else if (loteDia.estado === 'ARMADO') colorEstado = 'text-purple-700 bg-purple-50 border-purple-200';
+          else if (loteDia.estado === 'INYECCIÓN') colorEstado = 'text-orange-700 bg-orange-50 border-orange-200';
+          else if (loteDia.estado === 'ENTREGADO') colorEstado = 'text-green-700 bg-green-50 border-green-200';
+
+          html += `
             <td class="p-1 border border-gray-300 font-mono text-[10px] font-bold text-red-600">${loteDia.plan || '—'}</td>
             <td class="p-1 border border-gray-300 font-mono text-[10px]">${loteDia.articulo || '—'}</td>
             <td class="p-1 border border-gray-300 font-bold text-[10px] truncate max-w-[65px]">${loteDia.proyecto || '—'}</td>
@@ -1087,7 +1083,7 @@ function renderTablaEntregas() {
       </td>
       <td class="p-3 border-r border-gray-100 whitespace-nowrap">
         <span class="font-bold text-gray-800 block">${ent.entregadoPorNombre}</span>
-        <span class="text-[10px] text-gray-400">${ent.entregadoPorRol}</span>
+        <span class="text-[10px] text-gray-400">(${ent.entregadoPorRol})</span>
       </td>
       <td class="p-3 border-r border-gray-100 font-bold text-gray-700">${ent.destino}</td>
       <td class="p-3 text-center whitespace-nowrap">${recepcionHTML}</td>
@@ -1345,7 +1341,10 @@ if (formEntrega) {
   };
 }
 
-// ==================== MÓDULO TARJETAS (PD) - FORMATO CLÁSICO ORIGINAL CON ORDEN DE MÓDULOS 1,3,2 (CORTE) Y 1,2,3 (DEMÁS) ====================
+// Procurement placeholder
+function escucharProcurement() {}
+
+// ==================== MÓDULO TARJETAS (PD) ====================
 function initModuloTarjetas() {
   const inputFecha = document.getElementById("card-fecha");
   if (inputFecha && !inputFecha.value) {
@@ -1566,7 +1565,7 @@ function renderTarjetasPreview() {
     `;
 
     const moduloObservaciones = `
-      <div class="shoe-panel" style="padding:4px; display:flex; flex-direction:column; justify-content:space-between; font-size:7px; border-right:1px solid #000;">
+      <div class="shoe-panel" style="padding:4px; display:flex; flex-direction:column; justify-content:space-system; font-size:7px; border-right:1px solid #000;">
         <div>
           <span style="font-weight:900; color:#000; text-transform:uppercase; display:block; margin-bottom:1px;">OBSERVACIONES:</span>
           <p style="font-size:6.5px; color:#000; font-style:italic; line-height:1.2;">${observaciones}</p>
