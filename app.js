@@ -1341,7 +1341,7 @@ if (formEntrega) {
   };
 }
 
-// ==================== MÓDULO TARJETAS (PD) - POSICIÓN EXACTA IMAGEN DERECHA ====================
+// ==================== MÓDULO TARJETAS (PD) - POSICIÓN EXACTA IMAGEN DESEADA ====================
 function initModuloTarjetas() {
   const inputFecha = document.getElementById("card-fecha");
   if (inputFecha && !inputFecha.value) {
@@ -1531,13 +1531,13 @@ function renderTarjetasPreview() {
       </div>
     `;
 
-    // Módulo de Firmas con el paddingTop calibrado exactamente para que Chief y Merchandising bajen a la altura correcta
+    // Módulo de Firmas con Chief y Merchandising bajados exactamente 2.5 mm más (padding-top aumentado a 16px)
     const moduloFirmas = `
       <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:2px 4px; font-size:5.5px; ${tarj.esCorte ? '' : 'border-right:1px solid #000;'}">
         <div style="font-size:7px; font-weight:900; text-align:center; color:#000; text-transform:uppercase; border-bottom:1px solid #000; padding-bottom:1px;">
           APROBACIONES
         </div>
-        <div style="display:flex; flex-direction:column; justify-content:space-between; flex:1; padding-top:9px; padding-bottom:2px;">
+        <div style="display:flex; flex-direction:column; justify-content:space-between; flex:1; padding-top:16px; padding-bottom:2px;">
           <div style="display:flex; justify-content:space-between;">
             <div>
               <div style="border-bottom:1px solid #000; width:28mm; height:5px;"></div>
