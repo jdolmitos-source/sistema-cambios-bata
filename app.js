@@ -938,8 +938,11 @@ function renderProduccionView() {
           const p = parseInt(loteDia.pares) || 0;
           totalFila += p;
           sumaParesSeccion += p;
-          const colorEstado = loteDia.estado === 'ENTREGADO' ? 'text-green-700 bg-green-50' : (loteDia.estado === 'APARADO' ? 'text-blue-700 bg-blue-50' : (loteDia.estado === 'ARMADO' ? 'text-purple-700 bg-purple-50' : 'text-amber-700 bg-amber-50'));
-          html += `
+          let colorEstado = 'text-amber-700 bg-amber-50 border-amber-200'; // CORTADO (Ámbar)
+if (loteDia.estado === 'APARADO') colorEstado = 'text-blue-700 bg-blue-50 border-blue-200';
+else if (loteDia.estado === 'ARMADO') colorEstado = 'text-purple-700 bg-purple-50 border-purple-200';
+else if (loteDia.estado === 'INYECCIÓN') colorEstado = 'text-orange-700 bg-orange-50 border-orange-200'; // INYECCIÓN (Naranja)
+else if (loteDia.estado === 'ENTREGADO') colorEstado = 'text-green-700 bg-green-50 border-green-200';
             <td class="p-1 border border-gray-300 font-mono text-[10px] font-bold text-red-600">${loteDia.plan || '—'}</td>
             <td class="p-1 border border-gray-300 font-mono text-[10px]">${loteDia.articulo || '—'}</td>
             <td class="p-1 border border-gray-300 font-bold text-[10px] truncate max-w-[65px]">${loteDia.proyecto || '—'}</td>
