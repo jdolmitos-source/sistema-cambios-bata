@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { 
   getAuth, 
-  createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   onAuthStateChanged, 
   signOut 
@@ -16,8 +15,7 @@ import {
   setDoc, 
   updateDoc, 
   deleteDoc, 
-  onSnapshot, 
-  serverTimestamp 
+  onSnapshot 
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -41,13 +39,9 @@ let currentUser = null;
 let userData = null;
 let solicitudes = [];
 let entregas = [];
-let bloqueosMateriales = [];
-let llegadasMateriales = [];
 let lotesProduccion = [];
 
 let categoriaEntregaActiva = "todas";
-
-// Memoria Tarjetas PD
 let croquisTarjetaBase64 = null;
 let plantillaCorteTarjetaBase64 = null;
 
@@ -102,11 +96,6 @@ function esSuperAdmin() {
   return currentUser.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
 }
 
-function esDesarrollo() {
-  if (esSuperAdmin()) return true;
-  return userData && (userData.rol || "").includes("Desarrollo");
-}
-
 document.addEventListener("DOMContentLoaded", () => {
   onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -125,7 +114,6 @@ document.addEventListener("DOMContentLoaded", () => {
       escucharCambios();
       escucharEntregas();
       escucharProduccion();
-      escucharProcurement();
     } else {
       currentUser = null;
       userData = null;
@@ -163,19 +151,6 @@ document.addEventListener("DOMContentLoaded", () => {
   safeClick("menu-btn-produccion", () => { resetMenuStyles(); document.getElementById("view-produccion")?.classList.remove("hidden"); renderProduccionView(); });
   safeClick("menu-btn-procurement", () => { resetMenuStyles(); document.getElementById("view-procurement")?.classList.remove("hidden"); });
   safeClick("menu-btn-tarjetas", () => { resetMenuStyles(); document.getElementById("view-tarjetas")?.classList.remove("hidden"); initModuloTarjetas(); });
-  safeClick("menu-btn-usuarios", () => {
-    if (!esSuperAdmin()) { alert("Acceso denegado."); return; }
-    resetMenuStyles();
-    document.getElementById("view-usuarios")?.classList.remove("hidden");
-    cargarPanelSuperAdmin();
-  });
-
-  safeClick("sub-btn-MATERIALES", () => window.cambiarSubmenuEntrega("MATERIALES"));
-  safeClick("sub-btn-GUIA", () => window.cambiarSubmenuEntrega("GUÍA DE PRODUCCIÓN"));
-  safeClick("sub-btn-CORTE", () => window.cambiarSubmenuEntrega("CORTE"));
-  safeClick("sub-btn-MUESTRA", () => window.cambiarSubmenuEntrega("MUESTRA DEFINITIVA"));
-  safeClick("sub-btn-DESBASTE", () => window.cambiarSubmenuEntrega("HOJA DE DESBASTE"));
-  safeClick("sub-btn-TIZADORES", () => window.cambiarSubmenuEntrega("TIZADORES"));
 });
 
 function resetMenuStyles() {
@@ -209,6 +184,49 @@ function inicializarSemanas01a52() {
       sel.innerHTML += `<option value="Semana ${numStr}">Semana ${numStr}</option>`;
     }
     if (valAct) sel.value = valAct;
+  });
+}
+
+// ==================== CAMBIOS ====================
+function escucharCambios() {
+  onSnapshot(collection(db, "solicitudes_cambios"), (snapshot) => {
+    solicitudes = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+    solicitudes.sort((a, b) => (b.fechaCreacion || "").localeCompare(a.fechaCreacion || ""));
+    renderTablaCambios();
+  }, (err) => console.log("Error cambios:", err));
+}
+
+function renderTablaCambios() {
+  const tbody = document.getElementById("table-cambios-body");
+  const empty = document.getElementById("table-empty-state");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  if (solicitudes.length === 0) {
+    empty?.classList.remove("hidden");
+    return;
+  }
+  empty?.classList.add("hidden");
+
+  solicitudes.forEach((item) => {
+    const tr = document.createElement("tr");
+    tr.className = item.esMinuta ? "bg-amber-50/70 border-b border-amber-200" : "hover:bg-gray-50/80 transition border-b border-gray-100";
+    let badgeMinuta = item.esMinuta ? `<span class="bg-amber-500 text-white font-black text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider block mb-1 w-fit">PLAN PILOTO</span>` : '';
+    const fotoHTML = item.foto ? `<img src="${item.foto}" onclick="window.verFotoGrande('${item.foto}', '${item.proyecto}')" class="w-10 h-7 object-cover rounded border cursor-pointer mx-auto">` : '—';
+
+    tr.innerHTML = `
+      <td class="p-2 border-r text-center">${fotoHTML}</td>
+      <td class="p-3 font-bold border-r font-mono">${item.semana || '—'}</td>
+      <td class="p-3 text-gray-600 border-r whitespace-nowrap">${formatearFecha(item.fechaCreacion)}</td>
+      <td class="p-3 border-r"><span class="font-bold">${item.solicitanteNombre || '—'}</span></td>
+      <td class="p-3.5 font-bold border-r">${badgeMinuta}${item.proyecto}</td>
+      <td class="p-3.5 font-mono border-r">${item.articulo}</td>
+      <td class="p-3.5 border-r">${item.boxCambio}</td>
+      <td class="p-3.5 text-center border-r"><span class="border px-2.5 py-1 rounded-lg font-bold text-xs">${item.estado}</span></td>
+      <td class="p-3.5 text-center border-r">${item.fechaRealizado ? formatearFecha(item.fechaRealizado) : '—'}</td>
+      <td class="p-3.5 text-center">${item.validadoCostos ? '<span class="text-green-700 font-bold"><i class="fa-solid fa-circle-check"></i> Validado</span>' : 'Pendiente'}</td>
+    `;
+    tbody.appendChild(tr);
   });
 }
 
@@ -302,63 +320,6 @@ function escucharProduccion() {
   }, (err) => console.log("Error producción:", err));
 }
 
-function escucharProcurement() {}
-function escucharCambios() {}
-
-const formLoteProd = document.getElementById("form-nuevo-lote-prod");
-if (formLoteProd) {
-  formLoteProd.onsubmit = async (e) => {
-    e.preventDefault();
-    const semana = document.getElementById("lote-semana").value;
-    const dia = document.getElementById("lote-dia").value;
-    const linea = document.getElementById("lote-linea").value;
-    const plan = document.getElementById("lote-plan").value.trim();
-    const proyecto = document.getElementById("lote-proyecto").value.trim();
-    const articulo = document.getElementById("lote-articulo").value.trim();
-    const estado = document.getElementById("lote-estado").value;
-    const pares = parseInt(document.getElementById("lote-pares").value) || 0;
-
-    try {
-      await addDoc(collection(db, "produccion_lotes"), {
-        semana, dia, linea, plan, proyecto, articulo, estado, pares,
-        fechaRegistro: new Date().toISOString()
-      });
-      formLoteProd.reset();
-      document.getElementById("modal-nuevo-lote-prod")?.classList.add("hidden");
-      renderProduccionView();
-    } catch (err) {
-      alert("Error: " + err.message);
-    }
-  };
-}
-
-window.actualizarEstadoDiaLote = async (id, nuevoEstado) => {
-  if (!id) return;
-  await updateDoc(doc(db, "produccion_lotes", id), { estado: nuevoEstado });
-};
-
-window.eliminarTodosRegistrosProduccion = async () => {
-  if (confirm("⚠️ ¿Eliminar TODOS los registros de producción para empezar de 0?")) {
-    const snap = await getDocs(collection(db, "produccion_lotes"));
-    await Promise.all(snap.docs.map(d => deleteDoc(doc(db, "produccion_lotes", d.id))));
-    renderProduccionView();
-  }
-};
-
-window.exportarExcelProduccion = () => {
-  const tabla = document.getElementById("tabla-export-excel");
-  if (!tabla) return;
-  let html = tabla.outerHTML;
-  let blob = new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel' });
-  let url = URL.createObjectURL(blob);
-  let a = document.createElement('a');
-  a.href = url;
-  a.download = `Work_Planner_Produccion.xls`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-};
-
 function renderProduccionView() {
   const table = document.getElementById("tabla-matriz-produccion");
   const labelSemanaGrande = document.getElementById("label-semana-grande");
@@ -378,34 +339,6 @@ function renderProduccionView() {
     const linMatch = !fLin || String(l.linea || "") === String(fLin);
     return semMatch && proyMatch && linMatch;
   });
-
-  // KPIs
-  let totCortado = 0, totAparado = 0, totArmado = 0, totInyeccion = 0, totEntregado = 0;
-  lotesProduccion.forEach(l => {
-    const p = parseInt(l.pares) || 0;
-    if (l.estado === "CORTADO") totCortado += p;
-    else if (l.estado === "APARADO") totAparado += p;
-    else if (l.estado === "ARMADO") totArmado += p;
-    else if (l.estado === "INYECCIÓN") totInyeccion += p;
-    else if (l.estado === "ENTREGADO") totEntregado += p;
-  });
-
-  const grandTotal = totCortado + totAparado + totArmado + totInyeccion + totEntregado;
-  const setKpi = (idVal, idBar, val) => {
-    const vEl = document.getElementById(idVal);
-    const bEl = document.getElementById(idBar);
-    if (vEl) vEl.textContent = val.toLocaleString();
-    if (bEl && grandTotal > 0) bEl.style.width = `${Math.round((val / grandTotal) * 100)}%`;
-  };
-
-  const elTotKpi = document.getElementById("prod-total-pares-kpi");
-  if (elTotKpi) elTotKpi.textContent = `${grandTotal.toLocaleString()} Pares Totales`;
-
-  setKpi("kpi-cortado", "bar-cortado", totCortado);
-  setKpi("kpi-aparado", "bar-aparado", totAparado);
-  setKpi("kpi-armado", "bar-armado", totArmado);
-  setKpi("kpi-inyeccion", "bar-inyeccion", totInyeccion);
-  setKpi("kpi-entregado", "bar-entregado", totEntregado);
 
   const seccionesDisponibles = fLin ? [fLin] : ["330", "331", "332", "251", "252", "254"];
   const diasSemana = ["LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES"];
@@ -572,11 +505,11 @@ function renderTarjetasPreview() {
   const siluetaCalzadoHTML = `<div style="height:32px; display:flex; align-items:center; justify-content:center; font-size:8px; color:#999; border:1px dashed #ccc;">Croquis</div>`;
 
   const listaAImprimir = [];
-  for (let i = 1; i <= cCortes; i++) listaAImprimir.push({ color: "#FFFFFF", etiqueta: "APROBACIONES (CORTE)", esCorte: true });
-  for (let i = 1; i <= cProd; i++) listaAImprimir.push({ color: "#FFFFFF", etiqueta: "APROBACIONES (PRODUCCIÓN)", esCorte: false });
-  for (let i = 1; i <= cVerdes; i++) listaAImprimir.push({ color: "#80C342", etiqueta: "APROBACIONES (RETAIL)", esCorte: false });
-  for (let i = 1; i <= cAmarillas; i++) listaAImprimir.push({ color: "#FFF200", etiqueta: "APROBACIONES (PLANEAMIENTO)", esCorte: false });
-  for (let i = 1; i <= cRosadas; i++) listaAImprimir.push({ color: "#E06D8A", etiqueta: "APROBACIONES (EXPORTACIÓN)", esCorte: false });
+  for (let i = 1; i <= cCortes; i++) listaAImprimir.push({ color: "#FFFFFF", etiqueta: "APROBACIONES", esCorte: true });
+  for (let i = 1; i <= cProd; i++) listaAImprimir.push({ color: "#FFFFFF", etiqueta: "APROBACIONES", esCorte: false });
+  for (let i = 1; i <= cVerdes; i++) listaAImprimir.push({ color: "#80C342", etiqueta: "APROBACIONES", esCorte: false });
+  for (let i = 1; i <= cAmarillas; i++) listaAImprimir.push({ color: "#FFF200", etiqueta: "APROBACIONES", esCorte: false });
+  for (let i = 1; i <= cRosadas; i++) listaAImprimir.push({ color: "#E06D8A", etiqueta: "APROBACIONES", esCorte: false });
 
   let tarjetasHTML = "";
   listaAImprimir.forEach((tarj) => {
@@ -607,11 +540,20 @@ function renderTarjetasPreview() {
 
     const moduloFirmas = `
       <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:2px 4px; font-size:6px; ${tarj.esCorte ? '' : 'border-right:1px solid #000;'}">
-        <div style="font-size:6.5px; font-weight:900; text-align:center; text-transform:uppercase; border-bottom:1px solid #000;">${tarj.etiqueta}</div>
-        <div style="display:flex; flex-direction:column; justify-content:space-around; flex:1;">
-          <div style="display:flex; justify-content:space-between; align-items:flex-end;"><div style="border-bottom:1px solid #000; width:65%; height:10px;"></div><span style="font-size:5px; font-weight:bold;">P.D. CHIEF</span></div>
-          <div style="display:flex; justify-content:space-between; align-items:flex-end;"><div style="border-bottom:1px solid #000; width:65%; height:10px;"></div><span style="font-size:5px; font-weight:bold;">PURCHASING</span></div>
-          <div style="display:flex; justify-content:space-between; align-items:flex-end;"><div style="border-bottom:1px solid #000; width:65%; height:10px;"></div><span style="font-size:5px; font-weight:bold;">MERCHANDISING</span></div>
+        <div style="font-size:7px; font-weight:900; text-align:center; text-transform:uppercase; border-bottom:1px solid #000; padding-bottom:1px;">${tarj.etiqueta}</div>
+        <div style="display:flex; flex-direction:column; justify-content:space-around; flex:1; font-size:5.5px;">
+          <div style="display:flex; justify-content:space-between;">
+            <div><div style="border-bottom:1px solid #000; width:55mm; height:8px;"></div><span style="font-weight:bold;">PD. CHIEF</span><br>DATE: &nbsp; / &nbsp; / &nbsp;</div>
+            <div><div style="border-bottom:1px solid #000; width:55mm; height:8px;"></div><span style="font-weight:bold;">PD. CHIEF</span><br>DATE: &nbsp; / &nbsp; / &nbsp;</div>
+          </div>
+          <div style="text-align:center; margin-top:2px;">
+            <div style="border-bottom:1px solid #000; width:55mm; height:8px; margin:auto;"></div>
+            <span style="font-weight:bold;">PURCHASING MANAGER</span><br>DATE: &nbsp; / &nbsp; / &nbsp;
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-top:2px;">
+            <div><div style="border-bottom:1px solid #000; width:55mm; height:8px;"></div><span style="font-weight:bold;">PRODUCTION MANAGER</span><br>DATE: &nbsp; / &nbsp; / &nbsp;</div>
+            <div><div style="border-bottom:1px solid #000; width:55mm; height:8px;"></div><span style="font-weight:bold;">COUNTRY MANAGER</span><br>DATE: &nbsp; / &nbsp; / &nbsp;</div>
+          </div>
         </div>
       </div>
     `;
