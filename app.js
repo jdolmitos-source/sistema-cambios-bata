@@ -542,13 +542,58 @@ function actualizarHeaderUsuario() {
     }
   }
 
-  const secTarjetas = document.getElementById("section-menu-tarjetas");
-  if (secTarjetas) {
-    if (esDesarrollo() || esAdmin) {
-      secTarjetas.classList.remove("hidden");
-    } else {
-      secTarjetas.classList.add("hidden");
-    }
+  // Aplicar control de visibilidad de menú según el rol definido
+  aplicarPermisosRol();
+}
+
+// Control estricto de visibilidad por rol en el menú lateral
+function aplicarPermisosRol() {
+  if (esSuperAdmin()) {
+    // Super admin ve todo
+    document.querySelectorAll("aside > button, aside > div").forEach(el => el.style.display = "block");
+    return;
+  }
+
+  const rol = (userData && userData.rol) || "";
+
+  const btnCambios = document.getElementById("menu-btn-cambios")?.parentElement || document.getElementById("menu-btn-cambios");
+  const btnInforme = document.getElementById("menu-btn-informe");
+  const bloqueEntregas = document.getElementById("menu-btn-entregas-todas")?.closest(".pt-3");
+  const bloqueProd = document.getElementById("menu-btn-produccion")?.closest(".pt-3");
+  const bloqueCompras = document.getElementById("menu-btn-procurement")?.closest(".pt-3");
+  const bloqueTarjetas = document.getElementById("section-menu-tarjetas");
+
+  // Ocultar todo por defecto
+  if (btnInforme) btnInforme.style.display = "none";
+  if (bloqueEntregas) bloqueEntregas.style.display = "none";
+  if (bloqueProd) bloqueProd.style.display = "none";
+  if (bloqueCompras) bloqueCompras.style.display = "none";
+  if (bloqueTarjetas) bloqueTarjetas.style.display = "none";
+  
+  // Cambios siempre visible para todos los roles autorizados
+  if (btnCambios) btnCambios.style.display = "flex";
+
+  // Reglas específicas por rol solicitado:
+  if (rol.includes("Desarrollo")) {
+    // Desarrollo: ve entregas, tarjetas y cambios
+    if (bloqueEntregas) bloqueEntregas.style.display = "block";
+    if (bloqueTarjetas) bloqueTarjetas.style.display = "block";
+  } else if (rol.includes("Compras")) {
+    // Compras: ve compras, entrega de material y cambios
+    if (bloqueCompras) bloqueCompras.style.display = "block";
+    if (bloqueEntregas) bloqueEntregas.style.display = "block"; // Incluye entrega de material
+  } else if (rol === "Planeamiento") {
+    // Planeamiento: ve prod., entregas y cambios
+    if (bloqueProd) bloqueProd.style.display = "block";
+    if (bloqueEntregas) bloqueEntregas.style.display = "block";
+  } else if (rol === "Producción") {
+    // Producción: ve prod, entregas, compras y cambios
+    if (bloqueProd) bloqueProd.style.display = "block";
+    if (bloqueEntregas) bloqueEntregas.style.display = "block";
+    if (bloqueCompras) bloqueCompras.style.display = "block";
+  } else if (rol === "Costos") {
+    // Costos: ve entregas y cambios
+    if (bloqueEntregas) bloqueEntregas.style.display = "block";
   }
 }
 
@@ -850,6 +895,7 @@ window.exportarExcelProduccion = () => {
   a.click();
   document.body.removeChild(a);
 };
+
 window.imprimirSemanaProduccion = () => {
   const fSem = document.getElementById("prod-filter-semana")?.value || "Todas las Semanas";
   const kpiTotales = document.getElementById("prod-total-pares-kpi")?.textContent || "";
@@ -1257,12 +1303,10 @@ window.confirmarValidacionCostos = async (id, proyecto, articulo, checkboxElem) 
   }
 };
 
-// Panel Super Admin
+// Panel Super Admin (Con selector de roles totalmente funcional)
 async function cargarPanelSuperAdmin() {
   if (!esSuperAdmin()) return;
   const tbodyUsers = document.getElementById("table-users-body");
-  const tbodySols = document.getElementById("table-admin-solicitudes-body");
-  const tbodyEnts = document.getElementById("table-admin-entregas-body");
 
   try {
     const snap = await getDocs(collection(db, "usuarios"));
@@ -1272,19 +1316,47 @@ async function cargarPanelSuperAdmin() {
         const u = docU.data();
         const tr = document.createElement("tr");
         tr.className = "border-b";
+
+        const rolesDisponibles = [
+          "Desarrollo de producto", 
+          "Compras", 
+          "Planeamiento", 
+          "Producción", 
+          "Costos", 
+          "Calidad", 
+          "Almacén", 
+          "Retail", 
+          "Super Admin"
+        ];
+        
+        let optionsHTML = rolesDisponibles.map(r => `<option value="${r}" ${u.rol === r ? 'selected' : ''}>${r}</option>`).join('');
+
         tr.innerHTML = `
           <td class="p-3"><img src="${u.foto || 'https://via.placeholder.com/30'}" class="w-7 h-7 rounded-full object-cover"></td>
           <td class="p-3 font-bold">${u.nombre || '—'}</td>
           <td class="p-3">${u.email || '—'}</td>
           <td class="p-3 font-mono">${u.celular || '—'}</td>
-          <td class="p-3 font-semibold text-[#D61B28]">${u.rol}</td>
-          <td class="p-3 text-center"><span class="text-xs text-gray-400">Activo</span></td>
+          <td class="p-3">
+            <select onchange="window.cambiarRolUsuario('${docU.id}', this.value)" class="border border-gray-300 rounded px-2 py-1 text-xs font-bold text-[#D61B28] bg-white cursor-pointer shadow-sm">
+              ${optionsHTML}
+            </select>
+          </td>
+          <td class="p-3 text-center"><span class="text-xs text-green-600 font-bold">Activo</span></td>
         `;
         tbodyUsers.appendChild(tr);
       });
     }
   } catch (e) { console.error(e); }
 }
+
+window.cambiarRolUsuario = async (uid, nuevoRol) => {
+  try {
+    await updateDoc(doc(db, "usuarios", uid), { rol: nuevoRol });
+    alert(`¡Rol actualizado exitosamente a: ${nuevoRol}!`);
+  } catch (err) {
+    alert("Error al actualizar el rol: " + err.message);
+  }
+};
 
 // Configuración de campos dinámicos en Entrega
 const selEntTipo = document.getElementById("ent-tipo");
@@ -1390,7 +1462,10 @@ if (formEntrega) {
   };
 }
 
-// ==================== MÓDULO TARJETAS (PD) - POSICIÓN EXACTA CON BLOQUE SUPERIOR BAJADO 3MM MÁS ====================
+// Procurement placeholder
+function escucharProcurement() {}
+
+// ==================== MÓDULO TARJETAS (PD) ====================
 function initModuloTarjetas() {
   const inputFecha = document.getElementById("card-fecha");
   if (inputFecha && !inputFecha.value) {
@@ -1580,7 +1655,7 @@ function renderTarjetasPreview() {
       </div>
     `;
 
-    // Módulo de Firmas con Chief y Merchandising bajados exactamente 3 mm más (padding-top aumentado a 22px)
+    // Módulo de Firmas ajustado con el bloque superior bajado exactamente 3 mm adicionales (padding-top: 22px)
     const moduloFirmas = `
       <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:2px 4px; font-size:5.5px; ${tarj.esCorte ? '' : 'border-right:1px solid #000;'}">
         <div style="font-size:7px; font-weight:900; text-align:center; color:#000; text-transform:uppercase; border-bottom:1px solid #000; padding-bottom:1px;">
