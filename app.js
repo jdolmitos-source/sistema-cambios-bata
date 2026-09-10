@@ -850,6 +850,55 @@ window.exportarExcelProduccion = () => {
   a.click();
   document.body.removeChild(a);
 };
+window.imprimirSemanaProduccion = () => {
+  const fSem = document.getElementById("prod-filter-semana")?.value || "Todas las Semanas";
+  const kpiTotales = document.getElementById("prod-total-pares-kpi")?.textContent || "";
+  const matrizHTML = document.getElementById("tabla-export-excel")?.outerHTML || "";
+  
+  const ventanaPrint = window.open("", "_blank", "width=1000,height=700");
+  if (!ventanaPrint) {
+    alert("Por favor permite las ventanas emergentes para imprimir.");
+    return;
+  }
+
+  ventanaPrint.document.open();
+  ventanaPrint.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Reporte de Producción - Bata Bolivia</title>
+      <script src="https://cdn.tailwindcss.com"></script>
+      <style>
+        @page { size: letter landscape; margin: 10mm; }
+        body { font-family: sans-serif; background: #fff; color: #000; padding: 10px; }
+        .print-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #D61B28; padding-bottom: 10px; }
+        .print-header h1 { font-size: 18px; font-weight: bold; color: #D61B28; text-transform: uppercase; }
+        .print-header p { font-size: 12px; color: #555; }
+        table { width: 100% !important; border-collapse: collapse !important; font-size: 9px !important; }
+        th, td { border: 1px solid #999 !important; padding: 4px !important; text-align: center !important; }
+        th { background-color: #f1f5f9 !important; color: #333 !important; }
+        select { border: none !important; background: transparent !important; font-weight: bold !important; appearance: none; }
+      </style>
+    </head>
+    <body>
+      <div class="print-header">
+        <h1>Bata Bolivia - Work Planner de Producción</h1>
+        <p>Período: <strong>${fSem}</strong> | Total Registrado: <strong>${kpiTotales}</strong> | Fecha de Emisión: ${new Date().toLocaleDateString("es-BO")}</p>
+      </div>
+      <div>
+        ${matrizHTML}
+      </div>
+      <script>
+        window.onload = () => {
+          setTimeout(() => { window.print(); window.close(); }, 300);
+        };
+      </script>
+    </body>
+    </html>
+  `);
+  ventanaPrint.document.close();
+};
 
 function renderProduccionView() {
   const table = document.getElementById("tabla-matriz-produccion");
