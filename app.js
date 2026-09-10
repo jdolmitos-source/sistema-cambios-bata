@@ -1180,7 +1180,7 @@ function renderTabla() {
       <td class="p-3 border-r whitespace-nowrap"><span class="font-bold block">${item.solicitanteNombre || '—'}</span></td>
       <td class="p-3.5 font-bold border-r">${badgeMinuta}${item.proyecto}</td>
       <td class="p-3.5 font-mono border-r">${item.articulo}</td>
-      <td class="p-3.5 font-r">${item.boxCambio}</td>
+      <td class="p-3.5 border-r">${item.boxCambio}</td>
       <td class="p-3.5 text-center border-r whitespace-nowrap">${estadoHTML}</td>
       <td class="p-3.5 text-center border-r whitespace-nowrap">${fechaRealizadoHTML}</td>
       <td class="p-3.5 text-center whitespace-nowrap">${costosHTML}</td>
@@ -1341,7 +1341,7 @@ if (formEntrega) {
   };
 }
 
-// ==================== MÓDULO TARJETAS (PD) - DISEÑO EXACTO IMAGEN DERECHA ====================
+// ==================== MÓDULO TARJETAS (PD) - POSICIÓN EXACTA IMAGEN DERECHA ====================
 function initModuloTarjetas() {
   const inputFecha = document.getElementById("card-fecha");
   if (inputFecha && !inputFecha.value) {
@@ -1531,13 +1531,13 @@ function renderTarjetasPreview() {
       </div>
     `;
 
-    // Módulo de Firmas exacto a la imagen de la derecha (APROBACIONES arriba, 4 esquinas + centro con DATE: / /)
+    // Módulo de Firmas ajustado con el bloque superior (Chief y Merchandising) más abajo y espaciado exacto a la imagen de la derecha
     const moduloFirmas = `
       <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:2px 4px; font-size:5.5px; ${tarj.esCorte ? '' : 'border-right:1px solid #000;'}">
         <div style="font-size:7px; font-weight:900; text-align:center; color:#000; text-transform:uppercase; border-bottom:1px solid #000; padding-bottom:1px;">
           APROBACIONES
         </div>
-        <div style="display:flex; flex-direction:column; justify-content:space-between; flex:1; padding-top:3px;">
+        <div style="display:flex; flex-direction:column; justify-content:space-between; flex:1; padding-top:6px;">
           <div style="display:flex; justify-content:space-between;">
             <div>
               <div style="border-bottom:1px solid #000; width:28mm; height:5px;"></div>
@@ -1548,7 +1548,7 @@ function renderTarjetasPreview() {
               <span style="font-weight:bold; font-size:4.5px;">MERCHANDISING MAN.</span><br><span style="font-size:4px;">DATE: &nbsp; / &nbsp; / &nbsp;</span>
             </div>
           </div>
-          <div style="text-align:center; margin: 1px 0;">
+          <div style="text-align:center; margin: 2px 0;">
             <div style="border-bottom:1px solid #000; width:30mm; height:5px; margin:auto;"></div>
             <span style="font-weight:bold; font-size:4.5px;">PURCHASING MANAGER</span><br><span style="font-size:4px;">DATE: &nbsp; / &nbsp; / &nbsp;</span>
           </div>
