@@ -853,6 +853,7 @@ window.exportarExcelProduccion = () => {
 
 function renderProduccionView() {
   const table = document.getElementById("tabla-matriz-produccion");
+  const empty = document.getElementById("produccion-empty-state");
   const labelSemanaGrande = document.getElementById("label-semana-grande");
   if (!table) return;
 
@@ -865,14 +866,15 @@ function renderProduccionView() {
   }
 
   let filtrados = lotesProduccion.filter(l => {
-    const semMatch = !fSem || (l.semana || "").trim().toLowerCase() === fSem.trim().toLowerCase();
+    const semMatch = !fSem || (l.semana || "") === fSem;
     const proyMatch = !fProy || (l.proyecto || "").toLowerCase().includes(fProy) || (l.plan || "").toLowerCase().includes(fProy) || (l.articulo || "").toLowerCase().includes(fProy);
     const linMatch = !fLin || String(l.linea || "") === String(fLin);
     return semMatch && proyMatch && linMatch;
   });
 
+  // KPIs
   let totCortado = 0, totAparado = 0, totArmado = 0, totInyeccion = 0, totEntregado = 0;
-  filtrados.forEach(l => {
+  lotesProduccion.forEach(l => {
     const p = parseInt(l.pares) || 0;
     if (l.estado === "CORTADO") totCortado += p;
     else if (l.estado === "APARADO") totAparado += p;
@@ -936,27 +938,19 @@ function renderProduccionView() {
           const p = parseInt(loteDia.pares) || 0;
           totalFila += p;
           sumaParesSeccion += p;
-          const estado = (loteDia.estado || "").toUpperCase();
-          
-          // Colores unificados idénticos a los KPIs de la Imagen 1 (Sin repeticiones)
-          let colorEstado = 'text-amber-800 bg-amber-100 border-amber-300'; // Cortado (Ámbar)
-          if (estado === 'APARADO') colorEstado = 'text-blue-800 bg-blue-100 border-blue-300'; // Aparado (Azul)
-          else if (estado === 'ARMADO') colorEstado = 'text-purple-800 bg-purple-100 border-purple-300'; // Armado (Morado)
-          else if (estado === 'INYECCIÓN') colorEstado = 'text-emerald-800 bg-emerald-100 border-emerald-300'; // Inyección (Turquesa/Esmeralda)
-          else if (estado === 'ENTREGADO') colorEstado = 'text-green-900 bg-green-200 border-green-400'; // Entregado (Verde fuerte)
-
+          const colorEstado = loteDia.estado === 'ENTREGADO' ? 'text-green-700 bg-green-50' : (loteDia.estado === 'APARADO' ? 'text-blue-700 bg-blue-50' : (loteDia.estado === 'ARMADO' ? 'text-purple-700 bg-purple-50' : 'text-amber-700 bg-amber-50'));
           html += `
             <td class="p-1 border border-gray-300 font-mono text-[10px] font-bold text-red-600">${loteDia.plan || '—'}</td>
             <td class="p-1 border border-gray-300 font-mono text-[10px]">${loteDia.articulo || '—'}</td>
             <td class="p-1 border border-gray-300 font-bold text-[10px] truncate max-w-[65px]">${loteDia.proyecto || '—'}</td>
             <td class="p-1 border border-gray-300 font-black text-cyan-900 bg-cyan-50/30">${p.toLocaleString()}</td>
             <td class="p-1 border border-gray-300">
-              <select onchange="window.actualizarEstadoDiaLote('${loteDia.id}', this.value)" class="text-[10px] font-bold rounded px-1.5 py-0.5 border shadow-xs ${colorEstado}">
-                <option value="CORTADO" ${estado === 'CORTADO' ? 'selected' : ''}>CORTADO</option>
-                <option value="APARADO" ${estado === 'APARADO' ? 'selected' : ''}>APARADO</option>
-                <option value="ARMADO" ${estado === 'ARMADO' ? 'selected' : ''}>ARMADO</option>
-                <option value="INYECCIÓN" ${estado === 'INYECCIÓN' ? 'selected' : ''}>INYECCIÓN</option>
-                <option value="ENTREGADO" ${estado === 'ENTREGADO' ? 'selected' : ''}>ENTREGADO</option>
+              <select onchange="window.actualizarEstadoDiaLote('${loteDia.id}', this.value)" class="text-[10px] font-bold rounded px-1 py-0.5 border ${colorEstado}">
+                <option value="CORTADO" ${loteDia.estado === 'CORTADO' ? 'selected' : ''}>CORTADO</option>
+                <option value="APARADO" ${loteDia.estado === 'APARADO' ? 'selected' : ''}>APARADO</option>
+                <option value="ARMADO" ${loteDia.estado === 'ARMADO' ? 'selected' : ''}>ARMADO</option>
+                <option value="INYECCIÓN" ${loteDia.estado === 'INYECCIÓN' ? 'selected' : ''}>INYECCIÓN</option>
+                <option value="ENTREGADO" ${loteDia.estado === 'ENTREGADO' ? 'selected' : ''}>ENTREGADO</option>
               </select>
             </td>
           `;
@@ -975,6 +969,7 @@ function renderProduccionView() {
       html += `</tr>`;
     }
 
+    // Fila de Subtotal por Sección
     html += `
       <tr class="bg-gray-200 font-black text-[11px] text-gray-800 border-b-2 border-gray-400 text-center">
         <td colspan="26" class="p-1.5 text-right pr-4">SUBTOTAL SECCIÓN ${seccion}:</td>
@@ -1109,6 +1104,12 @@ function escucharCambios() {
   });
 }
 
+function formatearFecha(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return d.toLocaleDateString("es-BO", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
 function renderTabla() {
   const tbody = document.getElementById("table-cambios-body");
   const empty = document.getElementById("table-empty-state");
@@ -1228,10 +1229,111 @@ async function cargarPanelSuperAdmin() {
   } catch (e) { console.error(e); }
 }
 
-// Procurement & Storage placeholder
-function escucharProcurement() {}
+// Configuración de campos dinámicos en Entrega
+const selEntTipo = document.getElementById("ent-tipo");
+if (selEntTipo) selEntTipo.onchange = actualizarCamposSegunTipoEntrega;
 
-// ==================== MÓDULO TARJETAS (PD) - CALIBRADO EXACTO SEGÚN ÚLTIMA IMAGEN ====================
+function actualizarCamposSegunTipoEntrega() {
+  const tipo = document.getElementById("ent-tipo")?.value || "";
+  const selectDestino = document.getElementById("ent-destino");
+  const boxArticulo = document.getElementById("box-field-articulo");
+  const labelProy = document.getElementById("label-field-proyecto");
+  const inputProy = document.getElementById("ent-proyecto");
+  const boxFoto = document.getElementById("box-field-foto");
+  const boxCopias = document.getElementById("box-field-copias");
+  const containerSingle = document.getElementById("container-destino-single");
+  const containerMultiple = document.getElementById("container-destino-multiple");
+
+  if (!selectDestino) return;
+  selectDestino.innerHTML = "";
+  boxCopias?.classList.add("hidden");
+  containerMultiple?.classList.add("hidden");
+  containerSingle?.classList.remove("hidden");
+  boxFoto?.classList.add("hidden");
+
+  if (tipo === "MATERIALES") {
+    if (labelProy) labelProy.textContent = "Nombre del Material / Insumo";
+    if (inputProy) inputProy.placeholder = "Ej: Badana Beige 1.2mm";
+    boxArticulo?.classList.add("hidden");
+    selectDestino.innerHTML += `<option value="Desarrollo de producto">Desarrollo de producto</option>`;
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+    return;
+  }
+
+  boxArticulo?.classList.remove("hidden");
+  if (labelProy) labelProy.textContent = "Nombre del Proyecto";
+  if (inputProy) inputProy.placeholder = "Ej: SKATER";
+
+  if (tipo === "GUÍA DE PRODUCCIÓN") {
+    boxFoto?.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
+  } else if (tipo === "CORTE") {
+    boxFoto?.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+  } else if (tipo === "MUESTRA DEFINITIVA") {
+    boxFoto?.classList.remove("hidden");
+    containerSingle?.classList.add("hidden");
+    containerMultiple?.classList.remove("hidden");
+  } else if (tipo === "HOJA DE DESBASTE") {
+    boxFoto?.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+  } else if (tipo === "TIZADORES") {
+    boxCopias?.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+  } else {
+    boxFoto?.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
+  }
+}
+
+// Formulario Entrega
+const formEntrega = document.getElementById("form-nueva-entrega");
+if (formEntrega) {
+  formEntrega.onsubmit = async (e) => {
+    e.preventDefault();
+    const semana = document.getElementById("ent-semana").value.trim();
+    const proyecto = document.getElementById("ent-proyecto").value.trim();
+    const articulo = document.getElementById("ent-articulo").value.trim();
+    const tipo = document.getElementById("ent-tipo").value;
+    const notas = document.getElementById("ent-notas").value.trim();
+    const copias = document.getElementById("ent-copias").value.trim();
+    const photoFile = document.getElementById("ent-photo").files[0];
+    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
+
+    try {
+      let destinosAEntregar = [];
+      if (tipo === "MUESTRA DEFINITIVA") {
+        destinosAEntregar = Array.from(document.querySelectorAll(".chk-muestras-dest:checked")).map(c => c.value);
+      } else {
+        destinosAEntregar = [document.getElementById("ent-destino").value];
+      }
+
+      for (const destino of destinosAEntregar) {
+        await addDoc(collection(db, "entregas_departamentos"), {
+          semana, proyecto,
+          articulo: tipo === "MATERIALES" ? "" : articulo,
+          tipo, destino,
+          copias: tipo === "TIZADORES" ? (copias || "1") : null,
+          foto: fotoBase64, notas,
+          entregadoPorNombre: (userData && userData.nombre) || "Usuario",
+          entregadoPorRol: (userData && userData.rol) || "Desarrollo",
+          recibido: false,
+          fechaEntrega: new Date().toISOString()
+        });
+      }
+      formEntrega.reset();
+      modalNuevaEntrega?.classList.add("hidden");
+      alert("Entrega registrada con éxito.");
+    } catch (err) {
+      alert("Error: " + err.message);
+    }
+  };
+}
+
+// ==================== MÓDULO TARJETAS (PD) - FORMATO CLÁSICO ORIGINAL CON ORDEN DE MÓDULOS 1,3,2 (CORTE) Y 1,2,3 (DEMÁS) ====================
 function initModuloTarjetas() {
   const inputFecha = document.getElementById("card-fecha");
   if (inputFecha && !inputFecha.value) {
@@ -1274,7 +1376,7 @@ function initModuloTarjetas() {
     if (cols.length >= 4) {
       document.getElementById("card-costo-articulo").value = cols[0] || "";
       document.getElementById("card-costo-linea").value = cols[2] || "";
-      document.getElementById("card-costo-marca").value = cols[3] || "BATA";
+      document.getElementById("card-costo-marca").value = cols[3] || "TEENER";
       document.getElementById("card-costo-budret").value = cols[10] || "37.39%";
       document.getElementById("card-costo-precio").value = cols[8] || "259.00";
       document.getElementById("card-costo-margen").value = cols[9] || "55.00%";
@@ -1305,6 +1407,40 @@ function initModuloTarjetas() {
     modalImpresionTarjetas?.classList.remove("hidden");
   });
 
+  safeClick("btn-ejecutar-print-tarjetas", () => {
+    const contenidoHTML = document.getElementById("contenedor-tarjetas-preview")?.innerHTML || "";
+    if (!contenidoHTML) return;
+    const ventanaPrint = window.open("", "_blank", "width=900,height=650");
+    if (!ventanaPrint) {
+      alert("Permite las ventanas emergentes para imprimir.");
+      return;
+    }
+    ventanaPrint.document.open();
+    ventanaPrint.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Impresión de Tarjetas - Bata Bolivia</title>
+        <style>
+          @page { size: letter portrait; margin: 8mm; }
+          * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          html, body { margin: 0; padding: 0; background: #fff; font-family: sans-serif; }
+          .shoe-card-container { width: 200mm !important; height: 34mm !important; max-height: 34mm !important; border: 1px solid #000 !important; margin: 0 !important; padding: 0 !important; display: flex; page-break-inside: avoid !important; break-inside: avoid !important; background: #fff; }
+          .shoe-panel { width: 66.66mm !important; height: 100% !important; box-sizing: border-box !important; }
+        </style>
+      </head>
+      <body>
+        <div style="display:flex; flex-direction:column; align-items:flex-start; margin:0; padding:0;">
+          ${contenidoHTML}
+        </div>
+      </body>
+      </html>
+    `);
+    ventanaPrint.document.close();
+    setTimeout(() => { ventanaPrint.focus(); ventanaPrint.print(); ventanaPrint.close(); }, 250);
+  });
+
   renderTarjetasPreview();
 }
 
@@ -1328,84 +1464,115 @@ function renderTarjetasPreview() {
   const precio = document.getElementById("card-costo-precio")?.value || "259.00";
   const margen = document.getElementById("card-costo-margen")?.value || "55.00%";
   const budRet = document.getElementById("card-costo-budret")?.value || "37.39%";
+
   const serie = document.getElementById("card-serie")?.value || "37-44";
   const fecha = document.getElementById("card-fecha")?.value || "9/9/2026";
   const materialCorte = (document.getElementById("card-material-corte")?.value || "IMITACION").toUpperCase();
   const forro = (document.getElementById("card-forro")?.value || "PIQUE NEGRO").toUpperCase();
-  const plantInt = (document.getElementById("card-plant-int")?.value || "PIQUE NEGRO").toUpperCase();
+  const plantInt = (document.getElementById("card-plant-int")?.value || "PIQUE NEGRO / CRETONE").toUpperCase();
   const modelista = (document.getElementById("card-tecnico")?.value || "CARLOS ARCE").toUpperCase();
   const construccion = (document.getElementById("card-construccion")?.value || "TRUE MOC").toUpperCase();
   const suela = (document.getElementById("card-horma-suela")?.value || "QUIQUE").toUpperCase();
   const observaciones = document.getElementById("card-observaciones")?.value || "Sin observaciones adicionales";
 
-  const siluetaCalzadoHTML = `<div style="height:28px; display:flex; align-items:center; justify-content:center; font-size:7px; color:#999; border:1px dashed #ccc;">Croquis</div>`;
+  const siluetaCalzadoHTML = croquisTarjetaBase64 
+    ? `<img src="${croquisTarjetaBase64}" style="width:100%; height:32px; object-fit:contain; margin:auto;">`
+    : `<div style="height:32px; display:flex; align-items:center; justify-content:center; font-size:8px; color:#999; border:1px dashed #ccc;">Croquis</div>`;
 
   const listaAImprimir = [];
-  for (let i = 1; i <= cCortes; i++) listaAImprimir.push({ color: "#FFFFFF", etiqueta: "APROBACIONES", esCorte: true });
-  for (let i = 1; i <= cProd; i++) listaAImprimir.push({ color: "#FFFFFF", etiqueta: "APROBACIONES", esCorte: false });
-  for (let i = 1; i <= cVerdes; i++) listaAImprimir.push({ color: "#80C342", etiqueta: "APROBACIONES", esCorte: false });
-  for (let i = 1; i <= cAmarillas; i++) listaAImprimir.push({ color: "#FFF200", etiqueta: "APROBACIONES", esCorte: false });
-  for (let i = 1; i <= cRosadas; i++) listaAImprimir.push({ color: "#E06D8A", etiqueta: "APROBACIONES", esCorte: false });
+  for (let i = 1; i <= cCortes; i++) listaAImprimir.push({ color: "#FFFFFF", etiqueta: "APROBACIONES (CORTE (PRODUCCIÓN))", esCorte: true });
+  for (let i = 1; i <= cProd; i++) listaAImprimir.push({ color: "#FFFFFF", etiqueta: "APROBACIONES (PRODUCCIÓN)", esCorte: false });
+  for (let i = 1; i <= cVerdes; i++) listaAImprimir.push({ color: "#80C342", etiqueta: "APROBACIONES (RETAIL)", esCorte: false });
+  for (let i = 1; i <= cAmarillas; i++) listaAImprimir.push({ color: "#FFF200", etiqueta: "APROBACIONES (PLANEAMIENTO)", esCorte: false });
+  for (let i = 1; i <= cRosadas; i++) listaAImprimir.push({ color: "#E06D8A", etiqueta: "APROBACIONES (EXPORTACIÓN)", esCorte: false });
 
   let tarjetasHTML = "";
   listaAImprimir.forEach((tarj) => {
     const moduloInfo = `
       <div class="shoe-panel" style="display:flex; border-right:1px solid #000; overflow:hidden;">
-        <div class="lateral-tab" style="width:14px; border-right:1px solid #000; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:8px; writing-mode:vertical-rl; transform:rotate(180deg); background-color:${tarj.color} !important;">
+        <div class="lateral-tab" style="width:16px; border-right:1px solid #000; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:9px; writing-mode:vertical-rl; transform:rotate(180deg); background-color:${tarj.color} !important;">
           ${linea}
         </div>
         <div style="flex:1; display:flex; flex-direction:column; justify-content:space-between; padding:1px;">
-          <div style="font-size:7px; font-weight:900; color:#dc2626; text-align:center; border-bottom:1px solid #000;">MANUFACTURA BOLIVIANA S.A.</div>
+          <div style="font-size:7.5px; font-weight:900; color:#dc2626; text-align:center; border-bottom:1px solid #000; padding-bottom:1px;">
+            MANUFACTURA BOLIVIANA S.A.
+          </div>
           <div style="display:flex; flex:1; align-items:center;">
-            <div style="width:40px; display:flex; justify-content:center; border-right:1px solid #000; height:100%;">${siluetaCalzadoHTML}</div>
+            <div style="width:45px; display:flex; flex-direction:column; justify-content:center; border-right:1px solid #000; padding-right:1px; height:100%;">
+              ${siluetaCalzadoHTML}
+            </div>
             <div style="flex:1; height:100%;">
-              <table style="width:100%; height:100%; border-collapse:collapse; font-size:5.5px; font-weight:900;">
-                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; text-align:center;">ART:</td><td style="text-align:center; font-family:monospace; font-size:6.5px;">${articulo}</td></tr>
-                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; text-align:center;">MARCA:</td><td style="text-align:center;">${marca}</td></tr>
-                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; text-align:center;">SERIE:</td><td style="text-align:center;">${serie}</td></tr>
-                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; text-align:center;">CORTE:</td><td style="text-align:center; font-size:4.5px;">${materialCorte}</td></tr>
-                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; text-align:center;">FORRO:</td><td style="text-align:center; font-size:4.5px;">${forro}</td></tr>
-                <tr><td style="border-right:1px solid #000; text-align:center;">PLANT:</td><td style="text-align:center; font-size:4.5px;">${plantInt}</td></tr>
+              <table style="width:100%; height:100%; border-collapse:collapse; font-size:6px; font-weight:900;">
+                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; width:35%; text-align:center;">ART:</td><td style="text-align:center; font-family:monospace; font-size:7px;">${articulo}</td></tr>
+                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; width:35%; text-align:center;">MARCA:</td><td style="text-align:center;">${marca}</td></tr>
+                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; width:35%; text-align:center;">SERIE:</td><td style="text-align:center;">${serie}</td></tr>
+                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; width:35%; text-align:center;">CORTE:</td><td style="text-align:center; font-size:5px;">${materialCorte}</td></tr>
+                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; width:35%; text-align:center;">FORRO:</td><td style="text-align:center; font-size:5px;">${forro}</td></tr>
+                <tr><td style="border-right:1px solid #000; width:35%; text-align:center;">PLANT:</td><td style="text-align:center; font-size:5px;">${plantInt}</td></tr>
               </table>
             </div>
           </div>
-          <div style="display:flex; border-top:1px solid #000; font-size:5px; font-weight:bold; padding:1px; justify-content:space-between;"><span>${fecha}</span></div>
+          <div style="display:flex; border-top:1px solid #000; font-size:5.5px; font-weight:bold; padding:1px 2px; justify-content:space-between; background:#fff;">
+            <span>${fecha}</span>
+          </div>
+          <div style="display:flex; border-top:1px solid #000; font-size:5px; font-weight:800; padding:1px 0;">
+            <div style="width:50%; border-right:1px solid #000; padding-left:1px;">TEC: ${modelista}<br>CONTR: ${construccion}<br>SUELA: ${suela}</div>
+            <div style="width:50%; padding-left:2px;">PRECIO: ${precio}<br>MRG BUD: ${budRet}<br>MRG: ${margen}</div>
+          </div>
         </div>
       </div>
     `;
 
-    // Módulo de Firmas ajustado exactamente a la altura de la línea roja que marcaste arriba
     const moduloFirmas = `
-      <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:2px 3px 2px 3px; font-size:5.5px; ${tarj.esCorte ? '' : 'border-right:1px solid #000;'}">
-        <div style="font-size:6.5px; font-weight:900; text-align:center; text-transform:uppercase; border-bottom:1px solid #000; padding-bottom:1px;">${tarj.etiqueta}</div>
-        <div style="display:flex; flex-direction:column; justify-content:space-between; flex:1; padding-top:1px;">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-            <div><div style="border-bottom:1px solid #000; width:28mm; height:5px;"></div><span style="font-weight:bold; font-size:4.5px;">PD. CHIEF</span><br><span style="font-size:4px;">DATE: / /</span></div>
-            <div style="text-align:right;"><div style="border-bottom:1px solid #000; width:31mm; height:5px; margin-left:auto;"></div><span style="font-weight:bold; font-size:4.5px;">MERCHANDISING MAN.</span><br><span style="font-size:4px;">DATE: / /</span></div>
-          </div>
-          <div style="text-align:center; margin: 0;">
-            <div style="border-bottom:1px solid #000; width:34mm; height:5px; margin:auto;"></div>
-            <span style="font-weight:bold; font-size:4.5px;">PURCHASING MANAGER</span><br><span style="font-size:4px;">DATE: / /</span>
+      <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:2px 4px; font-size:6px; ${tarj.esCorte ? '' : 'border-right:1px solid #000;'}">
+        <div style="font-size:6.5px; font-weight:900; text-align:center; color:#000; text-transform:uppercase; border-bottom:1px solid #000; padding-bottom:1px;">
+          ${tarj.etiqueta}
+        </div>
+        <div style="display:flex; flex-direction:column; justify-content:space-around; flex:1; padding-top:2px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+            <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
+            <span style="font-size:5.5px; font-weight:bold;">P.D. CHIEF</span>
           </div>
           <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-            <div><div style="border-bottom:1px solid #000; width:28mm; height:5px;"></div><span style="font-weight:bold; font-size:4.5px;">PRODUCTION MANAGER</span><br><span style="font-size:4px;">DATE: / /</span></div>
-            <div style="text-align:right;"><div style="border-bottom:1px solid #000; width:28mm; height:5px; margin-left:auto;"></div><span style="font-weight:bold; font-size:4.5px;">COUNTRY MANAGER</span><br><span style="font-size:4px;">DATE: / /</span></div>
+            <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
+            <span style="font-size:5.5px; font-weight:bold;">PURCHASING MANAGER</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+            <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
+            <span style="font-size:5.5px; font-weight:bold;">MERCHANDISING MAN.</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+            <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
+            <span style="font-size:5.5px; font-weight:bold;">PRODUCTION MANAGER</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+            <div style="border-bottom:1px solid #000; width:65%; height:10px;"></div>
+            <span style="font-size:5.5px; font-weight:bold;">COUNTRY MANAGER</span>
           </div>
         </div>
       </div>
     `;
 
     const moduloObservaciones = `
-      <div class="shoe-panel" style="padding:4px; display:flex; flex-direction:column; justify-content:space-between; font-size:6.5px; border-right:1px solid #000;">
-        <div><span style="font-weight:900; text-transform:uppercase; display:block;">OBSERVACIONES:</span><p style="font-size:6px; font-style:italic;">${observaciones}</p></div>
-        <div style="text-align:right; font-size:5.5px; font-weight:bold;">BATA BOLIVIA PD</div>
+      <div class="shoe-panel" style="padding:4px; display:flex; flex-direction:column; justify-content:space-between; font-size:7px; border-right:1px solid #000;">
+        <div>
+          <span style="font-weight:900; color:#000; text-transform:uppercase; display:block; margin-bottom:1px;">OBSERVACIONES:</span>
+          <p style="font-size:6.5px; color:#000; font-style:italic; line-height:1.2;">${observaciones}</p>
+        </div>
+        <div style="text-align:right; font-size:6px; color:#000; font-weight:bold;">BATA BOLIVIA PD</div>
       </div>
     `;
 
     const panelCentro = tarj.esCorte ? moduloObservaciones : moduloFirmas;
     const panelDerecha = tarj.esCorte ? moduloFirmas : moduloObservaciones;
 
-    tarjetasHTML += `<div class="shoe-card-container" style="background:#fff; display:flex; font-size:7px; color:#000;">${moduloInfo}${panelCentro}${panelDerecha}</div>`;
+    tarjetasHTML += `
+      <div class="shoe-card-container" style="background:#fff; display:flex; font-size:7px; line-height:1.1; color:#000;">
+        ${moduloInfo}
+        ${panelCentro}
+        ${panelDerecha}
+      </div>
+    `;
   });
 
   container.innerHTML = tarjetasHTML;
