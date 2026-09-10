@@ -1329,20 +1329,17 @@ function renderTarjetasPreview() {
   const precio = document.getElementById("card-costo-precio")?.value || "259.00";
   const margen = document.getElementById("card-costo-margen")?.value || "55.00%";
   const budRet = document.getElementById("card-costo-budret")?.value || "37.39%";
-
   const serie = document.getElementById("card-serie")?.value || "37-44";
   const fecha = document.getElementById("card-fecha")?.value || "9/9/2026";
   const materialCorte = (document.getElementById("card-material-corte")?.value || "IMITACION").toUpperCase();
   const forro = (document.getElementById("card-forro")?.value || "PIQUE NEGRO").toUpperCase();
-  const plantInt = (document.getElementById("card-plant-int")?.value || "PIQUE NEGRO / CRETONE").toUpperCase();
+  const plantInt = (document.getElementById("card-plant-int")?.value || "PIQUE NEGRO").toUpperCase();
   const modelista = (document.getElementById("card-tecnico")?.value || "CARLOS ARCE").toUpperCase();
   const construccion = (document.getElementById("card-construccion")?.value || "TRUE MOC").toUpperCase();
   const suela = (document.getElementById("card-horma-suela")?.value || "QUIQUE").toUpperCase();
   const observaciones = document.getElementById("card-observaciones")?.value || "Sin observaciones adicionales";
 
-  const siluetaCalzadoHTML = croquisTarjetaBase64 
-    ? `<img src="${croquisTarjetaBase64}" style="width:100%; height:32px; object-fit:contain; margin:auto;">`
-    : `<div style="height:32px; display:flex; align-items:center; justify-content:center; font-size:8px; color:#999; border:1px dashed #ccc;">Croquis</div>`;
+  const siluetaCalzadoHTML = `<div style="height:28px; display:flex; align-items:center; justify-content:center; font-size:7px; color:#999; border:1px dashed #ccc;">Croquis</div>`;
 
   const listaAImprimir = [];
   for (let i = 1; i <= cCortes; i++) listaAImprimir.push({ color: "#FFFFFF", etiqueta: "APROBACIONES", esCorte: true });
@@ -1355,94 +1352,61 @@ function renderTarjetasPreview() {
   listaAImprimir.forEach((tarj) => {
     const moduloInfo = `
       <div class="shoe-panel" style="display:flex; border-right:1px solid #000; overflow:hidden;">
-        <div class="lateral-tab" style="width:16px; border-right:1px solid #000; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:9px; writing-mode:vertical-rl; transform:rotate(180deg); background-color:${tarj.color} !important;">
+        <div class="lateral-tab" style="width:14px; border-right:1px solid #000; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:8px; writing-mode:vertical-rl; transform:rotate(180deg); background-color:${tarj.color} !important;">
           ${linea}
         </div>
         <div style="flex:1; display:flex; flex-direction:column; justify-content:space-between; padding:1px;">
-          <div style="font-size:7.5px; font-weight:900; color:#dc2626; text-align:center; border-bottom:1px solid #000; padding-bottom:1px;">
-            MANUFACTURA BOLIVIANA S.A.
-          </div>
+          <div style="font-size:7px; font-weight:900; color:#dc2626; text-align:center; border-bottom:1px solid #000;">MANUFACTURA BOLIVIANA S.A.</div>
           <div style="display:flex; flex:1; align-items:center;">
-            <div style="width:45px; display:flex; flex-direction:column; justify-content:center; border-right:1px solid #000; padding-right:1px; height:100%;">
-              ${siluetaCalzadoHTML}
-            </div>
+            <div style="width:40px; display:flex; justify-content:center; border-right:1px solid #000; height:100%;">${siluetaCalzadoHTML}</div>
             <div style="flex:1; height:100%;">
-              <table style="width:100%; height:100%; border-collapse:collapse; font-size:6px; font-weight:900;">
-                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; width:35%; text-align:center;">ART:</td><td style="text-align:center; font-family:monospace; font-size:7px;">${articulo}</td></tr>
-                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; width:35%; text-align:center;">MARCA:</td><td style="text-align:center;">${marca}</td></tr>
-                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; width:35%; text-align:center;">SERIE:</td><td style="text-align:center;">${serie}</td></tr>
-                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; width:35%; text-align:center;">CORTE:</td><td style="text-align:center; font-size:5px;">${materialCorte}</td></tr>
-                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; width:35%; text-align:center;">FORRO:</td><td style="text-align:center; font-size:5px;">${forro}</td></tr>
-                <tr><td style="border-right:1px solid #000; width:35%; text-align:center;">PLANT:</td><td style="text-align:center; font-size:5px;">${plantInt}</td></tr>
+              <table style="width:100%; height:100%; border-collapse:collapse; font-size:5.5px; font-weight:900;">
+                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; text-align:center;">ART:</td><td style="text-align:center; font-family:monospace; font-size:6.5px;">${articulo}</td></tr>
+                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; text-align:center;">MARCA:</td><td style="text-align:center;">${marca}</td></tr>
+                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; text-align:center;">SERIE:</td><td style="text-align:center;">${serie}</td></tr>
+                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; text-align:center;">CORTE:</td><td style="text-align:center; font-size:4.5px;">${materialCorte}</td></tr>
+                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; text-align:center;">FORRO:</td><td style="text-align:center; font-size:4.5px;">${forro}</td></tr>
+                <tr><td style="border-right:1px solid #000; text-align:center;">PLANT:</td><td style="text-align:center; font-size:4.5px;">${plantInt}</td></tr>
               </table>
             </div>
           </div>
-          <div style="display:flex; border-top:1px solid #000; font-size:5.5px; font-weight:bold; padding:1px 2px; justify-content:space-between; background:#fff;">
-            <span>${fecha}</span>
-          </div>
-          <div style="display:flex; border-top:1px solid #000; font-size:5px; font-weight:800; padding:1px 0;">
-            <div style="width:50%; border-right:1px solid #000; padding-left:1px;">TEC: ${modelista}<br>CONTR: ${construccion}<br>SUELA: ${suela}</div>
-            <div style="width:50%; padding-left:2px;">PRECIO: ${precio}<br>MRG BUD: ${budRet}<br>MRG: ${margen}</div>
-          </div>
+          <div style="display:flex; border-top:1px solid #000; font-size:5px; font-weight:bold; padding:1px; justify-content:space-between;"><span>${fecha}</span></div>
         </div>
       </div>
     `;
 
-    // Módulo de Firmas actualizado exactamente a tu última imagen (Merchandising Man. a la derecha con más espacio central para Purchasing Manager, y con respiro vertical superior)
+    // Módulo de Firmas ajustado exactamente a la altura de la línea roja que marcaste arriba
     const moduloFirmas = `
-      <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:4px 3px 2px 3px; font-size:5.5px; ${tarj.esCorte ? '' : 'border-right:1px solid #000;'}">
-        <div style="font-size:7px; font-weight:900; text-align:center; color:#000; text-transform:uppercase; border-bottom:1px solid #000; padding-bottom:1px;">
-          ${tarj.etiqueta}
-        </div>
-        <div style="display:flex; flex-direction:column; justify-content:space-between; flex:1; padding-top:6px;">
+      <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:2px 3px 2px 3px; font-size:5.5px; ${tarj.esCorte ? '' : 'border-right:1px solid #000;'}">
+        <div style="font-size:6.5px; font-weight:900; text-align:center; text-transform:uppercase; border-bottom:1px solid #000; padding-bottom:1px;">${tarj.etiqueta}</div>
+        <div style="display:flex; flex-direction:column; justify-content:space-between; flex:1; padding-top:1px;">
           <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-            <div>
-              <div style="border-bottom:1px solid #000; width:28mm; height:6px;"></div>
-              <span style="font-weight:bold; font-size:4.5px;">PD. CHIEF</span><br><span style="font-size:4px;">DATE: / /</span>
-            </div>
-            <div style="text-align:right;">
-              <div style="border-bottom:1px solid #000; width:31mm; height:6px; margin-left:auto;"></div>
-              <span style="font-weight:bold; font-size:4.5px;">MERCHANDISING MAN.</span><br><span style="font-size:4px;">DATE: / /</span>
-            </div>
+            <div><div style="border-bottom:1px solid #000; width:28mm; height:5px;"></div><span style="font-weight:bold; font-size:4.5px;">PD. CHIEF</span><br><span style="font-size:4px;">DATE: / /</span></div>
+            <div style="text-align:right;"><div style="border-bottom:1px solid #000; width:31mm; height:5px; margin-left:auto;"></div><span style="font-weight:bold; font-size:4.5px;">MERCHANDISING MAN.</span><br><span style="font-size:4px;">DATE: / /</span></div>
           </div>
-          <div style="text-align:center; margin: 1px 0;">
-            <div style="border-bottom:1px solid #000; width:34mm; height:6px; margin:auto;"></div>
+          <div style="text-align:center; margin: 0;">
+            <div style="border-bottom:1px solid #000; width:34mm; height:5px; margin:auto;"></div>
             <span style="font-weight:bold; font-size:4.5px;">PURCHASING MANAGER</span><br><span style="font-size:4px;">DATE: / /</span>
           </div>
           <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-            <div>
-              <div style="border-bottom:1px solid #000; width:28mm; height:6px;"></div>
-              <span style="font-weight:bold; font-size:4.5px;">PRODUCTION MANAGER</span><br><span style="font-size:4px;">DATE: / /</span>
-            </div>
-            <div style="text-align:right;">
-              <div style="border-bottom:1px solid #000; width:28mm; height:6px; margin-left:auto;"></div>
-              <span style="font-weight:bold; font-size:4.5px;">COUNTRY MANAGER</span><br><span style="font-size:4px;">DATE: / /</span>
-            </div>
+            <div><div style="border-bottom:1px solid #000; width:28mm; height:5px;"></div><span style="font-weight:bold; font-size:4.5px;">PRODUCTION MANAGER</span><br><span style="font-size:4px;">DATE: / /</span></div>
+            <div style="text-align:right;"><div style="border-bottom:1px solid #000; width:28mm; height:5px; margin-left:auto;"></div><span style="font-weight:bold; font-size:4.5px;">COUNTRY MANAGER</span><br><span style="font-size:4px;">DATE: / /</span></div>
           </div>
         </div>
       </div>
     `;
 
     const moduloObservaciones = `
-      <div class="shoe-panel" style="padding:4px; display:flex; flex-direction:column; justify-content:space-between; font-size:7px; border-right:1px solid #000;">
-        <div>
-          <span style="font-weight:900; color:#000; text-transform:uppercase; display:block; margin-bottom:1px;">OBSERVACIONES:</span>
-          <p style="font-size:6.5px; color:#000; font-style:italic; line-height:1.2;">${observaciones}</p>
-        </div>
-        <div style="text-align:right; font-size:6px; color:#000; font-weight:bold;">BATA BOLIVIA PD</div>
+      <div class="shoe-panel" style="padding:4px; display:flex; flex-direction:column; justify-content:space-between; font-size:6.5px; border-right:1px solid #000;">
+        <div><span style="font-weight:900; text-transform:uppercase; display:block;">OBSERVACIONES:</span><p style="font-size:6px; font-style:italic;">${observaciones}</p></div>
+        <div style="text-align:right; font-size:5.5px; font-weight:bold;">BATA BOLIVIA PD</div>
       </div>
     `;
 
     const panelCentro = tarj.esCorte ? moduloObservaciones : moduloFirmas;
     const panelDerecha = tarj.esCorte ? moduloFirmas : moduloObservaciones;
 
-    tarjetasHTML += `
-      <div class="shoe-card-container" style="background:#fff; display:flex; font-size:7px; line-height:1.1; color:#000;">
-        ${moduloInfo}
-        ${panelCentro}
-        ${panelDerecha}
-      </div>
-    `;
+    tarjetasHTML += `<div class="shoe-card-container" style="background:#fff; display:flex; font-size:7px; color:#000;">${moduloInfo}${panelCentro}${panelDerecha}</div>`;
   });
 
   container.innerHTML = tarjetasHTML;
