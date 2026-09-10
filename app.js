@@ -872,9 +872,9 @@ function renderProduccionView() {
     return semMatch && proyMatch && linMatch;
   });
 
-  // KPIs
+  // KPIs (Calculados sobre los registros filtrados por semana y sección)
   let totCortado = 0, totAparado = 0, totArmado = 0, totInyeccion = 0, totEntregado = 0;
-  lotesProduccion.forEach(l => {
+  filtrados.forEach(l => {
     const p = parseInt(l.pares) || 0;
     if (l.estado === "CORTADO") totCortado += p;
     else if (l.estado === "APARADO") totAparado += p;
@@ -892,7 +892,16 @@ function renderProduccionView() {
   };
 
   const elTotKpi = document.getElementById("prod-total-pares-kpi");
-  if (elTotKpi) elTotKpi.textContent = `${grandTotal.toLocaleString()} Pares Totales`;
+  if (elTotKpi) {
+    const textoSemanaLabel = fSem ? `(${fSem})` : "(Todas las Semanas)";
+    elTotKpi.textContent = `${grandTotal.toLocaleString()} Pares Totales ${textoSemanaLabel}`;
+  }
+
+  setKpi("kpi-cortado", "bar-cortado", totCortado);
+  setKpi("kpi-aparado", "bar-aparado", totAparado);
+  setKpi("kpi-armado", "bar-armado", totArmado);
+  setKpi("kpi-inyeccion", "bar-inyeccion", totInyeccion);
+  setKpi("kpi-entregado", "bar-entregado", totEntregado);
 
   setKpi("kpi-cortado", "bar-cortado", totCortado);
   setKpi("kpi-aparado", "bar-aparado", totAparado);
