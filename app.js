@@ -1079,17 +1079,17 @@ function renderProduccionView() {
 }
 
 const filtroSemanaProd = document.getElementById("prod-filter-semana");
+const filtroTallerProd = document.getElementById("prod-filter-taller");
 const filtroProyectoProd = document.getElementById("prod-filter-proyecto");
-const filtroLineaProd = document.getElementById("prod-filter-linea");
 
 if (filtroSemanaProd) filtroSemanaProd.onchange = renderProduccionView;
+if (filtroTallerProd) filtroTallerProd.onchange = renderProduccionView;
 if (filtroProyectoProd) filtroProyectoProd.oninput = renderProduccionView;
-if (filtroLineaProd) filtroLineaProd.onchange = renderProduccionView;
 
 safeClick("btn-limpiar-filtros-prod", () => {
   if (filtroSemanaProd) filtroSemanaProd.value = "";
+  if (filtroTallerProd) filtroTallerProd.value = "";
   if (filtroProyectoProd) filtroProyectoProd.value = "";
-  if (filtroLineaProd) filtroLineaProd.value = "";
   renderProduccionView();
 });
 
