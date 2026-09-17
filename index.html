@@ -3,17 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistema de Cambios & PM - Bata Bolivia</title>
+  <title>Sistema de Cambios y Procesos - Bata Bolivia</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    @media print {
+      body * { visibility: hidden; }
+      #modal-reporte-entregas-print, #modal-reporte-entregas-print * { visibility: visible; }
+      #modal-reporte-entregas-print { position: absolute; left: 0; top: 0; width: 100%; }
+    }
   </style>
 </head>
-<body class="bg-gray-50 min-h-screen text-gray-800">
+<body class="bg-gray-100 min-h-screen text-gray-800">
 
-  <!-- PANTALLA DE BIENVENIDA / LOGIN REQUERIDO -->
+  <!-- PANTALLA DE BIENVENIDA / LOGIN -->
   <div id="welcome-container" class="flex flex-col items-center justify-center min-h-screen p-6 bg-gradient-to-br from-slate-900 via-gray-900 to-[#D61B28]">
     <div class="bg-white/10 backdrop-blur-md p-8 rounded-3xl border border-white/20 shadow-2xl max-w-md w-full text-center space-y-6 text-white">
       <div class="w-16 h-16 bg-[#D61B28] rounded-2xl mx-auto flex items-center justify-center shadow-lg">
@@ -34,10 +39,10 @@
     </div>
   </div>
 
-  <!-- APLICACIÓN PRINCIPAL (OCULTA HASTA LOGIN) -->
+  <!-- APLICACIÓN PRINCIPAL -->
   <div id="app-container" class="hidden flex h-screen overflow-hidden bg-gray-100">
     
-    <!-- MENÚ LATERAL (SIDEBAR ANCHO w-72) -->
+    <!-- MENÚ LATERAL (SIDEBAR w-72) -->
     <aside class="w-72 bg-[#D61B28] p-4 flex flex-col justify-between select-none shadow-xl border-r border-red-800 overflow-y-auto">
       <div class="space-y-2">
         
@@ -139,60 +144,78 @@
       </div>
     </aside>
 
-    <!-- ÁREA PRINCIPAL DE CONTENIDO -->
+    <!-- ÁREA PRINCIPAL -->
     <div class="flex-1 flex flex-col h-screen overflow-hidden">
       
-      <!-- HEADER SUPERIOR -->
+      <!-- HEADER -->
       <header class="bg-white border-b border-gray-200 px-6 py-3 flex justify-between items-center shadow-xs">
         <div class="flex items-center space-x-3">
-          <span class="font-black text-red-600 text-sm">Bata</span>
-          <span class="text-xs text-gray-500">Bienvenido al sistema corporativo de gestión.</span>
+          <span class="font-black text-red-600 text-sm">Bata Bolivia</span>
+          <span class="text-xs text-gray-400">| Sistema de Gestión Corporativa</span>
         </div>
         <div class="flex items-center space-x-4">
-          <div class="text-right">
-            <span id="user-display-name" class="block font-bold text-xs text-gray-800">Usuario</span>
-            <span id="user-display-role" class="text-[10px] font-bold text-red-600">Rol</span>
+          <div class="flex items-center space-x-2">
+            <div id="user-display-avatar-icon" class="w-8 h-8 rounded-full bg-red-100 text-[#D61B28] flex items-center justify-center font-bold text-xs">
+              <i class="fa-solid fa-user"></i>
+            </div>
+            <img id="user-display-avatar" class="w-8 h-8 rounded-full object-cover hidden">
+            <div class="text-left">
+              <span id="user-display-name" class="block font-bold text-xs text-gray-800">Cargando...</span>
+              <span id="user-display-role" class="text-[10px] font-bold text-[#D61B28] block">Cargando...</span>
+            </div>
           </div>
-          <button type="button" id="btn-edit-profile" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold text-xs text-gray-700 hover:bg-gray-200 cursor-pointer">
-            <i class="fa-solid fa-user"></i>
+          <button type="button" id="btn-edit-profile" class="p-2 text-gray-500 hover:text-gray-800 transition text-xs cursor-pointer" title="Editar Perfil">
+            <i class="fa-solid fa-gear text-sm"></i>
           </button>
-          <button type="button" id="btn-logout" class="text-gray-400 hover:text-red-600 transition text-xs p-1.5 cursor-pointer" title="Cerrar Sesión">
+          <button type="button" id="btn-logout" class="p-2 text-gray-400 hover:text-red-600 transition text-xs cursor-pointer" title="Cerrar Sesión">
             <i class="fa-solid fa-right-from-bracket text-base"></i>
           </button>
         </div>
       </header>
 
-      <!-- CONTENEDOR DE VISTAS (SCROLLABLE) -->
+      <!-- CONTENEDOR DE VISTAS PRINCIPALES -->
       <main class="flex-1 overflow-y-auto p-6 bg-gray-50">
         
-        <!-- VISTA: CAMBIOS (Placeholder para tus otras vistas) -->
+        <!-- VISTA: CAMBIOS -->
         <section id="view-cambios" class="space-y-6">
-          <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex justify-between items-center">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <h2 class="text-base font-bold text-gray-800">Panel General de Solicitudes de Cambios</h2>
-              <p class="text-xs text-gray-400">Control de estados y validación de cambios de diseño.</p>
+              <h2 class="text-lg font-bold text-gray-800 flex items-center space-x-2">
+                <i class="fa-solid fa-arrow-right-arrow-left text-[#D61B28]"></i>
+                <span>Gestión de Solicitudes de Cambios</span>
+              </h2>
+              <p class="text-xs text-gray-400">Control operativo y seguimiento de modificaciones en desarrollo y planta.</p>
             </div>
-            <button type="button" onclick="window.abrirModalCambio()" class="bg-[#D61B28] text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow cursor-pointer">Nuevo Cambio</button>
+            <div class="flex items-center space-x-2">
+              <button type="button" onclick="window.abrirModalMinuta()" id="btn-open-minuta-header" class="hidden bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow transition cursor-pointer flex items-center space-x-2">
+                <i class="fa-solid fa-bolt"></i>
+                <span>Generar Minuta / Plan Piloto</span>
+              </button>
+              <button type="button" onclick="window.abrirModalCambio()" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow transition cursor-pointer flex items-center space-x-2">
+                <i class="fa-solid fa-plus"></i>
+                <span>Registrar Cambio</span>
+              </button>
+            </div>
           </div>
           <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden text-xs">
             <table class="w-full text-left border-collapse">
               <thead class="bg-gray-100 font-bold text-gray-600 border-b">
                 <tr>
-                  <th class="p-3 text-center">Foto</th>
+                  <th class="p-3 text-center w-16">Foto</th>
                   <th class="p-3">Sem.</th>
-                  <th class="p-3">Fecha</th>
+                  <th class="p-3">Fecha/Hora</th>
                   <th class="p-3">Solicitante</th>
                   <th class="p-3">Proyecto</th>
                   <th class="p-3">Artículo</th>
-                  <th class="p-3">Cambio</th>
+                  <th class="p-3">Detalle del Cambio</th>
                   <th class="p-3 text-center">Estado</th>
-                  <th class="p-3 text-center">Realizado</th>
+                  <th class="p-3 text-center">F. Realizado</th>
                   <th class="p-3 text-center">Costos</th>
                 </tr>
               </thead>
               <tbody id="table-cambios-body"></tbody>
             </table>
-            <div id="table-empty-state" class="p-8 text-center text-gray-400 text-xs">No hay solicitudes de cambios registradas.</div>
+            <div id="table-empty-state" class="p-8 text-center text-gray-400 text-xs hidden">No hay solicitudes de cambios registradas.</div>
           </div>
         </section>
 
@@ -298,7 +321,422 @@
           </div>
         </section>
 
+        <!-- VISTA: ENTREGAS -->
+        <section id="view-entregas" class="hidden space-y-6">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h2 id="entregas-vista-titulo" class="text-lg font-bold text-gray-800 flex items-center space-x-2">
+                <i class="fa-solid fa-truck-ramp-box text-[#D61B28]"></i>
+                <span>Control de Entregas a Departamentos</span>
+              </h2>
+              <p id="entregas-vista-subtitulo" class="text-xs text-gray-400">Visualizador consolidado de entregas físicas.</p>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button type="button" id="btn-reporte-entregas-pdf" class="bg-slate-700 hover:bg-slate-800 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow transition cursor-pointer">
+                <i class="fa-solid fa-print mr-1"></i> Imprimir Reporte
+              </button>
+              <button type="button" onclick="window.abrirModalEntrega()" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow transition cursor-pointer flex items-center space-x-2">
+                <i class="fa-solid fa-plus"></i>
+                <span id="btn-text-nueva-entrega">Registrar Entrega</span>
+              </button>
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden text-xs">
+            <table class="w-full text-left border-collapse">
+              <thead class="bg-gray-100 font-bold text-gray-600 border-b">
+                <tr>
+                  <th id="th-ent-foto" class="p-3 text-center w-16">Foto</th>
+                  <th class="p-3">Sem.</th>
+                  <th class="p-3">Fecha/Hora</th>
+                  <th id="label-th-proy" class="p-3">Proyecto</th>
+                  <th id="th-ent-art" class="p-3">Artículo</th>
+                  <th class="p-3">Elemento Entregado</th>
+                  <th class="p-3">Entregado Por</th>
+                  <th class="p-3">Destino</th>
+                  <th class="p-3 text-center">Estado Recepción</th>
+                </tr>
+              </thead>
+              <tbody id="table-entregas-body"></tbody>
+            </table>
+            <div id="entregas-empty-state" class="p-8 text-center text-gray-400 text-xs hidden">No hay registros de entregas en esta categoría.</div>
+          </div>
+        </section>
+
+        <!-- VISTA: PRODUCCIÓN -->
+        <section id="view-produccion" class="hidden space-y-6">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h2 class="text-lg font-bold text-gray-800 flex items-center space-x-2">
+                <i class="fa-solid fa-industry text-[#D61B28]"></i>
+                <span>Work Planner de Producción (<span id="label-semana-grande">TODAS LAS SEMANAS</span>)</span>
+              </h2>
+              <p class="text-xs text-gray-400">Matriz de seguimiento semanal de lotes por sección y día.</p>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button type="button" onclick="window.imprimirSemanaProduccion()" class="bg-slate-700 hover:bg-slate-800 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
+                <i class="fa-solid fa-print"></i>
+                <span>Imprimir Semana Completa</span>
+              </button>
+              <button type="button" onclick="window.exportarExcelProduccion()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow transition cursor-pointer flex items-center space-x-2">
+                <i class="fa-solid fa-file-excel"></i>
+                <span>Exportar Excel</span>
+              </button>
+              <button type="button" onclick="window.abrirModalLoteProduccion()" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow transition cursor-pointer flex items-center space-x-2">
+                <i class="fa-solid fa-plus"></i>
+                <span>Registrar Lote</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- KPI DE PARES Y FILTROS -->
+          <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+            <div class="flex flex-wrap justify-between items-center gap-4 text-xs">
+              <div class="flex items-center space-x-3">
+                <span class="font-bold text-gray-600">Semana:</span>
+                <select id="prod-filter-semana" class="px-3 py-1.5 border border-gray-300 rounded-lg font-bold bg-white text-[#D61B28]"></select>
+                <span class="font-bold text-gray-600 ml-2">Sección:</span>
+                <select id="prod-filter-linea" class="px-3 py-1.5 border border-gray-300 rounded-lg font-bold bg-white">
+                  <option value="">Todas las Secciones</option>
+                  <option value="330">Sección 330</option>
+                  <option value="331">Sección 331</option>
+                  <option value="332">Sección 332</option>
+                  <option value="251">Sección 251</option>
+                  <option value="252">Sección 252</option>
+                  <option value="254">Sección 254</option>
+                </select>
+                <span class="font-bold text-gray-600 ml-2">Buscar:</span>
+                <input type="text" id="prod-filter-proyecto" placeholder="Proyecto / Plan / Artículo..." class="px-3 py-1.5 border border-gray-300 rounded-lg w-48">
+              </div>
+              <button type="button" id="btn-limpiar-filtros-prod" class="text-gray-500 hover:text-red-600 font-bold transition cursor-pointer">Limpiar Filtros</button>
+            </div>
+
+            <!-- BARRAS DE PROGRESO / KPI -->
+            <div class="pt-3 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 text-xs">
+              <div class="font-black text-gray-800" id="prod-total-pares-kpi">0 Pares Totales</div>
+              <div class="flex flex-wrap items-center gap-3 text-[10px] font-bold">
+                <span class="bg-amber-50 text-amber-700 px-2.5 py-1 rounded-lg border border-amber-200">Cortado: <strong id="kpi-cortado">0</strong></span>
+                <span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg border border-blue-200">Aparado: <strong id="kpi-aparado">0</strong></span>
+                <span class="bg-purple-50 text-purple-700 px-2.5 py-1 rounded-lg border border-purple-200">Armado: <strong id="kpi-armado">0</strong></span>
+                <span class="bg-orange-50 text-orange-700 px-2.5 py-1 rounded-lg border border-orange-200">Inyección: <strong id="kpi-inyeccion">0</strong></span>
+                <span class="bg-green-50 text-green-700 px-2.5 py-1 rounded-lg border border-green-200">Entregado: <strong id="kpi-entregado">0</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- TABLA MATRIZ PRODUCCIÓN -->
+          <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-x-auto">
+            <table id="tabla-export-excel" class="w-full text-left border-collapse text-xs">
+              <thead class="bg-gray-100 font-black text-gray-700 text-center border-b border-gray-300">
+                <tr>
+                  <th rowspan="2" class="p-2 border border-gray-300 w-16">SEC.</th>
+                  <th colspan="5" class="p-2 border border-gray-300 bg-red-50 text-red-700">LUNES</th>
+                  <th colspan="5" class="p-2 border border-gray-300 bg-amber-50 text-amber-700">MARTES</th>
+                  <th colspan="5" class="p-2 border border-gray-300 bg-blue-50 text-blue-700">MIÉRCOLES</th>
+                  <th colspan="5" class="p-2 border border-gray-300 bg-purple-50 text-purple-700">JUEVES</th>
+                  <th colspan="5" class="p-2 border border-gray-300 bg-emerald-50 text-emerald-700">VIERNES</th>
+                  <th rowspan="2" class="p-2 border border-gray-300 w-20 bg-gray-200">TOTAL PARES</th>
+                </tr>
+                <tr>
+                  <!-- Lunes -->
+                  <th class="p-1 border border-gray-300 text-[10px]">Plan</th><th class="p-1 border border-gray-300 text-[10px]">Art.</th><th class="p-1 border border-gray-300 text-[10px]">Proy.</th><th class="p-1 border border-gray-300 text-[10px]">Pares</th><th class="p-1 border border-gray-300 text-[10px]">Estado</th>
+                  <!-- Martes -->
+                  <th class="p-1 border border-gray-300 text-[10px]">Plan</th><th class="p-1 border border-gray-300 text-[10px]">Art.</th><th class="p-1 border border-gray-300 text-[10px]">Proy.</th><th class="p-1 border border-gray-300 text-[10px]">Pares</th><th class="p-1 border border-gray-300 text-[10px]">Estado</th>
+                  <!-- Miércoles -->
+                  <th class="p-1 border border-gray-300 text-[10px]">Plan</th><th class="p-1 border border-gray-300 text-[10px]">Art.</th><th class="p-1 border border-gray-300 text-[10px]">Proy.</th><th class="p-1 border border-gray-300 text-[10px]">Pares</th><th class="p-1 border border-gray-300 text-[10px]">Estado</th>
+                  <!-- Jueves -->
+                  <th class="p-1 border border-gray-300 text-[10px]">Plan</th><th class="p-1 border border-gray-300 text-[10px]">Art.</th><th class="p-1 border border-gray-300 text-[10px]">Proy.</th><th class="p-1 border border-gray-300 text-[10px]">Pares</th><th class="p-1 border border-gray-300 text-[10px]">Estado</th>
+                  <!-- Viernes -->
+                  <th class="p-1 border border-gray-300 text-[10px]">Plan</th><th class="p-1 border border-gray-300 text-[10px]">Art.</th><th class="p-1 border border-gray-300 text-[10px]">Proy.</th><th class="p-1 border border-gray-300 text-[10px]">Pares</th><th class="p-1 border border-gray-300 text-[10px]">Estado</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-matriz-produccion"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- VISTA: PROCUREMENT -->
+        <section id="view-procurement" class="hidden space-y-6">
+          <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex justify-between items-center">
+            <div>
+              <h2 class="text-base font-bold text-gray-800">Módulo de Compras & Almacén (Procurement)</h2>
+              <p class="text-xs text-gray-400">Control de bloqueos y llegadas de materiales.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- VISTA: TARJETAS PD -->
+        <section id="view-tarjetas" class="hidden space-y-6">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h2 class="text-lg font-bold text-gray-800 flex items-center space-x-2">
+                <i class="fa-solid fa-id-card text-[#D61B28]"></i>
+                <span>Generador de Tarjetas de Muestra y Corte (34 mm × 200 mm)</span>
+              </h2>
+              <p class="text-xs text-gray-400">Pega directamente tu fila de Excel y se distribuirá automáticamente.</p>
+            </div>
+            <button type="button" id="btn-imprimir-tarjetas-action" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold text-xs px-5 py-3 rounded-xl shadow transition cursor-pointer flex items-center space-x-2">
+              <i class="fa-solid fa-print"></i>
+              <span>Imprimir Tarjetas Sin Separación</span>
+            </button>
+          </div>
+
+          <!-- CONTROLES DE TARJETAS -->
+          <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-4 text-xs">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="md:col-span-2">
+                <label class="block font-bold text-gray-700 mb-1">Pegar Fila de Excel Completa</label>
+                <div class="flex space-x-2">
+                  <input type="text" id="input-quick-paste-row" placeholder="Pega aquí la fila copiada de Excel..." class="flex-1 px-3 py-2 border rounded-xl font-mono text-xs">
+                  <button type="button" id="btn-quick-distribute" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-4 py-2 rounded-xl cursor-pointer">Distribuir</button>
+                </div>
+              </div>
+              <div>
+                <label class="block font-bold text-gray-700 mb-1">Total Tarjetas a Generar: <span id="label-total-tarjetas-count" class="text-red-600 font-black">0</span></label>
+                <div class="grid grid-cols-5 gap-1 pt-1">
+                  <div><span class="block text-[9px] text-gray-500 font-bold">Corte</span><input type="number" id="count-card-corte" value="0" min="0" class="w-full border text-center font-bold rounded p-1"></div>
+                  <div><span class="block text-[9px] text-gray-500 font-bold">Prod</span><input type="number" id="count-card-prod" value="1" min="0" class="w-full border text-center font-bold rounded p-1"></div>
+                  <div><span class="block text-[9px] text-gray-500 font-bold">Retail</span><input type="number" id="count-card-verde" value="0" min="0" class="w-full border text-center font-bold rounded p-1"></div>
+                  <div><span class="block text-[9px] text-gray-500 font-bold">Planeam</span><input type="number" id="count-card-amarilla" value="0" min="0" class="w-full border text-center font-bold rounded p-1"></div>
+                  <div><span class="block text-[9px] text-gray-500 font-bold">Export</span><input type="number" id="count-card-rosada" value="0" min="0" class="w-full border text-center font-bold rounded p-1"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- CAMPOS EDITABLES DE LA TARJETA -->
+            <div class="grid grid-cols-2 md:grid-cols-6 gap-3 pt-3 border-t border-gray-100">
+              <div><label class="block font-semibold text-gray-500 mb-1">Artículo</label><input type="text" id="card-costo-articulo" value="34461836" class="w-full px-2 py-1.5 border rounded-lg font-mono font-bold"></div>
+              <div><label class="block font-semibold text-gray-500 mb-1">Línea</label><input type="text" id="card-costo-linea" value="QUIQUE" class="w-full px-2 py-1.5 border rounded-lg font-bold uppercase"></div>
+              <div><label class="block font-semibold text-gray-500 mb-1">Marca</label><input type="text" id="card-costo-marca" value="TEENER" class="w-full px-2 py-1.5 border rounded-lg font-bold uppercase"></div>
+              <div><label class="block font-semibold text-gray-500 mb-1">Precio</label><input type="text" id="card-costo-precio" value="259.00" class="w-full px-2 py-1.5 border rounded-lg font-bold"></div>
+              <div><label class="block font-semibold text-gray-500 mb-1">Margen Bud</label><input type="text" id="card-costo-budret" value="37.39%" class="w-full px-2 py-1.5 border rounded-lg font-bold"></div>
+              <div><label class="block font-semibold text-gray-500 mb-1">Margen</label><input type="text" id="card-costo-margen" value="55.00%" class="w-full px-2 py-1.5 border rounded-lg font-bold"></div>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <div><label class="block font-semibold text-gray-500 mb-1">Serie</label><input type="text" id="card-serie" value="37-44" class="w-full px-2 py-1.5 border rounded-lg font-bold"></div>
+              <div><label class="block font-semibold text-gray-500 mb-1">Fecha</label><input type="text" id="card-fecha" value="9/9/2026" class="w-full px-2 py-1.5 border rounded-lg font-bold"></div>
+              <div><label class="block font-semibold text-gray-500 mb-1">Corte</label><input type="text" id="card-material-corte" value="IMITACION" class="w-full px-2 py-1.5 border rounded-lg font-bold uppercase"></div>
+              <div><label class="block font-semibold text-gray-500 mb-1">Forro</label><input type="text" id="card-forro" value="PIQUE NEGRO" class="w-full px-2 py-1.5 border rounded-lg font-bold uppercase"></div>
+              <div><label class="block font-semibold text-gray-500 mb-1">Planta Int.</label><input type="text" id="card-plant-int" value="PIQUE NEGRO / CRETONE" class="w-full px-2 py-1.5 border rounded-lg font-bold uppercase"></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <div><label class="block font-semibold text-gray-500 mb-1">Técnico / Modelista</label><input type="text" id="card-tecnico" value="CARLOS ARCE" class="w-full px-2 py-1.5 border rounded-lg font-bold uppercase"></div>
+              <div><label class="block font-semibold text-gray-500 mb-1">Horma / Suela</label><input type="text" id="card-horma-suela" value="QUIQUE" class="w-full px-2 py-1.5 border rounded-lg font-bold uppercase"></div>
+              <div><label class="block font-semibold text-gray-500 mb-1">Construcción</label><input type="text" id="card-construccion" value="TRUE MOC" class="w-full px-2 py-1.5 border rounded-lg font-bold uppercase"></div>
+              <div><label class="block font-semibold text-gray-500 mb-1">Croquis (Imagen)</label><input type="file" id="card-croquis-file" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-red-50 file:text-red-700 cursor-pointer"></div>
+            </div>
+
+            <div>
+              <label class="block font-semibold text-gray-500 mb-1">Observaciones</label>
+              <input type="text" id="card-observaciones" value="Sin observaciones adicionales" class="w-full px-2 py-1.5 border rounded-lg font-medium">
+            </div>
+          </div>
+
+          <!-- PREVIEW EN VIVO DE LAS TARJETAS -->
+          <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+            <h3 class="font-bold text-xs text-gray-500 uppercase tracking-wider">Vista Previa de Impresión</h3>
+            <div id="contenedor-tarjetas-preview" class="space-y-2 overflow-x-auto p-2 bg-gray-100 rounded-xl border border-dashed border-gray-300"></div>
+          </div>
+        </section>
+
+        <!-- VISTA: SUPER ADMIN -->
+        <section id="view-usuarios" class="hidden space-y-6">
+          <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+            <h2 class="text-base font-bold text-gray-800 mb-4"><i class="fa-solid fa-user-shield text-[#D61B28] mr-2"></i>Panel de Administración de Usuarios y Roles</h2>
+            <div class="overflow-x-auto text-xs">
+              <table class="w-full text-left border-collapse">
+                <thead class="bg-gray-100 font-bold border-b">
+                  <tr>
+                    <th class="p-3">Avatar</th>
+                    <th class="p-3">Nombre</th>
+                    <th class="p-3">Correo</th>
+                    <th class="p-3">Celular</th>
+                    <th class="p-3">Rol del Sistema</th>
+                    <th class="p-3 text-center">Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="table-users-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
       </main>
+    </div>
+  </div>
+
+  <!-- MODALES DEL SISTEMA -->
+  <div id="modal-login" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl relative text-xs">
+      <button type="button" id="close-login" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+      <h2 class="font-bold text-sm text-gray-800 mb-4">Iniciar Sesión en el Sistema</h2>
+      <form id="form-login" class="space-y-3">
+        <div><label class="block font-semibold text-gray-600 mb-1">Correo electrónico</label><input type="email" id="login-email" required class="w-full px-3 py-2 border rounded-xl"></div>
+        <div>
+          <label class="block font-semibold text-gray-600 mb-1">Contraseña</label>
+          <div class="relative">
+            <input type="password" id="login-pass" required class="w-full px-3 py-2 border rounded-xl pr-10">
+            <button type="button" onclick="togglePasswordVisibility('login-pass', 'eye-login')" class="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 cursor-pointer"><i id="eye-login" class="fa-solid fa-eye"></i></button>
+          </div>
+        </div>
+        <button type="submit" class="w-full bg-[#D61B28] text-white font-bold py-2.5 rounded-xl cursor-pointer mt-2">Entrar</button>
+        <button type="button" id="btn-forgot-pass" class="w-full text-center text-red-600 font-bold mt-2 hover:underline cursor-pointer">¿Olvidaste tu contraseña?</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-register" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl relative text-xs max-h-[90vh] overflow-y-auto">
+      <button type="button" id="close-register" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+      <h2 class="font-bold text-sm text-gray-800 mb-4">Registro de Nuevo Usuario</h2>
+      <form id="form-register" class="space-y-3">
+        <div><label class="block font-semibold text-gray-600 mb-1">Nombre Completo</label><input type="text" id="reg-name" required class="w-full px-3 py-2 border rounded-xl"></div>
+        <div><label class="block font-semibold text-gray-600 mb-1">Número de Celular (WhatsApp)</label><input type="text" id="reg-phone" placeholder="74812364" required class="w-full px-3 py-2 border rounded-xl"></div>
+        <div><label class="block font-semibold text-gray-600 mb-1">Correo electrónico</label><input type="email" id="reg-email" required class="w-full px-3 py-2 border rounded-xl"></div>
+        <div>
+          <label class="block font-semibold text-gray-600 mb-1">Rol / Departamento</label>
+          <select id="reg-role" class="w-full px-3 py-2 border rounded-xl bg-white font-bold text-red-600">
+            <option value="Desarrollo de producto">Desarrollo de producto</option>
+            <option value="Compras">Compras</option>
+            <option value="Planeamiento">Planeamiento</option>
+            <option value="Producción">Producción</option>
+            <option value="Costos">Costos</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-semibold text-gray-600 mb-1">Contraseña</label>
+          <div class="relative">
+            <input type="password" id="reg-pass" required class="w-full px-3 py-2 border rounded-xl pr-10">
+            <button type="button" onclick="togglePasswordVisibility('reg-pass', 'eye-reg')" class="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 cursor-pointer"><i id="eye-reg" class="fa-solid fa-eye"></i></button>
+          </div>
+        </div>
+        <div><label class="block font-semibold text-gray-600 mb-1">Foto de Perfil (Opcional)</label><input type="file" id="reg-photo" accept="image/*" class="w-full text-xs text-gray-500"></div>
+        <button type="submit" class="w-full bg-[#D61B28] text-white font-bold py-2.5 rounded-xl cursor-pointer mt-2">Registrarse</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-profile" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl relative text-xs">
+      <button type="button" id="close-profile" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+      <h2 class="font-bold text-sm text-gray-800 mb-4">Editar Perfil</h2>
+      <form id="form-update-profile" class="space-y-3">
+        <div><label class="block font-semibold text-gray-600 mb-1">Nombre</label><input type="text" id="prof-name" required class="w-full px-3 py-2 border rounded-xl"></div>
+        <div><label class="block font-semibold text-gray-600 mb-1">Celular</label><input type="text" id="prof-phone" required class="w-full px-3 py-2 border rounded-xl"></div>
+        <div><label class="block font-semibold text-gray-600 mb-1">Nueva Foto</label><input type="file" id="prof-photo" accept="image/*" class="w-full text-xs text-gray-500"></div>
+        <button type="submit" class="w-full bg-[#D61B28] text-white font-bold py-2.5 rounded-xl cursor-pointer mt-2">Guardar Cambios</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-new-change" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl relative text-xs">
+      <button type="button" id="modal-btn-close" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+      <h2 class="font-bold text-sm text-gray-800 mb-4">Registrar Solicitud de Cambio</h2>
+    </div>
+  </div>
+
+  <div id="modal-minuta" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl relative text-xs">
+      <button type="button" id="close-minuta" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+      <h2 class="font-bold text-sm text-gray-800 mb-4">Generar Minuta / Plan Piloto</h2>
+    </div>
+  </div>
+
+  <div id="modal-nueva-entrega" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl relative text-xs">
+      <button type="button" id="close-nueva-entrega" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+      <h2 class="font-bold text-sm text-gray-800 mb-4">Registrar Entrega a Departamento</h2>
+      <form id="form-nueva-entrega" class="space-y-3">
+        <div><label class="block font-semibold text-gray-600 mb-1">Semana</label><input type="text" id="ent-semana" value="Semana 38" required class="w-full px-3 py-2 border rounded-xl font-mono font-bold"></div>
+        <div>
+          <label class="block font-semibold text-gray-600 mb-1">Tipo de Elemento</label>
+          <select id="ent-tipo" class="w-full px-3 py-2 border rounded-xl bg-white font-bold"></select>
+        </div>
+        <div><label id="label-field-proyecto" class="block font-semibold text-gray-600 mb-1">Proyecto</label><input type="text" id="ent-proyecto" required class="w-full px-3 py-2 border rounded-xl font-bold"></div>
+        <div id="box-field-articulo"><label class="block font-semibold text-gray-600 mb-1">Artículo</label><input type="text" id="ent-articulo" class="w-full px-3 py-2 border rounded-xl font-mono"></div>
+        <div id="container-destino-single">
+          <label class="block font-semibold text-gray-600 mb-1">Departamento Destino</label>
+          <select id="ent-destino" class="w-full px-3 py-2 border rounded-xl bg-white font-bold"></select>
+        </div>
+        <div id="box-field-foto"><label class="block font-semibold text-gray-600 mb-1">Foto o Comprobante</label><input type="file" id="ent-photo" accept="image/*" class="w-full text-xs text-gray-500"></div>
+        <div id="box-field-copias" class="hidden"><label class="block font-semibold text-gray-600 mb-1">Número de Copias</label><input type="number" id="ent-copias" value="1" min="1" class="w-full px-3 py-2 border rounded-xl font-bold"></div>
+        <div><label class="block font-semibold text-gray-600 mb-1">Notas / Observaciones</label><input type="text" id="ent-notas" class="w-full px-3 py-2 border rounded-xl"></div>
+        <button type="submit" class="w-full bg-[#D61B28] text-white font-bold py-2.5 rounded-xl cursor-pointer mt-2">Guardar Entrega</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-nuevo-lote-prod" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl relative text-xs">
+      <button type="button" id="close-nuevo-lote-prod" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+      <h2 class="font-bold text-sm text-gray-800 mb-4">Registrar Lote de Producción</h2>
+      <form id="form-nuevo-lote-prod" class="space-y-3">
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="block font-semibold text-gray-600 mb-1">Semana</label><select id="lote-semana" class="w-full px-2 py-1.5 border rounded-lg font-bold bg-white"></select></div>
+          <div>
+            <label class="block font-semibold text-gray-600 mb-1">Día</label>
+            <select id="lote-dia" class="w-full px-2 py-1.5 border rounded-lg font-bold bg-white">
+              <option value="LUNES">LUNES</option><option value="MARTES">MARTES</option><option value="MIÉRCOLES">MIÉRCOLES</option><option value="JUEVES">JUEVES</option><option value="VIERNES">VIERNES</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-semibold text-gray-600 mb-1">Sección</label>
+            <select id="lote-linea" class="w-full px-2 py-1.5 border rounded-lg font-bold bg-white">
+              <option value="330">Sección 330</option><option value="331">Sección 331</option><option value="332">Sección 332</option><option value="251">Sección 251</option><option value="252">Sección 252</option><option value="254">Sección 254</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold text-gray-600 mb-1">Estado Inicial</label>
+            <select id="lote-estado" class="w-full px-2 py-1.5 border rounded-lg font-bold bg-white">
+              <option value="CORTADO">CORTADO</option><option value="APARADO">APARADO</option><option value="ARMADO">ARMADO</option><option value="INYECCIÓN">INYECCIÓN</option><option value="ENTREGADO">ENTREGADO</option>
+            </select>
+          </div>
+        </div>
+        <div><label class="block font-semibold text-gray-600 mb-1">Nº de Plan / OP</label><input type="text" id="lote-plan" required placeholder="Ej: P-9041" class="w-full px-2 py-1.5 border rounded-lg font-mono font-bold"></div>
+        <div><label class="block font-semibold text-gray-600 mb-1">Proyecto</label><input type="text" id="lote-proyecto" required placeholder="Ej: SKATER" class="w-full px-2 py-1.5 border rounded-lg font-bold"></div>
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="block font-semibold text-gray-600 mb-1">Artículo</label><input type="text" id="lote-articulo" placeholder="Ej: 3446" class="w-full px-2 py-1.5 border rounded-lg font-mono"></div>
+          <div><label class="block font-semibold text-gray-600 mb-1">Pares</label><input type="number" id="lote-pares" required min="1" placeholder="120" class="w-full px-2 py-1.5 border rounded-lg font-bold"></div>
+        </div>
+        <button type="submit" class="w-full bg-[#D61B28] text-white font-bold py-2.5 rounded-xl cursor-pointer mt-2">Guardar Lote</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-reporte-entregas-print" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-3xl rounded-3xl p-6 shadow-2xl relative text-xs max-h-[90vh] overflow-y-auto">
+      <button type="button" id="close-modal-entregas-print" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+      <h2 class="font-bold text-sm text-gray-800 mb-4">Reporte Impreso de Entregas</h2>
+      <div id="contenido-impresion-entregas" class="mb-4"></div>
+      <button type="button" onclick="window.print()" class="bg-slate-800 text-white font-bold px-4 py-2 rounded-xl">Imprimir</button>
+    </div>
+  </div>
+
+  <div id="modal-entregas-texto" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl relative text-xs">
+      <button type="button" id="close-modal-entregas-texto" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+      <textarea id="texto-entregas-output" rows="10" class="w-full p-2 border rounded-xl font-mono text-[11px]"></textarea>
+    </div>
+  </div>
+
+  <div id="modal-visor-foto" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="relative max-w-2xl w-full bg-white p-4 rounded-3xl shadow-2xl text-center">
+      <button type="button" id="close-visor-foto" class="absolute top-3 right-3 text-gray-500 hover:text-red-600 text-lg p-2 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+      <h3 id="visor-foto-titulo" class="font-bold text-xs text-gray-800 mb-2">Visualización</h3>
+      <img id="visor-foto-img" src="" class="max-h-[70vh] mx-auto rounded-xl border">
+    </div>
+  </div>
+
+  <div id="modal-impresion-tarjetas" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-4xl rounded-3xl p-6 shadow-2xl relative text-xs max-h-[90vh] overflow-y-auto">
+      <button type="button" id="close-modal-tarjetas" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+      <h2 class="font-bold text-sm text-gray-800 mb-4">Vista Previa de Impresión de Tarjetas</h2>
+      <div id="hoja-impresion-tarjetas" class="mb-4"></div>
+      <button type="button" id="btn-ejecutar-print-tarjetas" class="bg-[#D61B28] text-white font-bold px-4 py-2.5 rounded-xl">Imprimir Tarjetas</button>
     </div>
   </div>
 
