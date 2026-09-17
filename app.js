@@ -942,8 +942,8 @@ function renderProduccionView() {
   if (!table) return;
 
   const fSem = document.getElementById("prod-filter-semana")?.value || "";
+  const fTaller = document.getElementById("prod-filter-taller")?.value || "";
   const fProy = document.getElementById("prod-filter-proyecto")?.value.trim().toLowerCase() || "";
-  const fLin = document.getElementById("prod-filter-linea")?.value || "";
 
   if (labelSemanaGrande) {
     if (fTaller) {
