@@ -547,13 +547,13 @@
             </div>
           </div>
 
-         <!-- FILTROS Y SEMANA EN GRANDE AL MEDIO -->
+          <!-- FILTROS Y TALLERES AL LADO DE SEMANA + ETIQUETA CENTRAL -->
           <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-wrap justify-between items-center gap-4">
             <div class="flex items-center space-x-3">
               <span class="font-bold text-xs text-gray-600">Filtrar Semana:</span>
               <select id="prod-filter-semana" class="px-3 py-1.5 border border-gray-300 rounded-lg font-mono font-bold bg-white text-red-600 text-xs"></select>
 
-              <span class="font-bold text-xs text-gray-600 ml-3">Filtrar Taller:</span>
+              <span class="font-bold text-xs text-gray-600 ml-2">Filtrar Taller:</span>
               <select id="prod-filter-taller" class="px-3 py-1.5 border border-gray-300 rounded-lg font-mono font-bold bg-white text-red-600 text-xs">
                 <option value="">Todos los talleres</option>
                 <option value="330">Taller 330</option>
@@ -565,21 +565,16 @@
               </select>
             </div>
             
-            <!-- SEMANA ACTUAL EN GRANDE -->
+            <!-- ETIQUETA DINÁMICA AL CENTRO -->
             <div class="text-center bg-red-50 border border-red-200 px-8 py-2 rounded-2xl shadow-inner">
-              <span class="text-[10px] font-bold text-red-500 uppercase tracking-widest block">Semana Activa en Vista</span>
+              <span class="text-[10px] font-bold text-red-500 uppercase tracking-widest block">Semana / Taller Activo en Vista</span>
               <span id="label-semana-grande" class="text-xl font-black text-[#D61B28] font-mono">TODAS LAS SEMANAS</span>
             </div>
 
             <div class="flex items-center space-x-2">
               <input type="text" id="prod-filter-proyecto" placeholder="Proyecto / Plan..." class="px-3 py-1.5 border border-gray-300 rounded-lg bg-white w-36 text-xs font-medium">
-              <select id="prod-filter-linea" class="px-3 py-1.5 border border-gray-300 rounded-lg font-mono bg-white font-bold text-xs">
+              <select id="prod-filter-linea" class="hidden">
                 <option value="">Sección (Todas)</option>
-                <option value="330">330</option>
-                <option value="331">331</option>
-                <option value="332">332</option>
-                <option value="251">251</option>
-                <option value="252">252</option>
               </select>
               <button type="button" id="btn-limpiar-filtros-prod" class="bg-gray-200 hover:bg-gray-300 px-3 py-1.5 rounded-lg font-bold text-gray-700 text-xs cursor-pointer">Limpiar</button>
             </div>
@@ -605,9 +600,9 @@
                 <div class="w-full bg-purple-200 h-2 rounded-full overflow-hidden"><div id="bar-armado" class="bg-purple-600 h-2 transition-all" style="width:0%"></div></div>
               </div>
               <div class="bg-orange-50 p-3 rounded-xl border border-orange-200 space-y-1">
-  <div class="flex justify-between text-[11px] font-bold text-orange-900"><span>INYECCIÓN</span><span id="kpi-inyeccion">0</span></div>
-  <div class="w-full bg-orange-200 h-2 rounded-full overflow-hidden"><div id="bar-inyeccion" class="bg-orange-500 h-2 transition-all" style="width:0%"></div></div>
-</div>
+                <div class="flex justify-between text-[11px] font-bold text-orange-900"><span>INYECCIÓN</span><span id="kpi-inyeccion">0</span></div>
+                <div class="w-full bg-orange-200 h-2 rounded-full overflow-hidden"><div id="bar-inyeccion" class="bg-orange-500 h-2 transition-all" style="width:0%"></div></div>
+              </div>
               <div class="bg-green-50 p-3 rounded-xl border border-green-200 space-y-1">
                 <div class="flex justify-between text-[11px] font-bold text-green-900"><span>ENTREGADO</span><span id="kpi-entregado">0</span></div>
                 <div class="w-full bg-green-200 h-2 rounded-full overflow-hidden"><div id="bar-entregado" class="bg-green-700 h-2 transition-all" style="width:0%"></div></div>
@@ -620,24 +615,23 @@
             <div class="overflow-x-auto">
               <table id="tabla-export-excel" class="w-full text-left border-collapse text-xs border border-gray-300">
                 <thead>
-                  <thead>
-  <tr class="bg-gray-100 border-b border-gray-300 text-center font-bold text-gray-700 text-[10px]">
-    <th class="p-2.5 border border-gray-300 w-16" rowspan="2">1. SECCIÓN</th>
-    <th class="p-2.5 border border-gray-300 bg-slate-50" colspan="5">2. LUNES</th>
-    <th class="p-2.5 border border-gray-300 bg-slate-100" colspan="5">3. MARTES</th>
-    <th class="p-2.5 border border-gray-300 bg-slate-50" colspan="5">4. MIÉRCOLES</th>
-    <th class="p-2.5 border border-gray-300 bg-slate-100" colspan="5">5. JUEVES</th>
-    <th class="p-2.5 border border-gray-300 bg-slate-50" colspan="5">6. VIERNES</th>
-    <th class="p-2.5 border border-gray-300 bg-gray-200 w-16" rowspan="2">7. TOT</th>
-  </tr>
-  <tr class="bg-gray-50 border-b border-gray-300 text-center font-semibold text-gray-600 text-[9px]">
-    <th class="p-1.5 border border-gray-300">PLAN</th><th class="p-1.5 border border-gray-300">ART</th><th class="p-1.5 border border-gray-300">PROY</th><th class="p-1.5 border border-gray-300">PRS</th><th class="p-1.5 border border-gray-300">ESTADO</th>
-    <th class="p-1.5 border border-gray-300">PLAN</th><th class="p-1.5 border border-gray-300">ART</th><th class="p-1.5 border border-gray-300">PROY</th><th class="p-1.5 border border-gray-300">PRS</th><th class="p-1.5 border border-gray-300">ESTADO</th>
-    <th class="p-1.5 border border-gray-300">PLAN</th><th class="p-1.5 border border-gray-300">ART</th><th class="p-1.5 border border-gray-300">PROY</th><th class="p-1.5 border border-gray-300">PRS</th><th class="p-1.5 border border-gray-300">ESTADO</th>
-    <th class="p-1.5 border border-gray-300">PLAN</th><th class="p-1.5 border border-gray-300">ART</th><th class="p-1.5 border border-gray-300">PROY</th><th class="p-1.5 border border-gray-300">PRS</th><th class="p-1.5 border border-gray-300">ESTADO</th>
-    <th class="p-1.5 border border-gray-300">PLAN</th><th class="p-1.5 border border-gray-300">ART</th><th class="p-1.5 border border-gray-300">PROY</th><th class="p-1.5 border border-gray-300">PRS</th><th class="p-1.5 border border-gray-300">ESTADO</th>
-  </tr>
-</thead>
+                  <tr class="bg-gray-100 border-b border-gray-300 text-center font-bold text-gray-700 text-[10px]">
+                    <th class="p-2.5 border border-gray-300 w-16" rowspan="2">1. SECCIÓN</th>
+                    <th class="p-2.5 border border-gray-300 bg-slate-50" colspan="5">2. LUNES</th>
+                    <th class="p-2.5 border border-gray-300 bg-slate-100" colspan="5">3. MARTES</th>
+                    <th class="p-2.5 border border-gray-300 bg-slate-50" colspan="5">4. MIÉRCOLES</th>
+                    <th class="p-2.5 border border-gray-300 bg-slate-100" colspan="5">5. JUEVES</th>
+                    <th class="p-2.5 border border-gray-300 bg-slate-50" colspan="5">6. VIERNES</th>
+                    <th class="p-2.5 border border-gray-300 bg-gray-200 w-16" rowspan="2">7. TOT</th>
+                  </tr>
+                  <tr class="bg-gray-50 border-b border-gray-300 text-center font-semibold text-gray-600 text-[9px]">
+                    <th class="p-1.5 border border-gray-300">PLAN</th><th class="p-1.5 border border-gray-300">ART</th><th class="p-1.5 border border-gray-300">PROY</th><th class="p-1.5 border border-gray-300">PRS</th><th class="p-1.5 border border-gray-300">ESTADO</th>
+                    <th class="p-1.5 border border-gray-300">PLAN</th><th class="p-1.5 border border-gray-300">ART</th><th class="p-1.5 border border-gray-300">PROY</th><th class="p-1.5 border border-gray-300">PRS</th><th class="p-1.5 border border-gray-300">ESTADO</th>
+                    <th class="p-1.5 border border-gray-300">PLAN</th><th class="p-1.5 border border-gray-300">ART</th><th class="p-1.5 border border-gray-300">PROY</th><th class="p-1.5 border border-gray-300">PRS</th><th class="p-1.5 border border-gray-300">ESTADO</th>
+                    <th class="p-1.5 border border-gray-300">PLAN</th><th class="p-1.5 border border-gray-300">ART</th><th class="p-1.5 border border-gray-300">PROY</th><th class="p-1.5 border border-gray-300">PRS</th><th class="p-1.5 border border-gray-300">ESTADO</th>
+                    <th class="p-1.5 border border-gray-300">PLAN</th><th class="p-1.5 border border-gray-300">ART</th><th class="p-1.5 border border-gray-300">PROY</th><th class="p-1.5 border border-gray-300">PRS</th><th class="p-1.5 border border-gray-300">ESTADO</th>
+                  </tr>
+                </thead>
                 <tbody id="tabla-matriz-produccion" class="divide-y divide-gray-300"></tbody>
               </table>
             </div>
@@ -1009,6 +1003,7 @@
               <option value="332">332</option>
               <option value="251">251</option>
               <option value="252">252</option>
+              <option value="254">254</option>
             </select>
           </div>
           <div>
