@@ -542,11 +542,10 @@ function actualizarHeaderUsuario() {
     }
   }
 
-  // Aplicar control de visibilidad de menú según el rol definido
   aplicarPermisosRol();
 }
 
-// Control estricto de visibilidad por rol en el menú lateral de forma fluida
+// Control estricto de visibilidad por rol en el menú lateral
 function aplicarPermisosRol() {
   if (esSuperAdmin()) {
     document.querySelectorAll("aside .sidebar-section-item").forEach(el => el.classList.remove("hidden"));
@@ -561,13 +560,11 @@ function aplicarPermisosRol() {
   const bloqueCompras = document.getElementById("bloque-menu-compras");
   const bloqueTarjetas = document.getElementById("bloque-menu-tarjetas");
 
-  // Ocultar todos los bloques por defecto
   if (bloqueEntregas) bloqueEntregas.classList.add("hidden");
   if (bloqueProd) bloqueProd.classList.add("hidden");
   if (bloqueCompras) bloqueCompras.classList.add("hidden");
   if (bloqueTarjetas) bloqueTarjetas.classList.add("hidden");
 
-  // Mostrar según el rol solicitado:
   if (rol.includes("Desarrollo")) {
     if (bloqueEntregas) bloqueEntregas.classList.remove("hidden");
     if (bloqueTarjetas) bloqueTarjetas.classList.remove("hidden");
@@ -887,6 +884,8 @@ window.exportarExcelProduccion = () => {
 
 window.imprimirSemanaProduccion = () => {
   const fSem = document.getElementById("prod-filter-semana")?.value || "Todas las Semanas";
+  const fTaller = document.getElementById("prod-filter-taller")?.value || "";
+  const tituloPeriodo = fTaller ? `Taller ${fTaller} (Todas las Semanas)` : fSem;
   const kpiTotales = document.getElementById("prod-total-pares-kpi")?.textContent || "";
   const matrizHTML = document.getElementById("tabla-export-excel")?.outerHTML || "";
   
@@ -919,7 +918,7 @@ window.imprimirSemanaProduccion = () => {
     <body>
       <div class="print-header">
         <h1>Bata Bolivia - Work Planner de Producción</h1>
-        <p>Período: <strong>${fSem}</strong> | Total Registrado: <strong>${kpiTotales}</strong> | Fecha de Emisión: ${new Date().toLocaleDateString("es-BO")}</p>
+        <p>Período: <strong>${tituloPeriodo}</strong> | Total Registrado: <strong>${kpiTotales}</strong> | Fecha de Emisión: ${new Date().toLocaleDateString("es-BO")}</p>
       </div>
       <div>
         ${matrizHTML}
@@ -954,14 +953,14 @@ function renderProduccionView() {
   }
 
   let filtrados = lotesProduccion.filter(l => {
-    // Si se selecciona un taller específico, se ignoran las semanas ("sin importar las semanas")
+    // Si se filtra por taller específico, ignora el filtro de semana
     const semMatch = fTaller ? true : (!fSem || (l.semana || "") === fSem);
     const proyMatch = !fProy || (l.proyecto || "").toLowerCase().includes(fProy) || (l.plan || "").toLowerCase().includes(fProy) || (l.articulo || "").toLowerCase().includes(fProy);
     const linMatch = !fTaller || String(l.linea || "") === String(fTaller);
     return semMatch && proyMatch && linMatch;
   });
 
-  // KPIs (Calculados sobre los registros filtrados por semana y sección)
+  // KPIs
   let totCortado = 0, totAparado = 0, totArmado = 0, totInyeccion = 0, totEntregado = 0;
   filtrados.forEach(l => {
     const p = parseInt(l.pares) || 0;
@@ -982,8 +981,8 @@ function renderProduccionView() {
 
   const elTotKpi = document.getElementById("prod-total-pares-kpi");
   if (elTotKpi) {
-    const textoSemanaLabel = fSem ? `(${fSem})` : "(Todas las Semanas)";
-    elTotKpi.textContent = `${grandTotal.toLocaleString()} Pares Totales ${textoSemanaLabel}`;
+    const textoPeriodoLabel = fTaller ? `(Taller ${fTaller} - Todas las Semanas)` : (fSem ? `(${fSem})` : "(Todas las Semanas)");
+    elTotKpi.textContent = `${grandTotal.toLocaleString()} Pares Totales ${textoPeriodoLabel}`;
   }
 
   setKpi("kpi-cortado", "bar-cortado", totCortado);
@@ -992,7 +991,7 @@ function renderProduccionView() {
   setKpi("kpi-inyeccion", "bar-inyeccion", totInyeccion);
   setKpi("kpi-entregado", "bar-entregado", totEntregado);
 
-  const seccionesDisponibles = fLin ? [fLin] : ["330", "331", "332", "251", "252", "254"];
+  const seccionesDisponibles = fTaller ? [fTaller] : ["330", "331", "332", "251", "252", "254"];
   const diasSemana = ["LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES"];
 
   let html = "";
@@ -1649,7 +1648,6 @@ function renderTarjetasPreview() {
       </div>
     `;
 
-    // Módulo de Firmas ajustado con el bloque superior bajado exactamente 3 mm adicionales (padding-top: 22px)
     const moduloFirmas = `
       <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:2px 4px; font-size:5.5px; ${tarj.esCorte ? '' : 'border-right:1px solid #000;'}">
         <div style="font-size:7px; font-weight:900; text-align:center; color:#000; text-transform:uppercase; border-bottom:1px solid #000; padding-bottom:1px;">
