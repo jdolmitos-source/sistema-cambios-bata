@@ -631,7 +631,7 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// Navegación
+// Navegación de Vistas y Menú
 const viewCambios = document.getElementById("view-cambios");
 const viewInforme = document.getElementById("view-informe");
 const viewEntregas = document.getElementById("view-entregas");
@@ -751,6 +751,46 @@ window.cambiarSubmenuEntrega = (categoria) => {
   resetMenuStyles();
   viewEntregas?.classList.remove("hidden");
   categoriaEntregaActiva = categoria;
+
+  const titulo = document.getElementById("entregas-vista-titulo");
+  const subtitulo = document.getElementById("entregas-vista-subtitulo");
+  const thFoto = document.getElementById("th-ent-foto");
+  const thArt = document.getElementById("th-ent-art");
+  const labelThProy = document.getElementById("label-th-proy");
+  const btnTextEntrega = document.getElementById("btn-text-nueva-entrega");
+
+  if (categoria === "todas") {
+    if (menuBtnEntregasTodas) menuBtnEntregasTodas.className = CLASE_ACTIVO_PASTILLA;
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-truck-ramp-box"></i><span>Control de Entregas (Todas)</span>`;
+    if (subtitulo) subtitulo.textContent = "Visualizador consolidado de todas las entregas físicas a departamentos.";
+    if (thFoto) thFoto.classList.remove("hidden");
+    if (thArt) thArt.classList.remove("hidden");
+    if (labelThProy) labelThProy.textContent = "Proyecto";
+    if (btnTextEntrega) btnTextEntrega.textContent = "Registrar Entrega";
+  } else if (categoria === "MATERIALES") {
+    const btn = document.getElementById("sub-btn-MATERIALES");
+    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
+    if (titulo) titulo.innerHTML = `<i class="fa-solid fa-boxes-packing text-blue-600"></i><span>Entrega de Materiales</span>`;
+    if (thFoto) thFoto.classList.add("hidden");
+    if (thArt) thArt.classList.add("hidden");
+    if (labelThProy) labelThProy.textContent = "Nombre del Material";
+  } else if (categoria === "GUÍA DE PRODUCCIÓN") {
+    const btn = document.getElementById("sub-btn-GUIA");
+    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
+  } else if (categoria === "CORTE") {
+    const btn = document.getElementById("sub-btn-CORTE");
+    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
+  } else if (categoria === "MUESTRA DEFINITIVA") {
+    const btn = document.getElementById("sub-btn-MUESTRA");
+    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
+  } else if (categoria === "HOJA DE DESBASTE") {
+    const btn = document.getElementById("sub-btn-DESBASTE");
+    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
+  } else if (categoria === "TIZADORES") {
+    const btn = document.getElementById("sub-btn-TIZADORES");
+    if (btn) btn.className = CLASE_ACTIVO_SUB_PASTILLA;
+  }
+
   renderTablaEntregas();
 };
 
@@ -807,7 +847,6 @@ window.imprimirSemanaProduccion = () => {
 function renderProduccionView() {
   const table = document.getElementById("tabla-matriz-produccion");
   if (!table) return;
-  // render estándar producción
 }
 
 function escucharEntregas() {
@@ -821,7 +860,6 @@ function escucharEntregas() {
 function renderTablaEntregas() {
   const tbody = document.getElementById("table-entregas-body");
   if (!tbody) return;
-  tbody.innerHTML = "";
 }
 
 function escucharCambios() {
