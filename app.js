@@ -636,6 +636,24 @@ const viewProcurement = document.getElementById("view-procurement");
 const viewTarjetas = document.getElementById("view-tarjetas");
 const viewUsuarios = document.getElementById("view-usuarios");
 
+// Navegación para Proyectos y Tickets
+const viewProyectos = document.getElementById("view-proyectos");
+const menuBtnProyectos = document.getElementById("menu-btn-proyectos");
+
+safeClick("menu-btn-proyectos", () => {
+  resetMenuStyles();
+  viewProyectos?.classList.remove("hidden");
+  if (menuBtnProyectos) menuBtnProyectos.className = CLASE_ACTIVO_PASTILLA;
+});
+
+window.abrirModalNuevoTicket = () => {
+  document.getElementById("modal-nuevo-ticket")?.classList.remove("hidden");
+};
+
+window.cerrarModalNuevoTicket = () => {
+  document.getElementById("modal-nuevo-ticket")?.classList.add("hidden");
+};
+
 const menuBtnCambios = document.getElementById("menu-btn-cambios");
 const menuBtnInforme = document.getElementById("menu-btn-informe");
 const menuBtnEntregasTodas = document.getElementById("menu-btn-entregas-todas");
