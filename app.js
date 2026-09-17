@@ -44,6 +44,7 @@ let entregas = [];
 let bloqueosMateriales = [];
 let llegadasMateriales = [];
 let lotesProduccion = [];
+let bitacoraBorrados = [];
 
 let categoriaEntregaActiva = "todas";
 
@@ -208,6 +209,10 @@ window.abrirModalLoteProduccion = () => {
   document.getElementById("modal-nuevo-lote-prod")?.classList.remove("hidden");
 };
 
+window.abrirModalEliminarPlan = () => {
+  document.getElementById("modal-eliminar-plan")?.classList.remove("hidden");
+};
+
 // Inicializador de semanas 01 a 52
 function inicializarSemanas01a52() {
   const selects = [
@@ -363,6 +368,7 @@ const modalReporteLlegadasPrint = document.getElementById("modal-reporte-llegada
 const modalImpresionTarjetas = document.getElementById("modal-impresion-tarjetas");
 const modalNewChange = document.getElementById("modal-new-change");
 const modalNuevoLoteProd = document.getElementById("modal-nuevo-lote-prod");
+const modalEliminarPlan = document.getElementById("modal-eliminar-plan");
 
 safeClick("btn-close-whatsapp-modal", () => document.getElementById("modal-whatsapp")?.classList.add("hidden"));
 safeClick("btn-show-login", () => modalLogin?.classList.remove("hidden"));
@@ -388,6 +394,8 @@ safeClick("modal-btn-close", () => modalNewChange?.classList.add("hidden"));
 safeClick("modal-btn-cancel", () => modalNewChange?.classList.add("hidden"));
 safeClick("close-nuevo-lote-prod", () => modalNuevoLoteProd?.classList.add("hidden"));
 safeClick("cancel-nuevo-lote-prod", () => modalNuevoLoteProd?.classList.add("hidden"));
+safeClick("close-eliminar-plan", () => modalEliminarPlan?.classList.add("hidden"));
+safeClick("cancel-eliminar-plan", () => modalEliminarPlan?.classList.add("hidden"));
 
 safeClick("btn-reporte-entregas-pdf", window.abrirReporteImpresoEntregas);
 safeClick("btn-reporte-entregas-texto", window.abrirResumenTextoEntregas);
@@ -615,6 +623,7 @@ onAuthStateChanged(auth, async (user) => {
     escucharCambios();
     escucharEntregas();
     escucharProduccion();
+    escucharBitacoraBorrados();
     escucharProcurement();
   } else {
     currentUser = null;
@@ -819,6 +828,48 @@ function escucharProduccion() {
   }, (err) => console.log("Aviso Firestore Producción:", err.message));
 }
 
+function escucharBitacoraBorrados() {
+  const q = collection(db, "bitacora_borrados");
+  onSnapshot(q, (snapshot) => {
+    bitacoraBorrados = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    bitacoraBorrados.sort((a, b) => (b.fecha || "").localeCompare(a.fecha || ""));
+    renderBitacoraBorrados();
+  }, (err) => console.log("Aviso Bitácora:", err.message));
+}
+
+function renderBitacoraBorrados() {
+  const container = document.getElementById("bitacora-borrados-container");
+  if (!container) return;
+  if (bitacoraBorrados.length === 0) {
+    container.innerHTML = `<p class="italic text-gray-400">No hay registros de eliminación recientes.</p>`;
+    return;
+  }
+  let html = "";
+  bitacoraBorrados.forEach(b => {
+    html += `<div class="border-b border-gray-100 pb-1 flex justify-between items-center">
+      <span>• Usuario <strong>${b.usuario}</strong> borró el plan <strong>${b.plan}</strong> en fecha ${formatearFecha(b.fecha)}</span>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+window.limpiarBitacoraBorrados = async () => {
+  if (!esSuperAdmin()) {
+    alert("Acceso denegado. Solo el Super Admin puede limpiar la bitácora.");
+    return;
+  }
+  if (confirm("¿Estás seguro de vaciar la bitácora de registros eliminados?")) {
+    try {
+      const snap = await getDocs(collection(db, "bitacora_borrados"));
+      const promises = snap.docs.map(d => deleteDoc(doc(db, "bitacora_borrados", d.id)));
+      await Promise.all(promises);
+      alert("Bitácora limpiada correctamente.");
+    } catch (err) {
+      alert("Error: " + err.message);
+    }
+  }
+};
+
 const formLoteProd = document.getElementById("form-nuevo-lote-prod");
 if (formLoteProd) {
   formLoteProd.onsubmit = async (e) => {
@@ -846,40 +897,61 @@ if (formLoteProd) {
   };
 }
 
+const formEliminarPlan = document.getElementById("form-eliminar-plan");
+if (formEliminarPlan) {
+  formEliminarPlan.onsubmit = async (e) => {
+    e.preventDefault();
+    const codigoPlan = document.getElementById("eliminar-plan-codigo").value.trim();
+    const password = document.getElementById("eliminar-plan-pass").value;
+
+    if (password !== "prod.2026") {
+      alert("Contraseña incorrecta. Autorización denegada.");
+      return;
+    }
+
+    try {
+      const snap = await getDocs(collection(db, "produccion_lotes"));
+      let encontrados = [];
+      snap.forEach(d => {
+        const data = d.data();
+        if (String(data.plan).trim().toLowerCase() === codigoPlan.toLowerCase()) {
+          encontrados.push({ id: d.id, semana: data.semana });
+        }
+      });
+
+      if (encontrados.length === 0) {
+        alert(`No se encontró ningún lote con el número de plan "${codigoPlan}".`);
+        return;
+      }
+
+      if (confirm(`Se encontraron ${encontrados.length} registros con el plan "${codigoPlan}". ¿Proceder con la eliminación?`)) {
+        const promises = encontrados.map(item => deleteDoc(doc(db, "produccion_lotes", item.id)));
+        await Promise.all(promises);
+
+        // Registrar en bitácora
+        await addDoc(collection(db, "bitacora_borrados"), {
+          usuario: (userData && userData.nombre) || currentUser?.email || "Usuario",
+          plan: codigoPlan,
+          fecha: new Date().toISOString()
+        });
+
+        formEliminarPlan.reset();
+        modalEliminarPlan.classList.add("hidden");
+        alert(`Plan "${codigoPlan}" eliminado correctamente.`);
+        renderProduccionView();
+      }
+    } catch (err) {
+      alert("Error al eliminar plan: " + err.message);
+    }
+  };
+}
+
 window.actualizarEstadoDiaLote = async (id, nuevoEstado) => {
   if (!id) return;
   await updateDoc(doc(db, "produccion_lotes", id), {
     estado: nuevoEstado,
     fechaActualizacion: new Date().toISOString()
   });
-};
-
-window.eliminarTodosRegistrosProduccion = async () => {
-  if (confirm("⚠️ ¿Estás seguro de eliminar TODOS los registros de producción para empezar de 0?")) {
-    try {
-      const snap = await getDocs(collection(db, "produccion_lotes"));
-      const promises = snap.docs.map(d => deleteDoc(doc(db, "produccion_lotes", d.id)));
-      await Promise.all(promises);
-      alert("Todos los registros de producción han sido eliminados.");
-      renderProduccionView();
-    } catch (err) {
-      alert("Error: " + err.message);
-    }
-  }
-};
-
-window.exportarExcelProduccion = () => {
-  const tabla = document.getElementById("tabla-export-excel");
-  if (!tabla) return;
-  let html = tabla.outerHTML;
-  let blob = new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel' });
-  let url = URL.createObjectURL(blob);
-  let a = document.createElement('a');
-  a.href = url;
-  a.download = `Work_Planner_Produccion_${new Date().toISOString().slice(0,10)}.xls`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
 };
 
 window.imprimirSemanaProduccion = () => {
@@ -936,7 +1008,6 @@ window.imprimirSemanaProduccion = () => {
 
 function renderProduccionView() {
   const table = document.getElementById("tabla-matriz-produccion");
-  const empty = document.getElementById("produccion-empty-state");
   const labelSemanaGrande = document.getElementById("label-semana-grande");
   if (!table) return;
 
@@ -953,7 +1024,6 @@ function renderProduccionView() {
   }
 
   let filtrados = lotesProduccion.filter(l => {
-    // Si se filtra por taller específico, ignora el filtro de semana
     const semMatch = fTaller ? true : (!fSem || (l.semana || "") === fSem);
     const proyMatch = !fProy || (l.proyecto || "").toLowerCase().includes(fProy) || (l.plan || "").toLowerCase().includes(fProy) || (l.articulo || "").toLowerCase().includes(fProy);
     const linMatch = !fTaller || String(l.linea || "") === String(fTaller);
@@ -999,79 +1069,102 @@ function renderProduccionView() {
 
   seccionesDisponibles.forEach(seccion => {
     const lotesSeccion = filtrados.filter(l => String(l.linea) === String(seccion));
-    const planesUnicos = {};
+    
+    // Agrupar por Taller + Semana para crear bloques independientes si hay varias semanas en el mismo taller
+    const semanasEnSeccion = {};
     lotesSeccion.forEach(l => {
-      const pKey = l.plan || l.proyecto;
-      if (!planesUnicos[pKey]) {
-        planesUnicos[pKey] = { plan: l.plan, articulo: l.articulo, proyecto: l.proyecto, dias: {} };
-      }
-      planesUnicos[pKey].dias[l.dia] = l;
+      const sem = l.semana || "Sin Semana";
+      if (!semanasEnSeccion[sem]) semanasEnSeccion[sem] = [];
+      semanasEnSeccion[sem].push(l);
     });
 
-    const listaPlanes = Object.values(planesUnicos);
-    let sumaParesSeccion = 0;
+    const listaSemanas = Object.keys(semanasEnSeccion).sort();
 
-    for (let i = 0; i < 6; i++) {
-      const datosPlan = listaPlanes[i] || null;
-      let totalFila = 0;
-      rowIndexGlobal++;
-      const colorBg = rowIndexGlobal % 2 === 0 ? 'bg-white' : 'bg-slate-50';
-
-      html += `<tr class="${colorBg} border-b border-gray-300 text-center">`;
-
-      if (i === 0) {
-        html += `<td rowspan="6" class="p-2 font-black font-mono border border-gray-300 bg-gray-100 text-gray-900 align-middle text-sm">${seccion}</td>`;
-      }
-
-      diasSemana.forEach(dia => {
-        const loteDia = datosPlan && datosPlan.dias ? datosPlan.dias[dia] : null;
-        if (loteDia) {
-          const p = parseInt(loteDia.pares) || 0;
-          totalFila += p;
-          sumaParesSeccion += p;
-          let colorEstado = 'text-amber-700 bg-amber-50 border-amber-200';
-          if (loteDia.estado === 'APARADO') colorEstado = 'text-blue-700 bg-blue-50 border-blue-200';
-          else if (loteDia.estado === 'ARMADO') colorEstado = 'text-purple-700 bg-purple-50 border-purple-200';
-          else if (loteDia.estado === 'INYECCIÓN') colorEstado = 'text-orange-700 bg-orange-50 border-orange-200';
-          else if (loteDia.estado === 'ENTREGADO') colorEstado = 'text-green-700 bg-green-50 border-green-200';
-
-          html += `
-            <td class="p-1 border border-gray-300 font-mono text-[10px] font-bold text-red-600">${loteDia.plan || '—'}</td>
-            <td class="p-1 border border-gray-300 font-mono text-[10px]">${loteDia.articulo || '—'}</td>
-            <td class="p-1 border border-gray-300 font-bold text-[10px] truncate max-w-[65px]">${loteDia.proyecto || '—'}</td>
-            <td class="p-1 border border-gray-300 font-black text-cyan-900 bg-cyan-50/30">${p.toLocaleString()}</td>
-            <td class="p-1 border border-gray-300">
-              <select onchange="window.actualizarEstadoDiaLote('${loteDia.id}', this.value)" class="text-[10px] font-bold rounded px-1 py-0.5 border ${colorEstado}">
-                <option value="CORTADO" ${loteDia.estado === 'CORTADO' ? 'selected' : ''}>CORTADO</option>
-                <option value="APARADO" ${loteDia.estado === 'APARADO' ? 'selected' : ''}>APARADO</option>
-                <option value="ARMADO" ${loteDia.estado === 'ARMADO' ? 'selected' : ''}>ARMADO</option>
-                <option value="INYECCIÓN" ${loteDia.estado === 'INYECCIÓN' ? 'selected' : ''}>INYECCIÓN</option>
-                <option value="ENTREGADO" ${loteDia.estado === 'ENTREGADO' ? 'selected' : ''}>ENTREGADO</option>
-              </select>
-            </td>
-          `;
-        } else {
-          html += `
-            <td class="p-1 border border-gray-300 text-gray-300">—</td>
-            <td class="p-1 border border-gray-300 text-gray-300">—</td>
-            <td class="p-1 border border-gray-300 text-gray-300">—</td>
-            <td class="p-1 border border-gray-300 text-gray-300">—</td>
-            <td class="p-1 border border-gray-300 text-gray-300">—</td>
-          `;
-        }
-      });
-
-      html += `<td class="p-2 border border-gray-300 font-black text-xs bg-gray-100 text-[#D61B28] align-middle">${totalFila > 0 ? totalFila.toLocaleString() : '—'}</td>`;
-      html += `</tr>`;
+    if (listaSemanas.length === 0) {
+      // Si no hay lotes para esta sección, mostrar al menos un bloque vacío estándar
+      listaSemanas.push(fSem || "Semana Actual");
+      semanasEnSeccion[listaSemanas[0]] = [];
     }
 
-    // Fila de Subtotal por Sección
-    html += `
-      <tr class="bg-gray-200 font-black text-[11px] text-gray-800 border-b-2 border-gray-400 text-center">
-        <td colspan="26" class="p-1.5 text-right pr-4">SUBTOTAL SECCIÓN ${seccion}:</td>
-        <td class="p-1.5 border border-gray-300 text-[#D61B28]">${sumaParesSeccion > 0 ? sumaParesSeccion.toLocaleString() : '0'}</td>
-      </tr>
-    `;
+    listaSemanas.forEach(semKey => {
+      const lotesSemana = semanasEnSeccion[semKey];
+      const planesUnicos = {};
+      lotesSemana.forEach(l => {
+        const pKey = l.plan || l.proyecto;
+        if (!planesUnicos[pKey]) {
+          planesUnicos[pKey] = { plan: l.plan, articulo: l.articulo, proyecto: l.proyecto, dias: {} };
+        }
+        planesUnicos[pKey].dias[l.dia] = l;
+      });
+
+      const listaPlanes = Object.values(planesUnicos);
+      let sumaParesBloque = 0;
+
+      for (let i = 0; i < 6; i++) {
+        const datosPlan = listaPlanes[i] || null;
+        let totalFila = 0;
+        rowIndexGlobal++;
+        const colorBg = rowIndexGlobal % 2 === 0 ? 'bg-white' : 'bg-slate-50';
+
+        html += `<tr class="${colorBg} border-b border-gray-300 text-center">`;
+
+        if (i === 0) {
+          html += `<td rowspan="6" class="p-2 font-black font-mono border border-gray-300 bg-gray-100 text-gray-900 align-middle text-xs leading-tight">
+            <span class="text-red-600 block text-sm font-black">${seccion}</span>
+            <span class="text-[10px] text-gray-500 font-semibold">${semKey}</span>
+          </td>`;
+        }
+
+        diasSemana.forEach(dia => {
+          const loteDia = datosPlan && datosPlan.dias ? datosPlan.dias[dia] : null;
+          if (loteDia) {
+            const p = parseInt(loteDia.pares) || 0;
+            totalFila += p;
+            sumaParesBloque += p;
+            let colorEstado = 'text-amber-700 bg-amber-50 border-amber-200';
+            if (loteDia.estado === 'APARADO') colorEstado = 'text-blue-700 bg-blue-50 border-blue-200';
+            else if (loteDia.estado === 'ARMADO') colorEstado = 'text-purple-700 bg-purple-50 border-purple-200';
+            else if (loteDia.estado === 'INYECCIÓN') colorEstado = 'text-orange-700 bg-orange-50 border-orange-200';
+            else if (loteDia.estado === 'ENTREGADO') colorEstado = 'text-green-700 bg-green-50 border-green-200';
+
+            html += `
+              <td class="p-1 border border-gray-300 font-mono text-[10px] font-bold text-red-600">${loteDia.plan || '—'}</td>
+              <td class="p-1 border border-gray-300 font-mono text-[10px]">${loteDia.articulo || '—'}</td>
+              <td class="p-1 border border-gray-300 font-bold text-[10px] truncate max-w-[65px]">${loteDia.proyecto || '—'}</td>
+              <td class="p-1 border border-gray-300 font-black text-cyan-900 bg-cyan-50/30">${p.toLocaleString()}</td>
+              <td class="p-1 border border-gray-300">
+                <select onchange="window.actualizarEstadoDiaLote('${loteDia.id}', this.value)" class="text-[10px] font-bold rounded px-1 py-0.5 border ${colorEstado}">
+                  <option value="CORTADO" ${loteDia.estado === 'CORTADO' ? 'selected' : ''}>CORTADO</option>
+                  <option value="APARADO" ${loteDia.estado === 'APARADO' ? 'selected' : ''}>APARADO</option>
+                  <option value="ARMADO" ${loteDia.estado === 'ARMADO' ? 'selected' : ''}>ARMADO</option>
+                  <option value="INYECCIÓN" ${loteDia.estado === 'INYECCIÓN' ? 'selected' : ''}>INYECCIÓN</option>
+                  <option value="ENTREGADO" ${loteDia.estado === 'ENTREGADO' ? 'selected' : ''}>ENTREGADO</option>
+                </select>
+              </td>
+            `;
+          } else {
+            html += `
+              <td class="p-1 border border-gray-300 text-gray-300">—</td>
+              <td class="p-1 border border-gray-300 text-gray-300">—</td>
+              <td class="p-1 border border-gray-300 text-gray-300">—</td>
+              <td class="p-1 border border-gray-300 text-gray-300">—</td>
+              <td class="p-1 border border-gray-300 text-gray-300">—</td>
+            `;
+          }
+        });
+
+        html += `<td class="p-2 border border-gray-300 font-black text-xs bg-gray-100 text-[#D61B28] align-middle">${totalFila > 0 ? totalFila.toLocaleString() : '—'}</td>`;
+        html += `</tr>`;
+      }
+
+      // Fila de Subtotal por Bloque (Sección + Semana)
+      html += `
+        <tr class="bg-gray-200 font-black text-[11px] text-gray-800 border-b-2 border-gray-400 text-center">
+          <td colspan="26" class="p-1.5 text-right pr-4">SUBTOTAL ${seccion} (${semKey}):</td>
+          <td class="p-1.5 border border-gray-300 text-[#D61B28]">${sumaParesBloque > 0 ? sumaParesBloque.toLocaleString() : '0'}</td>
+        </tr>
+      `;
+    });
   });
 
   table.innerHTML = html;
