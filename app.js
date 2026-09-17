@@ -928,7 +928,6 @@ if (formEliminarPlan) {
         const promises = encontrados.map(item => deleteDoc(doc(db, "produccion_lotes", item.id)));
         await Promise.all(promises);
 
-        // Registrar en bitácora
         await addDoc(collection(db, "bitacora_borrados"), {
           usuario: (userData && userData.nombre) || currentUser?.email || "Usuario",
           plan: codigoPlan,
@@ -1070,7 +1069,6 @@ function renderProduccionView() {
   seccionesDisponibles.forEach(seccion => {
     const lotesSeccion = filtrados.filter(l => String(l.linea) === String(seccion));
     
-    // Agrupar por Taller + Semana para crear bloques independientes si hay varias semanas en el mismo taller
     const semanasEnSeccion = {};
     lotesSeccion.forEach(l => {
       const sem = l.semana || "Sin Semana";
@@ -1081,7 +1079,6 @@ function renderProduccionView() {
     const listaSemanas = Object.keys(semanasEnSeccion).sort();
 
     if (listaSemanas.length === 0) {
-      // Si no hay lotes para esta sección, mostrar al menos un bloque vacío estándar
       listaSemanas.push(fSem || "Semana Actual");
       semanasEnSeccion[listaSemanas[0]] = [];
     }
@@ -1157,7 +1154,6 @@ function renderProduccionView() {
         html += `</tr>`;
       }
 
-      // Fila de Subtotal por Bloque (Sección + Semana)
       html += `
         <tr class="bg-gray-200 font-black text-[11px] text-gray-800 border-b-2 border-gray-400 text-center">
           <td colspan="26" class="p-1.5 text-right pr-4">SUBTOTAL ${seccion} (${semKey}):</td>
@@ -1290,6 +1286,7 @@ function escucharCambios() {
     solicitudes = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
     solicitudes.sort((a, b) => (b.fechaCreacion || "").localeCompare(a.fechaCreacion || ""));
     renderTabla();
+    renderAdminTablas();
   });
 }
 
@@ -1389,7 +1386,7 @@ window.confirmarValidacionCostos = async (id, proyecto, articulo, checkboxElem) 
   }
 };
 
-// Panel Super Admin (Con selector de roles totalmente funcional)
+// Panel Super Admin
 async function cargarPanelSuperAdmin() {
   if (!esSuperAdmin()) return;
   const tbodyUsers = document.getElementById("table-users-body");
@@ -1432,8 +1429,64 @@ async function cargarPanelSuperAdmin() {
         tbodyUsers.appendChild(tr);
       });
     }
+    renderAdminTablas();
   } catch (e) { console.error(e); }
 }
+
+function renderAdminTablas() {
+  if (!esSuperAdmin()) return;
+  const tbodySol = document.getElementById("table-admin-solicitudes-body");
+  const tbodyEnt = document.getElementById("table-admin-entregas-body");
+
+  if (tbodySol) {
+    tbodySol.innerHTML = "";
+    solicitudes.forEach(s => {
+      const tr = document.createElement("tr");
+      tr.className = "border-b hover:bg-gray-50";
+      tr.innerHTML = `
+        <td class="p-3 font-mono font-bold">${s.semana || '—'}</td>
+        <td class="p-3">${formatearFecha(s.fechaCreacion)}</td>
+        <td class="p-3">${s.esMinuta ? 'Minuta' : 'Cambio'}</td>
+        <td class="p-3 font-bold">${s.proyecto}</td>
+        <td class="p-3 font-mono">${s.articulo}</td>
+        <td class="p-3">${s.solicitanteNombre || '—'}</td>
+        <td class="p-3">${s.estado}</td>
+        <td class="p-3 text-center"><button onclick="window.eliminarRegistroAdmin('solicitudes_cambios', '${s.id}')" class="text-red-600 hover:text-red-800 font-bold cursor-pointer"><i class="fa-solid fa-trash"></i></button></td>
+      `;
+      tbodySol.appendChild(tr);
+    });
+  }
+
+  if (tbodyEnt) {
+    tbodyEnt.innerHTML = "";
+    entregas.forEach(en => {
+      const tr = document.createElement("tr");
+      tr.className = "border-b hover:bg-gray-50";
+      tr.innerHTML = `
+        <td class="p-3 font-mono font-bold">${en.semana || '—'}</td>
+        <td class="p-3">${formatearFecha(en.fechaEntrega)}</td>
+        <td class="p-3">${en.tipo}</td>
+        <td class="p-3 font-bold">${en.proyecto}</td>
+        <td class="p-3 font-mono">${en.articulo || '—'}</td>
+        <td class="p-3">${en.destino}</td>
+        <td class="p-3 text-center"><button onclick="window.eliminarRegistroAdmin('entregas_departamentos', '${en.id}')" class="text-red-600 hover:text-red-800 font-bold cursor-pointer"><i class="fa-solid fa-trash"></i></button></td>
+      `;
+      tbodyEnt.appendChild(tr);
+    });
+  }
+}
+
+window.eliminarRegistroAdmin = async (coleccion, id) => {
+  if (confirm("¿Estás seguro de eliminar permanentemente este registro de la base de datos?")) {
+    try {
+      await deleteDoc(doc(db, coleccion, id));
+      alert("Registro eliminado correctamente.");
+      cargarPanelSuperAdmin();
+    } catch (err) {
+      alert("Error: " + err.message);
+    }
+  }
+};
 
 window.cambiarRolUsuario = async (uid, nuevoRol) => {
   try {
@@ -1504,7 +1557,7 @@ function actualizarCamposSegunTipoEntrega() {
   }
 }
 
-// Formulario Entrega
+// Formulario Entrega (Corregido con preventDefault para evitar recargas indeseadas)
 const formEntrega = document.getElementById("form-nueva-entrega");
 if (formEntrega) {
   formEntrega.onsubmit = async (e) => {
@@ -1544,6 +1597,70 @@ if (formEntrega) {
       alert("Entrega registrada con éxito.");
     } catch (err) {
       alert("Error: " + err.message);
+    }
+  };
+}
+
+// Formulario Nuevo Cambio (Corregido con preventDefault riguroso para mantener sesión)
+const formNewChange = document.getElementById("form-new-change");
+if (formNewChange) {
+  formNewChange.onsubmit = async (e) => {
+    e.preventDefault();
+    const semana = document.getElementById("change-semana").value.trim();
+    const proyecto = document.getElementById("change-project").value.trim();
+    const articulo = document.getElementById("change-article").value.trim();
+    const boxCambio = document.getElementById("change-box").value.trim();
+    const photoFile = document.getElementById("change-photo").files[0];
+    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
+
+    try {
+      await addDoc(collection(db, "solicitudes_cambios"), {
+        semana, proyecto, articulo, boxCambio,
+        foto: fotoBase64,
+        estado: "En proceso",
+        solicitanteNombre: (userData && userData.nombre) || "Usuario",
+        solicitanteEmail: currentUser?.email || "",
+        fechaCreacion: new Date().toISOString(),
+        validadoCostos: false,
+        esMinuta: false
+      });
+      formNewChange.reset();
+      modalNewChange?.classList.add("hidden");
+      alert("Solicitud de cambio registrada correctamente.");
+    } catch (err) {
+      alert("Error al registrar solicitud: " + err.message);
+    }
+  };
+}
+
+// Formulario Minuta
+const formMinuta = document.getElementById("form-minuta");
+if (formMinuta) {
+  formMinuta.onsubmit = async (e) => {
+    e.preventDefault();
+    const semana = document.getElementById("minuta-semana").value.trim();
+    const proyecto = document.getElementById("minuta-proyecto").value.trim();
+    const articulo = document.getElementById("minuta-articulo").value.trim();
+    const boxCambio = document.getElementById("minuta-box").value.trim();
+    const photoFile = document.getElementById("minuta-photo").files[0];
+    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
+
+    try {
+      await addDoc(collection(db, "solicitudes_cambios"), {
+        semana, proyecto, articulo, boxCambio,
+        foto: fotoBase64,
+        estado: "En proceso",
+        solicitanteNombre: (userData && userData.nombre) || "Jefe de Desarrollo",
+        solicitanteEmail: currentUser?.email || "",
+        fechaCreacion: new Date().toISOString(),
+        validadoCostos: false,
+        esMinuta: true
+      });
+      formMinuta.reset();
+      modalMinuta?.classList.add("hidden");
+      alert("Minuta de plan piloto publicada correctamente.");
+    } catch (err) {
+      alert("Error al publicar minuta: " + err.message);
     }
   };
 }
