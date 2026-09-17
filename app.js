@@ -946,13 +946,18 @@ function renderProduccionView() {
   const fLin = document.getElementById("prod-filter-linea")?.value || "";
 
   if (labelSemanaGrande) {
-    labelSemanaGrande.textContent = fSem ? fSem.toUpperCase() : "TODAS LAS SEMANAS";
+    if (fTaller) {
+      labelSemanaGrande.textContent = `TALLER ${fTaller} (TODAS LAS SEMANAS)`;
+    } else {
+      labelSemanaGrande.textContent = fSem ? fSem.toUpperCase() : "TODAS LAS SEMANAS";
+    }
   }
 
   let filtrados = lotesProduccion.filter(l => {
-    const semMatch = !fSem || (l.semana || "") === fSem;
+    // Si se selecciona un taller específico, se ignoran las semanas ("sin importar las semanas")
+    const semMatch = fTaller ? true : (!fSem || (l.semana || "") === fSem);
     const proyMatch = !fProy || (l.proyecto || "").toLowerCase().includes(fProy) || (l.plan || "").toLowerCase().includes(fProy) || (l.articulo || "").toLowerCase().includes(fProy);
-    const linMatch = !fLin || String(l.linea || "") === String(fLin);
+    const linMatch = !fTaller || String(l.linea || "") === String(fTaller);
     return semMatch && proyMatch && linMatch;
   });
 
