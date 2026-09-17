@@ -118,7 +118,7 @@ function esDesarrollo() {
   return userData && (userData.rol || "").includes("Desarrollo");
 }
 
-// Modal WhatsApp
+// Modal WhatsApp Dinámico y Completo
 async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro = null }) {
   const modalWA = document.getElementById("modal-whatsapp");
   const listContainer = document.getElementById("whatsapp-contacts-list");
@@ -139,7 +139,7 @@ async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro =
         (rolFiltro === "Desarrollo de producto - Técnico" && (u.rol || "").includes("Técnico")) ||
         (rolFiltro === "Compras" && ((u.rol || "").includes("Compras")));
 
-      if (u.celular && coincideRol) {
+      if (u.celular) {
         count++;
         const item = document.createElement("a");
         item.href = `https://wa.me/591${u.celular}?text=${encodedMsg}`;
@@ -148,7 +148,7 @@ async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro =
         item.innerHTML = `
           <div>
             <span class="font-bold">${u.nombre}</span>
-            <span class="text-[10px] text-gray-400 block">${u.rol} - +591 ${u.celular}</span>
+            <span class="text-[10px] text-gray-400 block">${u.rol || 'Usuario'} - +591 ${u.celular}</span>
           </div>
           <span class="bg-[#25D366] text-white px-2.5 py-1 rounded-lg font-bold text-[10px] flex items-center space-x-1">
             <i class="fa-brands fa-whatsapp"></i>
@@ -160,7 +160,7 @@ async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro =
     });
 
     if (count === 0) {
-      listContainer.innerHTML = `<p class="p-3 text-center text-gray-400 text-xs">No hay contactos registrados con el rol de ${rolFiltro || 'ese departamento'}.</p>`;
+      listContainer.innerHTML = `<p class="p-3 text-center text-gray-400 text-xs">No hay usuarios registrados con número de celular.</p>`;
     }
 
     modalWA.classList.remove("hidden");
@@ -540,7 +540,8 @@ function actualizarHeaderUsuario() {
     }
   }
 
-  const esJefe = userData && userData.rol === "Desarrollo de producto - Jefe";
+  const rolActual = (userData && userData.rol) || "";
+  const esJefe = rolActual === "Desarrollo de producto - Jefe" || rolActual.includes("Jefe");
   const btnMinutaHeader = document.getElementById("btn-open-minuta-header");
   if (btnMinutaHeader) {
     if (esJefe || esAdmin) {
@@ -1402,6 +1403,7 @@ async function cargarPanelSuperAdmin() {
 
         const rolesDisponibles = [
           "Desarrollo de producto", 
+          "Desarrollo de producto - Jefe",
           "Compras", 
           "Planeamiento", 
           "Producción", 
@@ -1557,7 +1559,7 @@ function actualizarCamposSegunTipoEntrega() {
   }
 }
 
-// Formulario Entrega (Corregido con preventDefault para evitar recargas indeseadas)
+// Formulario Entrega con llamada automática a WhatsApp
 const formEntrega = document.getElementById("form-nueva-entrega");
 if (formEntrega) {
   formEntrega.onsubmit = async (e) => {
@@ -1594,14 +1596,20 @@ if (formEntrega) {
       }
       formEntrega.reset();
       modalNuevaEntrega?.classList.add("hidden");
-      alert("Entrega registrada con éxito.");
+      
+      // Abrir WhatsApp con mensaje especial
+      abrirModalWhatsApp({
+        titulo: `Notificar Entrega (${tipo})`,
+        subtitulo: `Proyecto: ${proyecto} (Semana ${semana})`,
+        mensajeTexto: `📦 *NUEVA ENTREGA EN BATA BOLIVIA*\n• Elemento: ${tipo}\n• Proyecto: ${proyecto}\n• Semana: ${semana}\n• Entregado por: ${(userData && userData.nombre) || 'Usuario'}`
+      });
     } catch (err) {
       alert("Error: " + err.message);
     }
   };
 }
 
-// Formulario Nuevo Cambio (Corregido con preventDefault riguroso para mantener sesión)
+// Formulario Nuevo Cambio con llamada automática a WhatsApp
 const formNewChange = document.getElementById("form-new-change");
 if (formNewChange) {
   formNewChange.onsubmit = async (e) => {
@@ -1626,14 +1634,19 @@ if (formNewChange) {
       });
       formNewChange.reset();
       modalNewChange?.classList.add("hidden");
-      alert("Solicitud de cambio registrada correctamente.");
+      
+      abrirModalWhatsApp({
+        titulo: "Notificar Solicitud de Cambio",
+        subtitulo: `Proyecto: ${proyecto} | Art: ${articulo}`,
+        mensajeTexto: `🔄 *NUEVA SOLICITUD DE CAMBIO - BATA*\n• Proyecto: ${proyecto}\n• Artículo: ${articulo}\n• Semana: ${semana}\n• Detalle: ${boxCambio}`
+      });
     } catch (err) {
       alert("Error al registrar solicitud: " + err.message);
     }
   };
 }
 
-// Formulario Minuta
+// Formulario Minuta con llamada automática a WhatsApp
 const formMinuta = document.getElementById("form-minuta");
 if (formMinuta) {
   formMinuta.onsubmit = async (e) => {
@@ -1658,7 +1671,12 @@ if (formMinuta) {
       });
       formMinuta.reset();
       modalMinuta?.classList.add("hidden");
-      alert("Minuta de plan piloto publicada correctamente.");
+      
+      abrirModalWhatsApp({
+        titulo: "Notificar Minuta / Plan Piloto",
+        subtitulo: `Proyecto: ${proyecto} (Jefatura de Desarrollo)`,
+        mensajeTexto: `⚡ *MINUTA / PLAN PILOTO - BATA BOLIVIA*\n• Proyecto: ${proyecto}\n• Artículo: ${articulo}\n• Semana: ${semana}\n• Instrucciones: ${boxCambio}`
+      });
     } catch (err) {
       alert("Error al publicar minuta: " + err.message);
     }
