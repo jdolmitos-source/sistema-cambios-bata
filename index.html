@@ -316,6 +316,15 @@
               <span>Tarjetas de Muestra (PD)</span>
             </button>
           </div>
+
+          <!-- NUEVO BLOQUE: GESTOR DE SOLICITUDES / HELPDESK -->
+          <div id="bloque-menu-solicitudes" class="sidebar-section-item pt-3 border-t border-white/20 space-y-1">
+            <div class="px-3 text-[10px] font-black text-white/70 uppercase tracking-widest mb-1.5">Comunicación de Planta</div>
+            <button type="button" id="menu-btn-solicitudes" class="sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white transition cursor-pointer">
+              <i class="fa-solid fa-headset text-sm text-amber-300"></i>
+              <span>HelpDesk / Solicitudes</span>
+            </button>
+          </div>
         </div>
 
         <!-- BOTÓN SUPER ADMIN ABAJO -->
@@ -372,6 +381,48 @@
             <div id="table-empty-state" class="hidden p-8 text-center text-gray-400 text-xs">
               <i class="fa-regular fa-folder-open text-3xl mb-2"></i>
               <p>No hay solicitudes de cambios registradas.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- VISTA: GESTOR DE SOLICITUDES / HELPDESK INTERDEPARTAMENTAL -->
+        <section id="view-solicitudes" class="hidden space-y-6">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h2 class="text-lg font-bold text-[#D61B28] flex items-center space-x-2">
+                <i class="fa-solid fa-headset text-amber-600"></i>
+                <span>Gestor de Solicitudes y HelpDesk de Planta</span>
+              </h2>
+              <p class="text-xs text-gray-400">Seguimiento de requerimientos entre departamentos con alertas de semáforo automático (>3 días rojo).</p>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button type="button" onclick="window.abrirModalNuevaSolicitudHelpDesk()" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
+                <i class="fa-solid fa-plus"></i>
+                <span>Nueva Solicitud Interdepartamental</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="bg-gray-50/75 border-b border-gray-200 text-gray-600 font-semibold">
+                    <th class="p-3 border-r">Fecha / Hora</th>
+                    <th class="p-3 border-r">De (Remitente)</th>
+                    <th class="p-3 border-r">Para (Destinatario)</th>
+                    <th class="p-3 border-r min-w-[240px]">Box de Pregunta / Requerimiento</th>
+                    <th class="p-3 border-r text-center">Estado (Semáforo)</th>
+                    <th class="p-3 border-r min-w-[240px]">Box de Respuesta</th>
+                    <th class="p-3 text-center">Acción / Cerrar</th>
+                  </tr>
+                </thead>
+                <tbody id="table-solicitudes-helpdesk-body" class="divide-y divide-gray-200"></tbody>
+              </table>
+            </div>
+            <div id="solicitudes-empty-state" class="hidden p-8 text-center text-gray-400 text-xs">
+              <i class="fa-regular fa-comments text-3xl mb-2 text-gray-300"></i>
+              <p>No hay solicitudes interdepartamentales registradas.</p>
             </div>
           </div>
         </section>
@@ -975,6 +1026,43 @@
           </div>
         </section>
       </main>
+    </div>
+  </div>
+
+  <!-- MODAL: NUEVA SOLICITUD INTERDEPARTAMENTAL (HelpDesk) -->
+  <div id="modal-nueva-solicitud-helpdesk" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden text-xs">
+      <div class="bg-[#D61B28] px-6 py-4 flex justify-between items-center text-white">
+        <h3 class="font-bold text-sm flex items-center space-x-2">
+          <i class="fa-solid fa-headset"></i>
+          <span>Crear Solicitud Interdepartamental</span>
+        </h3>
+        <button type="button" id="close-nueva-solicitud-helpdesk" class="text-white hover:text-gray-200 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="form-nueva-solicitud-helpdesk" class="p-6 space-y-3">
+        <div>
+          <label class="block font-bold text-gray-700 mb-1">Dirigido A (Departamento / Área)</label>
+          <select id="helpdesk-destino" required class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white font-bold text-[#D61B28]">
+            <option value="Compras">Compras</option>
+            <option value="Planeamiento">Planeamiento</option>
+            <option value="Producción">Producción</option>
+            <option value="Costos">Costos</option>
+            <option value="Desarrollo de producto">Desarrollo de producto</option>
+            <option value="Almacén">Almacén</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-bold text-gray-700 mb-1">Box de Pregunta / Requerimiento</label>
+          <textarea id="helpdesk-pregunta" rows="4" required placeholder="Ej: ¿Cuándo llega el material badana beige? o ¿Ya están las muestras del proyecto SKATER?" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D61B28]"></textarea>
+        </div>
+        <div class="pt-2 flex justify-end space-x-2">
+          <button type="button" id="cancel-nueva-solicitud-helpdesk" class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg font-bold cursor-pointer">Cancelar</button>
+          <button type="submit" class="px-5 py-2 bg-[#25D366] hover:bg-green-600 text-white rounded-lg font-bold flex items-center space-x-2 shadow cursor-pointer">
+            <i class="fa-brands fa-whatsapp text-sm"></i>
+            <span>Enviar Solicitud y Notificar</span>
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
