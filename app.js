@@ -218,14 +218,23 @@ window.abrirModalEliminarPlan = () => {
 function inicializarSemanas01a52() {
   const selects = [
     document.getElementById("prod-filter-semana"),
-    document.getElementById("lote-semana")
+    document.getElementById("lote-semana"),
+    document.getElementById("filtro-semana-aplica-cambios")
   ];
 
   selects.forEach(sel => {
     if (!sel) return;
     const valorActual = sel.value;
-    const esFiltro = sel.id === "prod-filter-semana";
-    sel.innerHTML = esFiltro ? '<option value="">Todas las Semanas (01-52)</option>' : '';
+    const esFiltroProd = sel.id === "prod-filter-semana";
+    const esFiltroCambios = sel.id === "filtro-semana-aplica-cambios";
+    
+    if (esFiltroProd) {
+      sel.innerHTML = '<option value="">Todas las Semanas (01-52)</option>';
+    } else if (esFiltroCambios) {
+      sel.innerHTML = '<option value="">Todas las Semanas</option>';
+    } else {
+      sel.innerHTML = '';
+    }
 
     for (let i = 1; i <= 52; i++) {
       const numStr = i < 10 ? `0${i}` : `${i}`;
@@ -235,6 +244,71 @@ function inicializarSemanas01a52() {
     if (valorActual) sel.value = valorActual;
   });
 }
+
+// ==================== INFORME / IMPRESIÓN DIRECTA DESDE CAMBIOS ====================
+window.abrirModalInformeResumenCambios = () => {
+  const fSemAplica = document.getElementById("filtro-semana-aplica-cambios")?.value || "";
+  let items = solicitudes;
+  if (fSemAplica) {
+    items = solicitudes.filter(s => (s.semanaAplica || s.semana) === fSemAplica);
+  }
+
+  if (items.length === 0) {
+    alert("No hay registros de cambios para generar el informe con el filtro actual.");
+    return;
+  }
+
+  const contenedor = document.getElementById("reporte-resumen-contenido");
+  if (!contenedor) return;
+
+  let html = `
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse border border-gray-300 text-xs">
+        <thead class="bg-gray-100 font-bold">
+          <tr>
+            <th class="p-2 border text-center w-12">Foto</th>
+            <th class="p-2 border">Sem. Sol.</th>
+            <th class="p-2 border">Sem. Aplica</th>
+            <th class="p-2 border">Proyecto</th>
+            <th class="p-2 border">Artículo</th>
+            <th class="p-2 border">Descripción del Cambio</th>
+            <th class="p-2 border text-center">Estado</th>
+            <th class="p-2 border text-center">Costos</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  items.forEach(it => {
+    const fotoPrint = it.foto 
+      ? `<img src="${it.foto}" style="width: 40px; height: 30px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; margin: auto;">`
+      : `<span style="color: #bbb;">—</span>`;
+
+    html += `
+      <tr class="border-b">
+        <td class="p-1 border text-center">${fotoPrint}</td>
+        <td class="p-2 border font-mono font-bold">${it.semana || '—'}</td>
+        <td class="p-2 border font-mono font-bold text-red-600">${it.semanaAplica || it.semana || '—'}</td>
+        <td class="p-2 border font-bold text-gray-800">${it.proyecto}</td>
+        <td class="p-2 border font-mono">${it.articulo}</td>
+        <td class="p-2 border">${it.boxCambio}</td>
+        <td class="p-2 border text-center font-bold">${it.estado}</td>
+        <td class="p-2 border text-center font-bold ${it.validadoCostos ? 'text-green-600' : 'text-amber-600'}">
+          ${it.validadoCostos ? 'Validado' : 'Pendiente'}
+        </td>
+      </tr>
+    `;
+  });
+
+  html += `
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  contenedor.innerHTML = html;
+  document.getElementById("modal-resumen-reporte")?.classList.remove("hidden");
+};
 
 // ==================== REPORTES DE ENTREGAS ====================
 window.abrirReporteImpresoEntregas = () => {
@@ -578,7 +652,7 @@ function aplicarPermisosRol() {
   if (bloqueProd) bloqueProd.classList.add("hidden");
   if (bloqueCompras) bloqueCompras.classList.add("hidden");
   if (bloqueTarjetas) bloqueTarjetas.classList.add("hidden");
-  if (bloqueSolicitudes) bloqueSolicitudes.classList.remove("hidden"); // Visible para todos para fomentar comunicación
+  if (bloqueSolicitudes) bloqueSolicitudes.classList.remove("hidden");
 
   if (rol.includes("Desarrollo")) {
     if (bloqueEntregas) bloqueEntregas.classList.remove("hidden");
@@ -643,7 +717,6 @@ onAuthStateChanged(auth, async (user) => {
 
 // Navegación
 const viewCambios = document.getElementById("view-cambios");
-const viewInforme = document.getElementById("view-informe");
 const viewEntregas = document.getElementById("view-entregas");
 const viewProduccion = document.getElementById("view-produccion");
 const viewProcurement = document.getElementById("view-procurement");
@@ -652,7 +725,6 @@ const viewUsuarios = document.getElementById("view-usuarios");
 const viewSolicitudes = document.getElementById("view-solicitudes");
 
 const menuBtnCambios = document.getElementById("menu-btn-cambios");
-const menuBtnInforme = document.getElementById("menu-btn-informe");
 const menuBtnEntregasTodas = document.getElementById("menu-btn-entregas-todas");
 const menuBtnProduccion = document.getElementById("menu-btn-produccion");
 const menuBtnProcurement = document.getElementById("menu-btn-procurement");
@@ -666,7 +738,7 @@ const CLASE_ACTIVO_PASTILLA = "sidebar-btn w-full flex items-center space-x-3 px
 const CLASE_ACTIVO_SUB_PASTILLA = "sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-black bg-white text-[#D61B28] shadow-md transition cursor-pointer pl-5 scale-[1.02]";
 
 function resetMenuStyles() {
-  [menuBtnCambios, menuBtnInforme, menuBtnEntregasTodas, menuBtnProduccion, menuBtnProcurement, menuBtnTarjetas, menuBtnUsuarios, menuBtnSolicitudes].forEach(b => {
+  [menuBtnCambios, menuBtnEntregasTodas, menuBtnProduccion, menuBtnProcurement, menuBtnTarjetas, menuBtnUsuarios, menuBtnSolicitudes].forEach(b => {
     if (b) b.className = CLASE_INACTIVO_PRINCIPAL;
   });
 
@@ -675,7 +747,6 @@ function resetMenuStyles() {
   });
 
   viewCambios?.classList.add("hidden");
-  viewInforme?.classList.add("hidden");
   viewEntregas?.classList.add("hidden");
   viewProduccion?.classList.add("hidden");
   viewProcurement?.classList.add("hidden");
@@ -688,16 +759,10 @@ function activarVistaCambios() {
   resetMenuStyles();
   viewCambios?.classList.remove("hidden");
   if (menuBtnCambios) menuBtnCambios.className = CLASE_ACTIVO_PASTILLA;
+  renderTabla();
 }
 
 safeClick("menu-btn-cambios", activarVistaCambios);
-
-safeClick("menu-btn-informe", () => {
-  resetMenuStyles();
-  viewInforme?.classList.remove("hidden");
-  if (menuBtnInforme) menuBtnInforme.className = CLASE_ACTIVO_PASTILLA;
-  renderInformeView();
-});
 
 safeClick("menu-btn-entregas-todas", () => {
   window.cambiarSubmenuEntrega("todas");
@@ -891,7 +956,6 @@ function renderHelpDeskView() {
     const tr = document.createElement("tr");
     tr.className = "hover:bg-gray-50/80 transition border-b border-gray-100";
 
-    // Calcular días transcurridos para el semáforo
     const fechaCreacion = new Date(sol.fechaCreacion);
     const diffDias = (ahora - fechaCreacion) / (1000 * 60 * 60 * 24);
 
@@ -1420,7 +1484,7 @@ window.confirmarRecepcionEntrega = async (id, tipo, proyecto) => {
   }
 };
 
-// Escucha en tiempo real de Solicitudes
+// Escucha en tiempo real de Solicitudes y Cambios
 function escucharCambios() {
   const q = collection(db, "solicitudes_cambios");
   onSnapshot(q, (snapshot) => {
@@ -1443,7 +1507,15 @@ function renderTabla() {
   if (!tbody) return;
   tbody.innerHTML = "";
 
-  if (solicitudes.length === 0) {
+  const fSemAplica = document.getElementById("filtro-semana-aplica-cambios")?.value || "";
+
+  let listaFiltrada = solicitudes.filter(item => {
+    if (!fSemAplica) return true;
+    const semItem = item.semanaAplica || item.semana || "";
+    return semItem === fSemAplica;
+  });
+
+  if (listaFiltrada.length === 0) {
     empty?.classList.remove("hidden");
     return;
   }
@@ -1453,7 +1525,7 @@ function renderTabla() {
   const esDesarrolloUsuario = esDesarrollo() || esAdmin;
   const esCostos = (userData && userData.rol === "Costos") || esAdmin;
 
-  solicitudes.forEach((item) => {
+  listaFiltrada.forEach((item) => {
     const tr = document.createElement("tr");
     tr.className = item.esMinuta ? "bg-amber-50/70 border-b border-amber-200" : "hover:bg-gray-50/80 transition border-b border-gray-100";
 
@@ -1468,7 +1540,7 @@ function renderTabla() {
             <option value="Realizado" ${item.estado === "Realizado" ? "selected" : ""}>Realizado</option>
             <option value="Retrasado" ${item.estado === "Retrasado" ? "selected" : ""}>Retrasado</option>
           </select>
-          <button onclick="window.guardarCambioEstado('${item.id}', '${item.proyecto}', '${item.articulo}', '${item.semana || ''}')" class="bg-gray-100 hover:bg-[#D61B28] hover:text-white text-gray-600 p-1.5 rounded-lg text-xs transition cursor-pointer">
+          <button onclick="window.guardarCambioEstado('${item.id}')" class="bg-gray-100 hover:bg-[#D61B28] hover:text-white text-gray-600 p-1.5 rounded-lg text-xs transition cursor-pointer">
             <i class="fa-solid fa-floppy-disk"></i>
           </button>
         </div>
@@ -1484,13 +1556,14 @@ function renderTabla() {
       if (item.validadoCostos) {
         costosHTML = `<span class="text-green-700 font-bold text-xs"><i class="fa-solid fa-circle-check"></i> Validado</span>`;
       } else {
-        costosHTML = `<input type="checkbox" ${!esCostos ? "disabled" : ""} onchange="window.confirmarValidacionCostos('${item.id}', '${item.proyecto}', '${item.articulo}', this)" class="h-4 w-4 accent-[#D61B28] rounded border-gray-300 cursor-pointer">`;
+        costosHTML = `<input type="checkbox" ${!esCostos ? "disabled" : ""} onchange="window.confirmarValidacionCostos('${item.id}', this)" class="h-4 w-4 accent-[#D61B28] rounded border-gray-300 cursor-pointer">`;
       }
     } else {
       costosHTML = `<input type="checkbox" disabled class="h-4 w-4 text-gray-300 rounded border-gray-200 opacity-40">`;
     }
 
     const fotoHTML = item.foto ? `<img src="${item.foto}" onclick="window.verFotoGrande('${item.foto}', '${item.proyecto}')" class="w-10 h-7 object-cover rounded border cursor-pointer mx-auto">` : '—';
+    const semanaAplicaBadge = `<span class="font-mono font-black text-red-600 bg-red-50 px-2 py-1 rounded border border-red-200 block text-center">${item.semanaAplica || item.semana || '—'}</span>`;
 
     tr.innerHTML = `
       <td class="p-2 border-r text-center">${fotoHTML}</td>
@@ -1502,13 +1575,22 @@ function renderTabla() {
       <td class="p-3.5 border-r">${item.boxCambio}</td>
       <td class="p-3.5 text-center border-r whitespace-nowrap">${estadoHTML}</td>
       <td class="p-3.5 text-center border-r whitespace-nowrap">${fechaRealizadoHTML}</td>
+      <td class="p-3.5 border-r text-center">${semanaAplicaBadge}</td>
       <td class="p-3.5 text-center whitespace-nowrap">${costosHTML}</td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-window.guardarCambioEstado = async (id, proyecto, articulo, semana) => {
+const filtroSemanaAplicaCambios = document.getElementById("filtro-semana-aplica-cambios");
+if (filtroSemanaAplicaCambios) filtroSemanaAplicaCambios.onchange = renderTabla;
+
+safeClick("btn-limpiar-filtro-cambios", () => {
+  if (filtroSemanaAplicaCambios) filtroSemanaAplicaCambios.value = "";
+  renderTabla();
+});
+
+window.guardarCambioEstado = async (id) => {
   const select = document.getElementById(`sel-estado-${id}`);
   if (!select) return;
   const nuevoEstado = select.value;
@@ -1519,8 +1601,8 @@ window.guardarCambioEstado = async (id, proyecto, articulo, semana) => {
   alert("Estado guardado correctamente.");
 };
 
-window.confirmarValidacionCostos = async (id, proyecto, articulo, checkboxElem) => {
-  if (confirm(`¿Validar costos de "${proyecto}"?`)) {
+window.confirmarValidacionCostos = async (id, checkboxElem) => {
+  if (confirm(`¿Validar costos de este cambio?`)) {
     await updateDoc(doc(db, "solicitudes_cambios", id), { validadoCostos: true });
   } else {
     checkboxElem.checked = false;
@@ -1748,12 +1830,13 @@ if (formEntrega) {
   };
 }
 
-// Formulario Nuevo Cambio con llamada automática a WhatsApp
+// Formulario Nuevo Cambio con Semana que Aplica
 const formNewChange = document.getElementById("form-new-change");
 if (formNewChange) {
   formNewChange.onsubmit = async (e) => {
     e.preventDefault();
     const semana = document.getElementById("change-semana").value.trim();
+    const semanaAplica = document.getElementById("change-semana-aplica").value.trim();
     const proyecto = document.getElementById("change-project").value.trim();
     const articulo = document.getElementById("change-article").value.trim();
     const boxCambio = document.getElementById("change-box").value.trim();
@@ -1762,7 +1845,7 @@ if (formNewChange) {
 
     try {
       await addDoc(collection(db, "solicitudes_cambios"), {
-        semana, proyecto, articulo, boxCambio,
+        semana, semanaAplica, proyecto, articulo, boxCambio,
         foto: fotoBase64,
         estado: "En proceso",
         solicitanteNombre: (userData && userData.nombre) || "Usuario",
@@ -1776,8 +1859,8 @@ if (formNewChange) {
       
       abrirModalWhatsApp({
         titulo: "Notificar Solicitud de Cambio",
-        subtitulo: `Proyecto: ${proyecto} | Art: ${articulo}`,
-        mensajeTexto: `🔄 *NUEVA SOLICITUD DE CAMBIO - BATA*\n• Proyecto: ${proyecto}\n• Artículo: ${articulo}\n• Semana: ${semana}\n• Detalle: ${boxCambio}`
+        subtitulo: `Proyecto: ${proyecto} | Aplica: ${semanaAplica}`,
+        mensajeTexto: `🔄 *NUEVA SOLICITUD DE CAMBIO - BATA*\n• Proyecto: ${proyecto}\n• Artículo: ${articulo}\n• Semana Solicitud: ${semana}\n• Semana que Aplica: ${semanaAplica}\n• Detalle: ${boxCambio}`
       });
     } catch (err) {
       alert("Error al registrar solicitud: " + err.message);
@@ -1785,12 +1868,13 @@ if (formNewChange) {
   };
 }
 
-// Formulario Minuta con llamada automática a WhatsApp
+// Formulario Minuta con Semana que Aplica
 const formMinuta = document.getElementById("form-minuta");
 if (formMinuta) {
   formMinuta.onsubmit = async (e) => {
     e.preventDefault();
     const semana = document.getElementById("minuta-semana").value.trim();
+    const semanaAplica = document.getElementById("minuta-semana-aplica").value.trim();
     const proyecto = document.getElementById("minuta-proyecto").value.trim();
     const articulo = document.getElementById("minuta-articulo").value.trim();
     const boxCambio = document.getElementById("minuta-box").value.trim();
@@ -1799,7 +1883,7 @@ if (formMinuta) {
 
     try {
       await addDoc(collection(db, "solicitudes_cambios"), {
-        semana, proyecto, articulo, boxCambio,
+        semana, semanaAplica, proyecto, articulo, boxCambio,
         foto: fotoBase64,
         estado: "En proceso",
         solicitanteNombre: (userData && userData.nombre) || "Jefe de Desarrollo",
@@ -1814,7 +1898,7 @@ if (formMinuta) {
       abrirModalWhatsApp({
         titulo: "Notificar Minuta / Plan Piloto",
         subtitulo: `Proyecto: ${proyecto} (Jefatura de Desarrollo)`,
-        mensajeTexto: `⚡ *MINUTA / PLAN PILOTO - BATA BOLIVIA*\n• Proyecto: ${proyecto}\n• Artículo: ${articulo}\n• Semana: ${semana}\n• Instrucciones: ${boxCambio}`
+        mensajeTexto: `⚡ *MINUTA / PLAN PILOTO - BATA BOLIVIA*\n• Proyecto: ${proyecto}\n• Artículo: ${articulo}\n• Semana Solicitud: ${semana}\n• Semana que Aplica: ${semanaAplica}\n• Instrucciones: ${boxCambio}`
       });
     } catch (err) {
       alert("Error al publicar minuta: " + err.message);
