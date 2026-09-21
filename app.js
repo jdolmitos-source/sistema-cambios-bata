@@ -219,33 +219,38 @@ function inicializarSemanas01a52() {
   const selects = [
     document.getElementById("prod-filter-semana"),
     document.getElementById("lote-semana"),
-    document.getElementById("filtro-semana-aplica-cambios")
+    document.getElementById("filtro-semana-aplica-cambios"),
+    document.getElementById("change-semana"),
+    document.getElementById("change-semana-aplica"),
+    document.getElementById("minuta-semana"),
+    document.getElementById("minuta-semana-aplica")
   ];
 
   selects.forEach(sel => {
     if (!sel) return;
     const valorActual = sel.value;
-    const esFiltroProd = sel.id === "prod-filter-semana";
-    const esFiltroCambios = sel.id === "filtro-semana-aplica-cambios";
+    const esSelectFiltro = sel.tagName === "SELECT" && (sel.id === "prod-filter-semana" || sel.id === "filtro-semana-aplica-cambios");
     
-    if (esFiltroProd) {
-      sel.innerHTML = '<option value="">Todas las Semanas (01-52)</option>';
-    } else if (esFiltroCambios) {
-      sel.innerHTML = '<option value="">Todas las Semanas</option>';
-    } else {
-      sel.innerHTML = '';
-    }
+    if (sel.tagName === "SELECT") {
+      if (sel.id === "prod-filter-semana") {
+        sel.innerHTML = '<option value="">Todas las Semanas (01-52)</option>';
+      } else if (sel.id === "filtro-semana-aplica-cambios") {
+        sel.innerHTML = '<option value="">Todas las Semanas</option>';
+      } else {
+        sel.innerHTML = '';
+      }
 
-    for (let i = 1; i <= 52; i++) {
-      const numStr = i < 10 ? `0${i}` : `${i}`;
-      const val = `Semana ${numStr}`;
-      sel.innerHTML += `<option value="${val}">Semana ${numStr}</option>`;
+      for (let i = 1; i <= 52; i++) {
+        const numStr = i < 10 ? `0${i}` : `${i}`;
+        const val = `Semana ${numStr}`;
+        sel.innerHTML += `<option value="${val}">Semana ${numStr}</option>`;
+      }
     }
     if (valorActual) sel.value = valorActual;
   });
 }
 
-// ==================== INFORME / IMPRESIÓN DIRECTA DESDE CAMBIOS ====================
+// ==================== REPORTES Y ENTREGAS ====================
 window.abrirModalInformeResumenCambios = () => {
   const fSemAplica = document.getElementById("filtro-semana-aplica-cambios")?.value || "";
   let items = solicitudes;
@@ -310,7 +315,6 @@ window.abrirModalInformeResumenCambios = () => {
   document.getElementById("modal-resumen-reporte")?.classList.remove("hidden");
 };
 
-// ==================== REPORTES DE ENTREGAS ====================
 window.abrirReporteImpresoEntregas = () => {
   const items = entregas.filter(item => (categoriaEntregaActiva === "todas") || 
     ((item.tipo || "").toUpperCase().trim() === categoriaEntregaActiva.toUpperCase().trim()));
@@ -894,7 +898,7 @@ window.cambiarSubmenuEntrega = (categoria) => {
   renderTablaEntregas();
 };
 
-// ==================== MÓDULO HELPDESK / SOLICITUDES INTERDEPARTAMENTALES ====================
+// ==================== MÓDULO HELPDESK (Con restricción exacta por departamento) ====================
 function escucharHelpDesk() {
   const q = collection(db, "solicitudes_helpdesk");
   onSnapshot(q, (snapshot) => {
@@ -951,6 +955,8 @@ function renderHelpDeskView() {
   empty?.classList.add("hidden");
 
   const ahora = new Date();
+  const rolUsuario = (userData && userData.rol) || "";
+  const esAdmin = esSuperAdmin();
 
   solicitudesHelpDesk.forEach(sol => {
     const tr = document.createElement("tr");
@@ -968,6 +974,9 @@ function renderHelpDeskView() {
       estadoBadge = `<span class="bg-amber-100 text-amber-800 font-bold px-2.5 py-1 rounded-full border border-amber-200 flex items-center justify-center space-x-1"><span class="w-2 h-2 rounded-full bg-amber-500"></span><span>Pendiente</span></span>`;
     }
 
+    // Validar si el usuario actual pertenece al departamento cuestionado o es Super Admin
+    const esDelDepartamento = esAdmin || rolUsuario.includes(sol.destino) || sol.destino.includes(rolUsuario);
+
     let respuestaHTML = "";
     if (sol.estado === "Resuelto") {
       respuestaHTML = `
@@ -977,14 +986,18 @@ function renderHelpDeskView() {
         </div>
       `;
     } else {
-      respuestaHTML = `
-        <div class="space-y-1.5">
-          <input type="text" id="resp-input-${sol.id}" placeholder="Escribe tu respuesta / fecha / ítem..." class="w-full px-2 py-1 border border-gray-300 rounded text-xs bg-white">
-          <button onclick="window.guardarRespuestaHelpDesk('${sol.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1 rounded text-[11px] cursor-pointer">
-            Responder y Resolver
-          </button>
-        </div>
-      `;
+      if (esDelDepartamento) {
+        respuestaHTML = `
+          <div class="space-y-1.5">
+            <input type="text" id="resp-input-${sol.id}" placeholder="Escribe tu respuesta / fecha / ítem..." class="w-full px-2 py-1 border border-gray-300 rounded text-xs bg-white">
+            <button onclick="window.guardarRespuestaHelpDesk('${sol.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1 rounded text-[11px] cursor-pointer">
+              Responder y Resolver
+            </button>
+          </div>
+        `;
+      } else {
+        respuestaHTML = `<span class="text-gray-400 italic text-[11px]">Pendiente de respuesta por el Dpto. de ${sol.destino}</span>`;
+      }
     }
 
     tr.innerHTML = `
@@ -1512,7 +1525,7 @@ function renderTabla() {
   let listaFiltrada = solicitudes.filter(item => {
     if (!fSemAplica) return true;
     const semItem = item.semanaAplica || item.semana || "";
-    return semItem === fSemAplica;
+    return semItem.trim().toLowerCase() === fSemAplica.trim().toLowerCase();
   });
 
   if (listaFiltrada.length === 0) {
