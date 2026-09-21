@@ -44,6 +44,7 @@ let entregas = [];
 let bloqueosMateriales = [];
 let llegadasMateriales = [];
 let lotesProduccion = [];
+let solicitudesHelpDesk = [];
 let bitacoraBorrados = [];
 
 let categoriaEntregaActiva = "todas";
@@ -118,8 +119,8 @@ function esDesarrollo() {
   return userData && (userData.rol || "").includes("Desarrollo");
 }
 
-// Modal WhatsApp Dinámico y Completo
-async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro = null }) {
+// Modal WhatsApp Dinámico listando TODOS los usuarios registrados
+async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto }) {
   const modalWA = document.getElementById("modal-whatsapp");
   const listContainer = document.getElementById("whatsapp-contacts-list");
   if (!modalWA || !listContainer) return;
@@ -135,10 +136,6 @@ async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro =
 
     usuariosSnap.forEach(d => {
       const u = d.data();
-      const coincideRol = !rolFiltro || u.rol === rolFiltro || 
-        (rolFiltro === "Desarrollo de producto - Técnico" && (u.rol || "").includes("Técnico")) ||
-        (rolFiltro === "Compras" && ((u.rol || "").includes("Compras")));
-
       if (u.celular) {
         count++;
         const item = document.createElement("a");
@@ -152,7 +149,7 @@ async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro =
           </div>
           <span class="bg-[#25D366] text-white px-2.5 py-1 rounded-lg font-bold text-[10px] flex items-center space-x-1">
             <i class="fa-brands fa-whatsapp"></i>
-            <span>Enviar</span>
+            <span>Enviar WSP</span>
           </span>
         `;
         listContainer.appendChild(item);
@@ -176,6 +173,10 @@ window.abrirModalCambio = () => {
 
 window.abrirModalMinuta = () => {
   document.getElementById("modal-minuta")?.classList.remove("hidden");
+};
+
+window.abrirModalNuevaSolicitudHelpDesk = () => {
+  document.getElementById("modal-nueva-solicitud-helpdesk")?.classList.remove("hidden");
 };
 
 window.abrirModalEntrega = () => {
@@ -369,6 +370,7 @@ const modalImpresionTarjetas = document.getElementById("modal-impresion-tarjetas
 const modalNewChange = document.getElementById("modal-new-change");
 const modalNuevoLoteProd = document.getElementById("modal-nuevo-lote-prod");
 const modalEliminarPlan = document.getElementById("modal-eliminar-plan");
+const modalNuevaSolicitudHelpDesk = document.getElementById("modal-nueva-solicitud-helpdesk");
 
 safeClick("btn-close-whatsapp-modal", () => document.getElementById("modal-whatsapp")?.classList.add("hidden"));
 safeClick("btn-show-login", () => modalLogin?.classList.remove("hidden"));
@@ -396,6 +398,8 @@ safeClick("close-nuevo-lote-prod", () => modalNuevoLoteProd?.classList.add("hidd
 safeClick("cancel-nuevo-lote-prod", () => modalNuevoLoteProd?.classList.add("hidden"));
 safeClick("close-eliminar-plan", () => modalEliminarPlan?.classList.add("hidden"));
 safeClick("cancel-eliminar-plan", () => modalEliminarPlan?.classList.add("hidden"));
+safeClick("close-nueva-solicitud-helpdesk", () => modalNuevaSolicitudHelpDesk?.classList.add("hidden"));
+safeClick("cancel-nueva-solicitud-helpdesk", () => modalNuevaSolicitudHelpDesk?.classList.add("hidden"));
 
 safeClick("btn-reporte-entregas-pdf", window.abrirReporteImpresoEntregas);
 safeClick("btn-reporte-entregas-texto", window.abrirResumenTextoEntregas);
@@ -568,11 +572,13 @@ function aplicarPermisosRol() {
   const bloqueProd = document.getElementById("bloque-menu-produccion");
   const bloqueCompras = document.getElementById("bloque-menu-compras");
   const bloqueTarjetas = document.getElementById("bloque-menu-tarjetas");
+  const bloqueSolicitudes = document.getElementById("bloque-menu-solicitudes");
 
   if (bloqueEntregas) bloqueEntregas.classList.add("hidden");
   if (bloqueProd) bloqueProd.classList.add("hidden");
   if (bloqueCompras) bloqueCompras.classList.add("hidden");
   if (bloqueTarjetas) bloqueTarjetas.classList.add("hidden");
+  if (bloqueSolicitudes) bloqueSolicitudes.classList.remove("hidden"); // Visible para todos para fomentar comunicación
 
   if (rol.includes("Desarrollo")) {
     if (bloqueEntregas) bloqueEntregas.classList.remove("hidden");
@@ -624,6 +630,7 @@ onAuthStateChanged(auth, async (user) => {
     escucharCambios();
     escucharEntregas();
     escucharProduccion();
+    escucharHelpDesk();
     escucharBitacoraBorrados();
     escucharProcurement();
   } else {
@@ -642,6 +649,7 @@ const viewProduccion = document.getElementById("view-produccion");
 const viewProcurement = document.getElementById("view-procurement");
 const viewTarjetas = document.getElementById("view-tarjetas");
 const viewUsuarios = document.getElementById("view-usuarios");
+const viewSolicitudes = document.getElementById("view-solicitudes");
 
 const menuBtnCambios = document.getElementById("menu-btn-cambios");
 const menuBtnInforme = document.getElementById("menu-btn-informe");
@@ -650,6 +658,7 @@ const menuBtnProduccion = document.getElementById("menu-btn-produccion");
 const menuBtnProcurement = document.getElementById("menu-btn-procurement");
 const menuBtnTarjetas = document.getElementById("menu-btn-tarjetas");
 const menuBtnUsuarios = document.getElementById("menu-btn-usuarios");
+const menuBtnSolicitudes = document.getElementById("menu-btn-solicitudes");
 
 const CLASE_INACTIVO_PRINCIPAL = "sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white hover:bg-white/15 transition cursor-pointer";
 const CLASE_INACTIVO_SUB = "sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white/90 hover:bg-white/15 hover:text-white transition cursor-pointer pl-5";
@@ -657,7 +666,7 @@ const CLASE_ACTIVO_PASTILLA = "sidebar-btn w-full flex items-center space-x-3 px
 const CLASE_ACTIVO_SUB_PASTILLA = "sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-black bg-white text-[#D61B28] shadow-md transition cursor-pointer pl-5 scale-[1.02]";
 
 function resetMenuStyles() {
-  [menuBtnCambios, menuBtnInforme, menuBtnEntregasTodas, menuBtnProduccion, menuBtnProcurement, menuBtnTarjetas, menuBtnUsuarios].forEach(b => {
+  [menuBtnCambios, menuBtnInforme, menuBtnEntregasTodas, menuBtnProduccion, menuBtnProcurement, menuBtnTarjetas, menuBtnUsuarios, menuBtnSolicitudes].forEach(b => {
     if (b) b.className = CLASE_INACTIVO_PRINCIPAL;
   });
 
@@ -672,6 +681,7 @@ function resetMenuStyles() {
   viewProcurement?.classList.add("hidden");
   viewTarjetas?.classList.add("hidden");
   viewUsuarios?.classList.add("hidden");
+  viewSolicitudes?.classList.add("hidden");
 }
 
 function activarVistaCambios() {
@@ -686,14 +696,6 @@ safeClick("menu-btn-informe", () => {
   resetMenuStyles();
   viewInforme?.classList.remove("hidden");
   if (menuBtnInforme) menuBtnInforme.className = CLASE_ACTIVO_PASTILLA;
-  
-  colFiltroSemanaInforme = "";
-  colFiltroProyectoInforme = "";
-  const inSem = document.getElementById("col-filter-semana-informe");
-  const inProy = document.getElementById("col-filter-proyecto-informe");
-  if (inSem) inSem.value = "";
-  if (inProy) inProy.value = "";
-  
   renderInformeView();
 });
 
@@ -720,6 +722,13 @@ safeClick("menu-btn-tarjetas", () => {
   viewTarjetas?.classList.remove("hidden");
   if (menuBtnTarjetas) menuBtnTarjetas.className = CLASE_ACTIVO_PASTILLA;
   initModuloTarjetas();
+});
+
+safeClick("menu-btn-solicitudes", () => {
+  resetMenuStyles();
+  viewSolicitudes?.classList.remove("hidden");
+  if (menuBtnSolicitudes) menuBtnSolicitudes.className = CLASE_ACTIVO_PASTILLA;
+  renderHelpDeskView();
 });
 
 safeClick("menu-btn-usuarios", () => {
@@ -818,6 +827,137 @@ window.cambiarSubmenuEntrega = (categoria) => {
   }
 
   renderTablaEntregas();
+};
+
+// ==================== MÓDULO HELPDESK / SOLICITUDES INTERDEPARTAMENTALES ====================
+function escucharHelpDesk() {
+  const q = collection(db, "solicitudes_helpdesk");
+  onSnapshot(q, (snapshot) => {
+    solicitudesHelpDesk = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    solicitudesHelpDesk.sort((a, b) => (b.fechaCreacion || "").localeCompare(a.fechaCreacion || ""));
+    renderHelpDeskView();
+  }, (err) => console.log("Aviso HelpDesk:", err.message));
+}
+
+const formNuevaSolicitudHelpDesk = document.getElementById("form-nueva-solicitud-helpdesk");
+if (formNuevaSolicitudHelpDesk) {
+  formNuevaSolicitudHelpDesk.onsubmit = async (e) => {
+    e.preventDefault();
+    const destino = document.getElementById("helpdesk-destino").value;
+    const pregunta = document.getElementById("helpdesk-pregunta").value.trim();
+
+    try {
+      await addDoc(collection(db, "solicitudes_helpdesk"), {
+        remitenteNombre: (userData && userData.nombre) || "Usuario",
+        remitenteRol: (userData && userData.rol) || "Planta",
+        destino,
+        pregunta,
+        respuesta: "",
+        respondidoPor: "",
+        fechaCreacion: new Date().toISOString(),
+        fechaRespuesta: null,
+        estado: "Pendiente"
+      });
+
+      formNuevaSolicitudHelpDesk.reset();
+      modalNuevaSolicitudHelpDesk?.classList.add("hidden");
+
+      abrirModalWhatsApp({
+        titulo: `Notificar Solicitud (${destino})`,
+        subtitulo: `Requerimiento enviado a ${destino}`,
+        mensajeTexto: `💬 *NUEVA SOLICITUD INTERDEPARTAMENTAL*\n• De: ${(userData && userData.nombre) || 'Usuario'}\n• Para: ${destino}\n• Pregunta: ${pregunta}`
+      });
+    } catch (err) {
+      alert("Error al enviar solicitud: " + err.message);
+    }
+  };
+}
+
+function renderHelpDeskView() {
+  const tbody = document.getElementById("table-solicitudes-helpdesk-body");
+  const empty = document.getElementById("solicitudes-empty-state");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  if (solicitudesHelpDesk.length === 0) {
+    empty?.classList.remove("hidden");
+    return;
+  }
+  empty?.classList.add("hidden");
+
+  const ahora = new Date();
+
+  solicitudesHelpDesk.forEach(sol => {
+    const tr = document.createElement("tr");
+    tr.className = "hover:bg-gray-50/80 transition border-b border-gray-100";
+
+    // Calcular días transcurridos para el semáforo
+    const fechaCreacion = new Date(sol.fechaCreacion);
+    const diffDias = (ahora - fechaCreacion) / (1000 * 60 * 60 * 24);
+
+    let estadoBadge = "";
+    if (sol.estado === "Resuelto") {
+      estadoBadge = `<span class="bg-green-100 text-green-800 font-bold px-2.5 py-1 rounded-full border border-green-200 flex items-center justify-center space-x-1"><span class="w-2 h-2 rounded-full bg-green-500"></span><span>Resuelto</span></span>`;
+    } else if (diffDias > 3) {
+      estadoBadge = `<span class="bg-red-100 text-red-800 font-bold px-2.5 py-1 rounded-full border border-red-200 flex items-center justify-center space-x-1 animate-pulse"><span class="w-2 h-2 rounded-full bg-red-600"></span><span>Rojo (>3 días)</span></span>`;
+    } else {
+      estadoBadge = `<span class="bg-amber-100 text-amber-800 font-bold px-2.5 py-1 rounded-full border border-amber-200 flex items-center justify-center space-x-1"><span class="w-2 h-2 rounded-full bg-amber-500"></span><span>Pendiente</span></span>`;
+    }
+
+    let respuestaHTML = "";
+    if (sol.estado === "Resuelto") {
+      respuestaHTML = `
+        <div class="text-gray-700 font-medium">
+          <p class="italic">${sol.respuesta}</p>
+          <span class="text-[10px] text-gray-400 block mt-1">Por: ${sol.respondidoPor} (${formatearFecha(sol.fechaRespuesta)})</span>
+        </div>
+      `;
+    } else {
+      respuestaHTML = `
+        <div class="space-y-1.5">
+          <input type="text" id="resp-input-${sol.id}" placeholder="Escribe tu respuesta / fecha / ítem..." class="w-full px-2 py-1 border border-gray-300 rounded text-xs bg-white">
+          <button onclick="window.guardarRespuestaHelpDesk('${sol.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1 rounded text-[11px] cursor-pointer">
+            Responder y Resolver
+          </button>
+        </div>
+      `;
+    }
+
+    tr.innerHTML = `
+      <td class="p-3 border-r whitespace-nowrap text-gray-600">${formatearFecha(sol.fechaCreacion)}</td>
+      <td class="p-3 border-r font-bold text-gray-800">${sol.remitenteNombre} <span class="text-[10px] text-gray-400 block">(${sol.remitenteRol})</span></td>
+      <td class="p-3 border-r font-bold text-[#D61B28]">${sol.destino}</td>
+      <td class="p-3 border-r text-gray-800 font-medium">${sol.pregunta}</td>
+      <td class="p-3 border-r text-center whitespace-nowrap">${estadoBadge}</td>
+      <td class="p-3 border-r">${respuestaHTML}</td>
+      <td class="p-3 text-center">
+        ${sol.estado === "Resuelto" ? '<i class="fa-solid fa-circle-check text-green-600 text-base"></i>' : '<span class="text-gray-300">—</span>'}
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+window.guardarRespuestaHelpDesk = async (id) => {
+  const input = document.getElementById(`resp-input-${id}`);
+  if (!input) return;
+  const textoRespuesta = input.value.trim();
+  if (!textoRespuesta) {
+    alert("Por favor escribe una respuesta antes de guardar.");
+    return;
+  }
+
+  try {
+    await updateDoc(doc(db, "solicitudes_helpdesk", id), {
+      respuesta: textoRespuesta,
+      respondidoPor: (userData && userData.nombre) || "Usuario",
+      fechaRespuesta: new Date().toISOString(),
+      estado: "Resuelto"
+    });
+    alert("Respuesta registrada y marcada como resuelta.");
+  } catch (err) {
+    alert("Error al responder: " + err.message);
+  }
 };
 
 // ==================== MÓDULO PRODUCCIÓN WORK PLANNER ====================
@@ -1597,7 +1737,6 @@ if (formEntrega) {
       formEntrega.reset();
       modalNuevaEntrega?.classList.add("hidden");
       
-      // Abrir WhatsApp con mensaje especial
       abrirModalWhatsApp({
         titulo: `Notificar Entrega (${tipo})`,
         subtitulo: `Proyecto: ${proyecto} (Semana ${semana})`,
