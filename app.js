@@ -44,7 +44,6 @@ let entregas = [];
 let bloqueosMateriales = [];
 let llegadasMateriales = [];
 let lotesProduccion = [];
-let solicitudesHelpDesk = [];
 let bitacoraBorrados = [];
 
 let categoriaEntregaActiva = "todas";
@@ -119,7 +118,7 @@ function esDesarrollo() {
   return userData && (userData.rol || "").includes("Desarrollo");
 }
 
-// Validación limpia de Multi-Roles para HelpDesk y áreas
+// Validación segura de multi-roles para áreas y HelpDesk
 function usuarioTieneAccesoArea(areaDestino) {
   if (esSuperAdmin()) return true;
   if (!userData) return false;
@@ -151,6 +150,10 @@ async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro =
 
     usuariosSnap.forEach(d => {
       const u = d.data();
+      const coincideRol = !rolFiltro || u.rol === rolFiltro || 
+        (rolFiltro === "Desarrollo de producto - Técnico" && (u.rol || "").includes("Técnico")) ||
+        (rolFiltro === "Compras" && ((u.rol || "").includes("Compras")));
+
       if (u.celular) {
         count++;
         const item = document.createElement("a");
@@ -644,7 +647,6 @@ onAuthStateChanged(auth, async (user) => {
     escucharCambios();
     escucharEntregas();
     escucharProduccion();
-    escucharHelpDesk();
     escucharBitacoraBorrados();
     escucharProcurement();
   } else {
@@ -707,6 +709,14 @@ safeClick("menu-btn-informe", () => {
   resetMenuStyles();
   viewInforme?.classList.remove("hidden");
   if (menuBtnInforme) menuBtnInforme.className = CLASE_ACTIVO_PASTILLA;
+  
+  colFiltroSemanaInforme = "";
+  colFiltroProyectoInforme = "";
+  const inSem = document.getElementById("col-filter-semana-informe");
+  const inProy = document.getElementById("col-filter-proyecto-informe");
+  if (inSem) inSem.value = "";
+  if (inProy) inProy.value = "";
+  
   renderInformeView();
 });
 
@@ -1229,6 +1239,7 @@ function renderTablaEntregas() {
     const tr = document.createElement("tr");
     tr.className = "hover:bg-gray-50/80 transition border-b border-gray-100";
 
+    // Usar la validación segura de multi-rol para confirmar recepciones de entregas
     const puedeConfirmar = usuarioTieneAccesoArea(ent.destino) || esAdmin;
 
     let recepcionHTML = "";
@@ -1293,7 +1304,7 @@ window.confirmarRecepcionEntrega = async (id, tipo, proyecto) => {
   }
 };
 
-// Escucha en tiempo real de Solicitudes y Cambios
+// Escucha en tiempo real de Solicitudes
 function escucharCambios() {
   const q = collection(db, "solicitudes_cambios");
   onSnapshot(q, (snapshot) => {
@@ -1400,7 +1411,7 @@ window.confirmarValidacionCostos = async (id, proyecto, articulo, checkboxElem) 
   }
 };
 
-// Panel Super Admin (Soporte Multi-Roles)
+// Panel Super Admin
 async function cargarPanelSuperAdmin() {
   if (!esSuperAdmin()) return;
   const tbodyUsers = document.getElementById("table-users-body");
@@ -1624,7 +1635,7 @@ if (formEntrega) {
   };
 }
 
-// Formulario Nuevo Cambio
+// Formulario Nuevo Cambio con llamada automática a WhatsApp
 const formNewChange = document.getElementById("form-new-change");
 if (formNewChange) {
   formNewChange.onsubmit = async (e) => {
@@ -1661,7 +1672,7 @@ if (formNewChange) {
   };
 }
 
-// Formulario Minuta
+// Formulario Minuta con llamada automática a WhatsApp
 const formMinuta = document.getElementById("form-minuta");
 if (formMinuta) {
   formMinuta.onsubmit = async (e) => {
