@@ -166,7 +166,7 @@ async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto }) {
   }
 }
 
-// ==================== FUNCIONES GLOBALES DE APERTURA ====================
+// ==================== FUNCIONES GLOBALES EXuestas al HTML (Window) ====================
 window.abrirModalCambio = () => {
   document.getElementById("modal-new-change")?.classList.remove("hidden");
 };
@@ -213,9 +213,6 @@ window.abrirModalLoteProduccion = () => {
 window.abrirModalEliminarPlan = () => {
   document.getElementById("modal-eliminar-plan")?.classList.remove("hidden");
 };
-
-// Enlace directo del botón principal de Cambios
-safeClick("btn-open-new-change", window.abrirModalCambio);
 
 // Inicializador de semanas 01 a 52 para Work Planner
 function inicializarSemanas01a52() {
