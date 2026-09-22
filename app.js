@@ -111,15 +111,15 @@ function esSuperAdmin() {
 
 function esComprasAdmin() {
   if (esSuperAdmin()) return true;
-  return userData && (userData.rol === "Compras Admin" || userData.rol === "Compras" || (userData.rolesMultiples && userData.rolesMultiples.includes("Compras")));
+  return userData && (userData.rol === "Compras Admin" || userData.rol === "Compras");
 }
 
 function esDesarrollo() {
   if (esSuperAdmin()) return true;
-  return userData && ((userData.rol || "").includes("Desarrollo") || (userData.rolesMultiples && userData.rolesMultiples.some(r => r.includes("Desarrollo"))));
+  return userData && (userData.rol || "").includes("Desarrollo");
 }
 
-// Validación inteligente multi-rol para HelpDesk o áreas
+// Validación limpia de Multi-Roles para HelpDesk y áreas
 function usuarioTieneAccesoArea(areaDestino) {
   if (esSuperAdmin()) return true;
   if (!userData) return false;
@@ -134,8 +134,8 @@ function usuarioTieneAccesoArea(areaDestino) {
   return false;
 }
 
-// Modal WhatsApp Dinámico listando TODOS los usuarios registrados
-async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto }) {
+// Modal WhatsApp
+async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro = null }) {
   const modalWA = document.getElementById("modal-whatsapp");
   const listContainer = document.getElementById("whatsapp-contacts-list");
   if (!modalWA || !listContainer) return;
@@ -164,7 +164,7 @@ async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto }) {
           </div>
           <span class="bg-[#25D366] text-white px-2.5 py-1 rounded-lg font-bold text-[10px] flex items-center space-x-1">
             <i class="fa-brands fa-whatsapp"></i>
-            <span>Enviar WSP</span>
+            <span>Enviar</span>
           </span>
         `;
         listContainer.appendChild(item);
@@ -181,17 +181,13 @@ async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto }) {
   }
 }
 
-// ==================== FUNCIONES GLOBALES EXpuestas en window ====================
+// ==================== FUNCIONES GLOBALES DE APERTURA ====================
 window.abrirModalCambio = () => {
   document.getElementById("modal-new-change")?.classList.remove("hidden");
 };
 
 window.abrirModalMinuta = () => {
   document.getElementById("modal-minuta")?.classList.remove("hidden");
-};
-
-window.abrirModalNuevaSolicitudHelpDesk = () => {
-  document.getElementById("modal-nueva-solicitud-helpdesk")?.classList.remove("hidden");
 };
 
 window.abrirModalEntrega = () => {
@@ -229,7 +225,7 @@ window.abrirModalEliminarPlan = () => {
   document.getElementById("modal-eliminar-plan")?.classList.remove("hidden");
 };
 
-// Inicializador de semanas 01 a 52 para Work Planner
+// Inicializador de semanas 01 a 52
 function inicializarSemanas01a52() {
   const selects = [
     document.getElementById("prod-filter-semana"),
@@ -250,95 +246,6 @@ function inicializarSemanas01a52() {
     if (valorActual) sel.value = valorActual;
   });
 }
-
-// Actualizador dinámico del filtro de semanas de aplicabilidad en la vista de Cambios
-function actualizarSelectSemanasAplica() {
-  const sel = document.getElementById("filtro-semana-aplica-cambios");
-  if (!sel) return;
-  const valorActual = sel.value;
-  
-  const semanasUnicas = new Set();
-  solicitudes.forEach(s => {
-    if (s.semanaAplica) semanasUnicas.add(s.semanaAplica.trim());
-    else if (s.semana) semanasUnicas.add(s.semana.trim());
-  });
-
-  let optionsHTML = '<option value="">Todas las Semanas</option>';
-  Array.from(semanasUnicas).sort().forEach(sem => {
-    optionsHTML += `<option value="${sem}">${sem}</option>`;
-  });
-  
-  sel.innerHTML = optionsHTML;
-  if (valorActual) sel.value = valorActual;
-}
-
-// ==================== INFORME / IMPRESIÓN DIRECTA DESDE CAMBIOS ====================
-window.abrirModalInformeResumenCambios = () => {
-  const fSemAplica = document.getElementById("filtro-semana-aplica-cambios")?.value || "";
-  let items = solicitudes;
-  if (fSemAplica) {
-    items = solicitudes.filter(s => {
-      const semAplica = (s.semanaAplica || s.semana || "").trim().toLowerCase();
-      return semAplica === fSemAplica.trim().toLowerCase();
-    });
-  }
-
-  if (items.length === 0) {
-    alert("No hay registros de cambios para generar el informe con el filtro actual.");
-    return;
-  }
-
-  const contenedor = document.getElementById("reporte-resumen-contenido");
-  if (!contenedor) return;
-
-  let html = `
-    <div class="overflow-x-auto">
-      <table class="w-full text-left border-collapse border border-gray-300 text-xs">
-        <thead class="bg-gray-100 font-bold">
-          <tr>
-            <th class="p-2 border text-center w-12">Foto</th>
-            <th class="p-2 border">Sem. Sol.</th>
-            <th class="p-2 border">Sem. Aplica</th>
-            <th class="p-2 border">Proyecto</th>
-            <th class="p-2 border">Artículo</th>
-            <th class="p-2 border">Descripción del Cambio</th>
-            <th class="p-2 border text-center">Estado</th>
-            <th class="p-2 border text-center">Costos</th>
-          </tr>
-        </thead>
-        <tbody>
-  `;
-
-  items.forEach(it => {
-    const fotoPrint = it.foto 
-      ? `<img src="${it.foto}" style="width: 40px; height: 30px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; margin: auto;">`
-      : `<span style="color: #bbb;">—</span>`;
-
-    html += `
-      <tr class="border-b">
-        <td class="p-1 border text-center">${fotoPrint}</td>
-        <td class="p-2 border font-mono font-bold">${it.semana || '—'}</td>
-        <td class="p-2 border font-mono font-bold text-red-600">${it.semanaAplica || it.semana || '—'}</td>
-        <td class="p-2 border font-bold text-gray-800">${it.proyecto}</td>
-        <td class="p-2 border font-mono">${it.articulo}</td>
-        <td class="p-2 border">${it.boxCambio}</td>
-        <td class="p-2 border text-center font-bold">${it.estado}</td>
-        <td class="p-2 border text-center font-bold ${it.validadoCostos ? 'text-green-600' : 'text-amber-600'}">
-          ${it.validadoCostos ? 'Validado' : 'Pendiente'}
-        </td>
-      </tr>
-    `;
-  });
-
-  html += `
-        </tbody>
-      </table>
-    </div>
-  `;
-
-  contenedor.innerHTML = html;
-  document.getElementById("modal-resumen-reporte")?.classList.remove("hidden");
-};
 
 // ==================== REPORTES DE ENTREGAS ====================
 window.abrirReporteImpresoEntregas = () => {
@@ -474,7 +381,6 @@ const modalImpresionTarjetas = document.getElementById("modal-impresion-tarjetas
 const modalNewChange = document.getElementById("modal-new-change");
 const modalNuevoLoteProd = document.getElementById("modal-nuevo-lote-prod");
 const modalEliminarPlan = document.getElementById("modal-eliminar-plan");
-const modalNuevaSolicitudHelpDesk = document.getElementById("modal-nueva-solicitud-helpdesk");
 
 safeClick("btn-close-whatsapp-modal", () => document.getElementById("modal-whatsapp")?.classList.add("hidden"));
 safeClick("btn-show-login", () => modalLogin?.classList.remove("hidden"));
@@ -502,8 +408,6 @@ safeClick("close-nuevo-lote-prod", () => modalNuevoLoteProd?.classList.add("hidd
 safeClick("cancel-nuevo-lote-prod", () => modalNuevoLoteProd?.classList.add("hidden"));
 safeClick("close-eliminar-plan", () => modalEliminarPlan?.classList.add("hidden"));
 safeClick("cancel-eliminar-plan", () => modalEliminarPlan?.classList.add("hidden"));
-safeClick("close-nueva-solicitud-helpdesk", () => modalNuevaSolicitudHelpDesk?.classList.add("hidden"));
-safeClick("cancel-nueva-solicitud-helpdesk", () => modalNuevaSolicitudHelpDesk?.classList.add("hidden"));
 
 safeClick("btn-reporte-entregas-pdf", window.abrirReporteImpresoEntregas);
 safeClick("btn-reporte-entregas-texto", window.abrirResumenTextoEntregas);
@@ -587,7 +491,7 @@ if (formRegister) {
         celular: phone,
         email: email,
         rol: role,
-        rolesMultiples: [role], // Inicializar array multi-rol
+        rolesMultiples: [role],
         foto: photoBase64,
         fechaCreacion: serverTimestamp()
       });
@@ -668,7 +572,7 @@ function actualizarHeaderUsuario() {
   aplicarPermisosRol();
 }
 
-// Control de visibilidad por rol en el menú lateral
+// Control estricto de visibilidad por rol en el menú lateral
 function aplicarPermisosRol() {
   if (esSuperAdmin()) {
     document.querySelectorAll("aside .sidebar-section-item").forEach(el => el.classList.remove("hidden"));
@@ -680,29 +584,28 @@ function aplicarPermisosRol() {
   const bloqueProd = document.getElementById("bloque-menu-produccion");
   const bloqueCompras = document.getElementById("bloque-menu-compras");
   const bloqueTarjetas = document.getElementById("bloque-menu-tarjetas");
-  const bloqueSolicitudes = document.getElementById("bloque-menu-solicitudes");
 
   if (bloqueEntregas) bloqueEntregas.classList.add("hidden");
   if (bloqueProd) bloqueProd.classList.add("hidden");
   if (bloqueCompras) bloqueCompras.classList.add("hidden");
   if (bloqueTarjetas) bloqueTarjetas.classList.add("hidden");
-  if (bloqueSolicitudes) bloqueSolicitudes.classList.remove("hidden");
 
   const tieneAcceso = (area) => usuarioTieneAccesoArea(area);
 
   if (tieneAcceso("Desarrollo")) {
     if (bloqueEntregas) bloqueEntregas.classList.remove("hidden");
     if (bloqueTarjetas) bloqueTarjetas.classList.remove("hidden");
-  } 
-  if (tieneAcceso("Compras")) {
+  } else if (tieneAcceso("Compras")) {
     if (bloqueCompras) bloqueCompras.classList.remove("hidden");
     if (bloqueEntregas) bloqueEntregas.classList.remove("hidden");
-  } 
-  if (tieneAcceso("Planeamiento") || tieneAcceso("Producción")) {
+  } else if (tieneAcceso("Planeamiento")) {
     if (bloqueProd) bloqueProd.classList.remove("hidden");
     if (bloqueEntregas) bloqueEntregas.classList.remove("hidden");
-  }
-  if (tieneAcceso("Costos")) {
+  } else if (tieneAcceso("Producción")) {
+    if (bloqueProd) bloqueProd.classList.remove("hidden");
+    if (bloqueEntregas) bloqueEntregas.classList.remove("hidden");
+    if (bloqueCompras) bloqueCompras.classList.remove("hidden");
+  } else if (tieneAcceso("Costos")) {
     if (bloqueEntregas) bloqueEntregas.classList.remove("hidden");
   }
 }
@@ -752,22 +655,22 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// Navegación principal
+// Navegación
 const viewCambios = document.getElementById("view-cambios");
+const viewInforme = document.getElementById("view-informe");
 const viewEntregas = document.getElementById("view-entregas");
 const viewProduccion = document.getElementById("view-produccion");
 const viewProcurement = document.getElementById("view-procurement");
 const viewTarjetas = document.getElementById("view-tarjetas");
 const viewUsuarios = document.getElementById("view-usuarios");
-const viewSolicitudes = document.getElementById("view-solicitudes");
 
 const menuBtnCambios = document.getElementById("menu-btn-cambios");
+const menuBtnInforme = document.getElementById("menu-btn-informe");
 const menuBtnEntregasTodas = document.getElementById("menu-btn-entregas-todas");
 const menuBtnProduccion = document.getElementById("menu-btn-produccion");
 const menuBtnProcurement = document.getElementById("menu-btn-procurement");
 const menuBtnTarjetas = document.getElementById("menu-btn-tarjetas");
 const menuBtnUsuarios = document.getElementById("menu-btn-usuarios");
-const menuBtnSolicitudes = document.getElementById("menu-btn-solicitudes");
 
 const CLASE_INACTIVO_PRINCIPAL = "sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white hover:bg-white/15 transition cursor-pointer";
 const CLASE_INACTIVO_SUB = "sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white/90 hover:bg-white/15 hover:text-white transition cursor-pointer pl-5";
@@ -775,7 +678,7 @@ const CLASE_ACTIVO_PASTILLA = "sidebar-btn w-full flex items-center space-x-3 px
 const CLASE_ACTIVO_SUB_PASTILLA = "sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-black bg-white text-[#D61B28] shadow-md transition cursor-pointer pl-5 scale-[1.02]";
 
 function resetMenuStyles() {
-  [menuBtnCambios, menuBtnEntregasTodas, menuBtnProduccion, menuBtnProcurement, menuBtnTarjetas, menuBtnUsuarios, menuBtnSolicitudes].forEach(b => {
+  [menuBtnCambios, menuBtnInforme, menuBtnEntregasTodas, menuBtnProduccion, menuBtnProcurement, menuBtnTarjetas, menuBtnUsuarios].forEach(b => {
     if (b) b.className = CLASE_INACTIVO_PRINCIPAL;
   });
 
@@ -784,47 +687,54 @@ function resetMenuStyles() {
   });
 
   viewCambios?.classList.add("hidden");
+  viewInforme?.classList.add("hidden");
   viewEntregas?.classList.add("hidden");
   viewProduccion?.classList.add("hidden");
   viewProcurement?.classList.add("hidden");
   viewTarjetas?.classList.add("hidden");
   viewUsuarios?.classList.add("hidden");
-  viewSolicitudes?.classList.add("hidden");
 }
 
 function activarVistaCambios() {
   resetMenuStyles();
   viewCambios?.classList.remove("hidden");
   if (menuBtnCambios) menuBtnCambios.className = CLASE_ACTIVO_PASTILLA;
-  renderTabla();
 }
 
 safeClick("menu-btn-cambios", activarVistaCambios);
-safeClick("menu-btn-entregas-todas", () => window.cambiarSubmenuEntrega("todas"));
+
+safeClick("menu-btn-informe", () => {
+  resetMenuStyles();
+  viewInforme?.classList.remove("hidden");
+  if (menuBtnInforme) menuBtnInforme.className = CLASE_ACTIVO_PASTILLA;
+  renderInformeView();
+});
+
+safeClick("menu-btn-entregas-todas", () => {
+  window.cambiarSubmenuEntrega("todas");
+});
+
 safeClick("menu-btn-produccion", () => {
   resetMenuStyles();
   viewProduccion?.classList.remove("hidden");
   if (menuBtnProduccion) menuBtnProduccion.className = CLASE_ACTIVO_PASTILLA;
   renderProduccionView();
 });
+
 safeClick("menu-btn-procurement", () => {
   resetMenuStyles();
   viewProcurement?.classList.remove("hidden");
   if (menuBtnProcurement) menuBtnProcurement.className = CLASE_ACTIVO_PASTILLA;
   renderProcurementView();
 });
+
 safeClick("menu-btn-tarjetas", () => {
   resetMenuStyles();
   viewTarjetas?.classList.remove("hidden");
   if (menuBtnTarjetas) menuBtnTarjetas.className = CLASE_ACTIVO_PASTILLA;
   initModuloTarjetas();
 });
-safeClick("menu-btn-solicitudes", () => {
-  resetMenuStyles();
-  viewSolicitudes?.classList.remove("hidden");
-  if (menuBtnSolicitudes) menuBtnSolicitudes.className = CLASE_ACTIVO_PASTILLA;
-  renderHelpDeskView();
-});
+
 safeClick("menu-btn-usuarios", () => {
   if (!esSuperAdmin()) {
     alert("Acceso denegado.");
@@ -835,10 +745,6 @@ safeClick("menu-btn-usuarios", () => {
   if (menuBtnUsuarios) menuBtnUsuarios.className = CLASE_ACTIVO_PASTILLA;
   cargarPanelSuperAdmin();
 });
-
-// Enlace directo de los botones de apertura de modales de Cambios
-safeClick("btn-open-new-change", window.abrirModalCambio);
-safeClick("btn-open-minuta-header", window.abrirModalMinuta);
 
 // Submenús entregas
 safeClick("sub-btn-MATERIALES", () => window.cambiarSubmenuEntrega("MATERIALES"));
@@ -925,143 +831,6 @@ window.cambiarSubmenuEntrega = (categoria) => {
   }
 
   renderTablaEntregas();
-};
-
-// ==================== MÓDULO HELPDESK ====================
-function escucharHelpDesk() {
-  const q = collection(db, "solicitudes_helpdesk");
-  onSnapshot(q, (snapshot) => {
-    solicitudesHelpDesk = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    solicitudesHelpDesk.sort((a, b) => (b.fechaCreacion || "").localeCompare(a.fechaCreacion || ""));
-    renderHelpDeskView();
-  }, (err) => console.log("Aviso HelpDesk:", err.message));
-}
-
-const formNuevaSolicitudHelpDesk = document.getElementById("form-nueva-solicitud-helpdesk");
-if (formNuevaSolicitudHelpDesk) {
-  formNuevaSolicitudHelpDesk.onsubmit = async (e) => {
-    e.preventDefault();
-    const destino = document.getElementById("helpdesk-destino").value;
-    const pregunta = document.getElementById("helpdesk-pregunta").value.trim();
-
-    try {
-      await addDoc(collection(db, "solicitudes_helpdesk"), {
-        remitenteNombre: (userData && userData.nombre) || "Usuario",
-        remitenteRol: (userData && userData.rol) || "Planta",
-        destino,
-        pregunta,
-        respuesta: "",
-        respondidoPor: "",
-        fechaCreacion: new Date().toISOString(),
-        fechaRespuesta: null,
-        estado: "Pendiente"
-      });
-
-      formNuevaSolicitudHelpDesk.reset();
-      modalNuevaSolicitudHelpDesk?.classList.add("hidden");
-
-      abrirModalWhatsApp({
-        titulo: `Notificar Solicitud (${destino})`,
-        subtitulo: `Requerimiento enviado a ${destino}`,
-        mensajeTexto: `💬 *NUEVA SOLICITUD INTERDEPARTAMENTAL*\n• De: ${(userData && userData.nombre) || 'Usuario'}\n• Para: ${destino}\n• Pregunta: ${pregunta}`
-      });
-    } catch (err) {
-      alert("Error al enviar solicitud: " + err.message);
-    }
-  };
-}
-
-function renderHelpDeskView() {
-  const tbody = document.getElementById("table-solicitudes-helpdesk-body");
-  const empty = document.getElementById("solicitudes-empty-state");
-  if (!tbody) return;
-  tbody.innerHTML = "";
-
-  if (solicitudesHelpDesk.length === 0) {
-    empty?.classList.remove("hidden");
-    return;
-  }
-  empty?.classList.add("hidden");
-
-  const ahora = new Date();
-
-  solicitudesHelpDesk.forEach(sol => {
-    const tr = document.createElement("tr");
-    tr.className = "hover:bg-gray-50/80 transition border-b border-gray-100";
-
-    const fechaCreacion = new Date(sol.fechaCreacion);
-    const diffDias = (ahora - fechaCreacion) / (1000 * 60 * 60 * 24);
-
-    let estadoBadge = "";
-    if (sol.estado === "Resuelto") {
-      estadoBadge = `<span class="bg-green-100 text-green-800 font-bold px-2.5 py-1 rounded-full border border-green-200 flex items-center justify-center space-x-1"><span class="w-2 h-2 rounded-full bg-green-500"></span><span>Resuelto</span></span>`;
-    } else if (diffDias > 3) {
-      estadoBadge = `<span class="bg-red-100 text-red-800 font-bold px-2.5 py-1 rounded-full border border-red-200 flex items-center justify-center space-x-1 animate-pulse"><span class="w-2 h-2 rounded-full bg-red-600"></span><span>Rojo (>3 días)</span></span>`;
-    } else {
-      estadoBadge = `<span class="bg-amber-100 text-amber-800 font-bold px-2.5 py-1 rounded-full border border-amber-200 flex items-center justify-center space-x-1"><span class="w-2 h-2 rounded-full bg-amber-500"></span><span>Pendiente</span></span>`;
-    }
-
-    // Validación multi-rol: verifica si el usuario actual tiene acceso al área de destino
-    const esDelDepartamento = usuarioTieneAccesoArea(sol.destino);
-
-    let respuestaHTML = "";
-    if (sol.estado === "Resuelto") {
-      respuestaHTML = `
-        <div class="text-gray-700 font-medium">
-          <p class="italic">${sol.respuesta}</p>
-          <span class="text-[10px] text-gray-400 block mt-1">Por: ${sol.respondidoPor} (${formatearFecha(sol.fechaRespuesta)})</span>
-        </div>
-      `;
-    } else {
-      if (esDelDepartamento) {
-        respuestaHTML = `
-          <div class="space-y-1.5">
-            <input type="text" id="resp-input-${sol.id}" placeholder="Escribe tu respuesta / fecha / ítem..." class="w-full px-2 py-1 border border-gray-300 rounded text-xs bg-white">
-            <button onclick="window.guardarRespuestaHelpDesk('${sol.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1 rounded text-[11px] cursor-pointer">
-              Responder y Resolver
-            </button>
-          </div>
-        `;
-      } else {
-        respuestaHTML = `<span class="text-gray-400 italic text-[11px]">Pendiente de respuesta por el Dpto. de ${sol.destino}</span>`;
-      }
-    }
-
-    tr.innerHTML = `
-      <td class="p-3 border-r whitespace-nowrap text-gray-600">${formatearFecha(sol.fechaCreacion)}</td>
-      <td class="p-3 border-r font-bold text-gray-800">${sol.remitenteNombre} <span class="text-[10px] text-gray-400 block">(${sol.remitenteRol})</span></td>
-      <td class="p-3 border-r font-bold text-[#D61B28]">${sol.destino}</td>
-      <td class="p-3 border-r text-gray-800 font-medium">${sol.pregunta}</td>
-      <td class="p-3 border-r text-center whitespace-nowrap">${estadoBadge}</td>
-      <td class="p-3 border-r">${respuestaHTML}</td>
-      <td class="p-3 text-center">
-        ${sol.estado === "Resuelto" ? '<i class="fa-solid fa-circle-check text-green-600 text-base"></i>' : '<span class="text-gray-300">—</span>'}
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-window.guardarRespuestaHelpDesk = async (id) => {
-  const input = document.getElementById(`resp-input-${id}`);
-  if (!input) return;
-  const textoRespuesta = input.value.trim();
-  if (!textoRespuesta) {
-    alert("Por favor escribe una respuesta antes de guardar.");
-    return;
-  }
-
-  try {
-    await updateDoc(doc(db, "solicitudes_helpdesk", id), {
-      respuesta: textoRespuesta,
-      respondidoPor: (userData && userData.nombre) || "Usuario",
-      fechaRespuesta: new Date().toISOString(),
-      estado: "Resuelto"
-    });
-    alert("Respuesta registrada y marcada como resuelta.");
-  } catch (err) {
-    alert("Error al responder: " + err.message);
-  }
 };
 
 // ==================== MÓDULO PRODUCCIÓN WORK PLANNER ====================
@@ -1530,7 +1299,6 @@ function escucharCambios() {
   onSnapshot(q, (snapshot) => {
     solicitudes = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
     solicitudes.sort((a, b) => (b.fechaCreacion || "").localeCompare(a.fechaCreacion || ""));
-    actualizarSelectSemanasAplica();
     renderTabla();
     renderAdminTablas();
   });
@@ -1548,15 +1316,7 @@ function renderTabla() {
   if (!tbody) return;
   tbody.innerHTML = "";
 
-  const fSemAplica = document.getElementById("filtro-semana-aplica-cambios")?.value || "";
-
-  let listaFiltrada = solicitudes.filter(item => {
-    if (!fSemAplica) return true;
-    const semAplicaItem = (item.semanaAplica || item.semana || "").trim().toLowerCase();
-    return semAplicaItem === fSemAplica.trim().toLowerCase();
-  });
-
-  if (listaFiltrada.length === 0) {
+  if (solicitudes.length === 0) {
     empty?.classList.remove("hidden");
     return;
   }
@@ -1566,7 +1326,7 @@ function renderTabla() {
   const esDesarrolloUsuario = esDesarrollo() || esAdmin;
   const esCostos = usuarioTieneAccesoArea("Costos") || esAdmin;
 
-  listaFiltrada.forEach((item) => {
+  solicitudes.forEach((item) => {
     const tr = document.createElement("tr");
     tr.className = item.esMinuta ? "bg-amber-50/70 border-b border-amber-200" : "hover:bg-gray-50/80 transition border-b border-gray-100";
 
@@ -1581,7 +1341,7 @@ function renderTabla() {
             <option value="Realizado" ${item.estado === "Realizado" ? "selected" : ""}>Realizado</option>
             <option value="Retrasado" ${item.estado === "Retrasado" ? "selected" : ""}>Retrasado</option>
           </select>
-          <button onclick="window.guardarCambioEstado('${item.id}')" class="bg-gray-100 hover:bg-[#D61B28] hover:text-white text-gray-600 p-1.5 rounded-lg text-xs transition cursor-pointer">
+          <button onclick="window.guardarCambioEstado('${item.id}', '${item.proyecto}', '${item.articulo}', '${item.semana || ''}')" class="bg-gray-100 hover:bg-[#D61B28] hover:text-white text-gray-600 p-1.5 rounded-lg text-xs transition cursor-pointer">
             <i class="fa-solid fa-floppy-disk"></i>
           </button>
         </div>
@@ -1597,14 +1357,13 @@ function renderTabla() {
       if (item.validadoCostos) {
         costosHTML = `<span class="text-green-700 font-bold text-xs"><i class="fa-solid fa-circle-check"></i> Validado</span>`;
       } else {
-        costosHTML = `<input type="checkbox" ${!esCostos ? "disabled" : ""} onchange="window.confirmarValidacionCostos('${item.id}', this)" class="h-4 w-4 accent-[#D61B28] rounded border-gray-300 cursor-pointer">`;
+        costosHTML = `<input type="checkbox" ${!esCostos ? "disabled" : ""} onchange="window.confirmarValidacionCostos('${item.id}', '${item.proyecto}', '${item.articulo}', this)" class="h-4 w-4 accent-[#D61B28] rounded border-gray-300 cursor-pointer">`;
       }
     } else {
       costosHTML = `<input type="checkbox" disabled class="h-4 w-4 text-gray-300 rounded border-gray-200 opacity-40">`;
     }
 
     const fotoHTML = item.foto ? `<img src="${item.foto}" onclick="window.verFotoGrande('${item.foto}', '${item.proyecto}')" class="w-10 h-7 object-cover rounded border cursor-pointer mx-auto">` : '—';
-    const semanaAplicaBadge = `<span class="font-mono font-black text-red-600 bg-red-50 px-2 py-1 rounded border border-red-200 block text-center">${item.semanaAplica || item.semana || '—'}</span>`;
 
     tr.innerHTML = `
       <td class="p-2 border-r text-center">${fotoHTML}</td>
@@ -1613,25 +1372,16 @@ function renderTabla() {
       <td class="p-3 border-r whitespace-nowrap"><span class="font-bold block">${item.solicitanteNombre || '—'}</span></td>
       <td class="p-3.5 font-bold border-r">${badgeMinuta}${item.proyecto}</td>
       <td class="p-3.5 font-mono border-r">${item.articulo}</td>
-      <td class="p-3.5 font-r">${item.boxCambio}</td>
+      <td class="p-3.5 border-r">${item.boxCambio}</td>
       <td class="p-3.5 text-center border-r whitespace-nowrap">${estadoHTML}</td>
       <td class="p-3.5 text-center border-r whitespace-nowrap">${fechaRealizadoHTML}</td>
-      <td class="p-3.5 border-r text-center">${semanaAplicaBadge}</td>
       <td class="p-3.5 text-center whitespace-nowrap">${costosHTML}</td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-const filtroSemanaAplicaCambios = document.getElementById("filtro-semana-aplica-cambios");
-if (filtroSemanaAplicaCambios) filtroSemanaAplicaCambios.onchange = renderTabla;
-
-safeClick("btn-limpiar-filtro-cambios", () => {
-  if (filtroSemanaAplicaCambios) filtroSemanaAplicaCambios.value = "";
-  renderTabla();
-});
-
-window.guardarCambioEstado = async (id) => {
+window.guardarCambioEstado = async (id, proyecto, articulo, semana) => {
   const select = document.getElementById(`sel-estado-${id}`);
   if (!select) return;
   const nuevoEstado = select.value;
@@ -1642,15 +1392,15 @@ window.guardarCambioEstado = async (id) => {
   alert("Estado guardado correctamente.");
 };
 
-window.confirmarValidacionCostos = async (id, checkboxElem) => {
-  if (confirm(`¿Validar costos de este cambio?`)) {
+window.confirmarValidacionCostos = async (id, proyecto, articulo, checkboxElem) => {
+  if (confirm(`¿Validar costos de "${proyecto}"?`)) {
     await updateDoc(doc(db, "solicitudes_cambios", id), { validadoCostos: true });
   } else {
     checkboxElem.checked = false;
   }
 };
 
-// Panel Super Admin (Con selector de Multi-Roles)
+// Panel Super Admin (Soporte Multi-Roles)
 async function cargarPanelSuperAdmin() {
   if (!esSuperAdmin()) return;
   const tbodyUsers = document.getElementById("table-users-body");
@@ -1764,3 +1514,438 @@ window.cambiarRolUsuario = async (uid, nuevoRol) => {
     alert("Error al actualizar el rol: " + err.message);
   }
 };
+
+// Configuración de campos dinámicos en Entrega
+const selEntTipo = document.getElementById("ent-tipo");
+if (selEntTipo) selEntTipo.onchange = actualizarCamposSegunTipoEntrega;
+
+function actualizarCamposSegunTipoEntrega() {
+  const tipo = document.getElementById("ent-tipo")?.value || "";
+  const selectDestino = document.getElementById("ent-destino");
+  const boxArticulo = document.getElementById("box-field-articulo");
+  const labelProy = document.getElementById("label-field-proyecto");
+  const inputProy = document.getElementById("ent-proyecto");
+  const boxFoto = document.getElementById("box-field-foto");
+  const boxCopias = document.getElementById("box-field-copias");
+  const containerSingle = document.getElementById("container-destino-single");
+  const containerMultiple = document.getElementById("container-destino-multiple");
+
+  if (!selectDestino) return;
+  selectDestino.innerHTML = "";
+  boxCopias?.classList.add("hidden");
+  containerMultiple?.classList.add("hidden");
+  containerSingle?.classList.remove("hidden");
+  boxFoto?.classList.add("hidden");
+
+  if (tipo === "MATERIALES") {
+    if (labelProy) labelProy.textContent = "Nombre del Material / Insumo";
+    if (inputProy) inputProy.placeholder = "Ej: Badana Beige 1.2mm";
+    boxArticulo?.classList.add("hidden");
+    selectDestino.innerHTML += `<option value="Desarrollo de producto">Desarrollo de producto</option>`;
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+    return;
+  }
+
+  boxArticulo?.classList.remove("hidden");
+  if (labelProy) labelProy.textContent = "Nombre del Proyecto";
+  if (inputProy) inputProy.placeholder = "Ej: SKATER";
+
+  if (tipo === "GUÍA DE PRODUCCIÓN") {
+    boxFoto?.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
+  } else if (tipo === "CORTE") {
+    boxFoto?.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+  } else if (tipo === "MUESTRA DEFINITIVA") {
+    boxFoto?.classList.remove("hidden");
+    containerSingle?.classList.add("hidden");
+    containerMultiple?.classList.remove("hidden");
+  } else if (tipo === "HOJA DE DESBASTE") {
+    boxFoto?.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+  } else if (tipo === "TIZADORES") {
+    boxCopias?.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+  } else {
+    boxFoto?.classList.remove("hidden");
+    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
+    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
+  }
+}
+
+// Formulario Entrega con llamada automática a WhatsApp
+const formEntrega = document.getElementById("form-nueva-entrega");
+if (formEntrega) {
+  formEntrega.onsubmit = async (e) => {
+    e.preventDefault();
+    const semana = document.getElementById("ent-semana").value.trim();
+    const proyecto = document.getElementById("ent-proyecto").value.trim();
+    const articulo = document.getElementById("ent-articulo").value.trim();
+    const tipo = document.getElementById("ent-tipo").value;
+    const notas = document.getElementById("ent-notas").value.trim();
+    const copias = document.getElementById("ent-copias").value.trim();
+    const photoFile = document.getElementById("ent-photo").files[0];
+    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
+
+    try {
+      let destinosAEntregar = [];
+      if (tipo === "MUESTRA DEFINITIVA") {
+        destinosAEntregar = Array.from(document.querySelectorAll(".chk-muestras-dest:checked")).map(c => c.value);
+      } else {
+        destinosAEntregar = [document.getElementById("ent-destino").value];
+      }
+
+      for (const destino of destinosAEntregar) {
+        await addDoc(collection(db, "entregas_departamentos"), {
+          semana, proyecto,
+          articulo: tipo === "MATERIALES" ? "" : articulo,
+          tipo, destino,
+          copias: tipo === "TIZADORES" ? (copias || "1") : null,
+          foto: fotoBase64, notas,
+          entregadoPorNombre: (userData && userData.nombre) || "Usuario",
+          entregadoPorRol: (userData && userData.rol) || "Desarrollo",
+          recibido: false,
+          fechaEntrega: new Date().toISOString()
+        });
+      }
+      formEntrega.reset();
+      modalNuevaEntrega?.classList.add("hidden");
+      
+      abrirModalWhatsApp({
+        titulo: `Notificar Entrega (${tipo})`,
+        subtitulo: `Proyecto: ${proyecto} (Semana ${semana})`,
+        mensajeTexto: `📦 *NUEVA ENTREGA EN BATA BOLIVIA*\n• Elemento: ${tipo}\n• Proyecto: ${proyecto}\n• Semana: ${semana}\n• Entregado por: ${(userData && userData.nombre) || 'Usuario'}`
+      });
+    } catch (err) {
+      alert("Error: " + err.message);
+    }
+  };
+}
+
+// Formulario Nuevo Cambio
+const formNewChange = document.getElementById("form-new-change");
+if (formNewChange) {
+  formNewChange.onsubmit = async (e) => {
+    e.preventDefault();
+    const semana = document.getElementById("change-semana").value.trim();
+    const proyecto = document.getElementById("change-project").value.trim();
+    const articulo = document.getElementById("change-article").value.trim();
+    const boxCambio = document.getElementById("change-box").value.trim();
+    const photoFile = document.getElementById("change-photo").files[0];
+    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
+
+    try {
+      await addDoc(collection(db, "solicitudes_cambios"), {
+        semana, proyecto, articulo, boxCambio,
+        foto: fotoBase64,
+        estado: "En proceso",
+        solicitanteNombre: (userData && userData.nombre) || "Usuario",
+        solicitanteEmail: currentUser?.email || "",
+        fechaCreacion: new Date().toISOString(),
+        validadoCostos: false,
+        esMinuta: false
+      });
+      formNewChange.reset();
+      modalNewChange?.classList.add("hidden");
+      
+      abrirModalWhatsApp({
+        titulo: "Notificar Solicitud de Cambio",
+        subtitulo: `Proyecto: ${proyecto} | Art: ${articulo}`,
+        mensajeTexto: `🔄 *NUEVA SOLICITUD DE CAMBIO - BATA*\n• Proyecto: ${proyecto}\n• Artículo: ${articulo}\n• Semana: ${semana}\n• Detalle: ${boxCambio}`
+      });
+    } catch (err) {
+      alert("Error al registrar solicitud: " + err.message);
+    }
+  };
+}
+
+// Formulario Minuta
+const formMinuta = document.getElementById("form-minuta");
+if (formMinuta) {
+  formMinuta.onsubmit = async (e) => {
+    e.preventDefault();
+    const semana = document.getElementById("minuta-semana").value.trim();
+    const proyecto = document.getElementById("minuta-proyecto").value.trim();
+    const articulo = document.getElementById("minuta-articulo").value.trim();
+    const boxCambio = document.getElementById("minuta-box").value.trim();
+    const photoFile = document.getElementById("minuta-photo").files[0];
+    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
+
+    try {
+      await addDoc(collection(db, "solicitudes_cambios"), {
+        semana, proyecto, articulo, boxCambio,
+        foto: fotoBase64,
+        estado: "En proceso",
+        solicitanteNombre: (userData && userData.nombre) || "Jefe de Desarrollo",
+        solicitanteEmail: currentUser?.email || "",
+        fechaCreacion: new Date().toISOString(),
+        validadoCostos: false,
+        esMinuta: true
+      });
+      formMinuta.reset();
+      modalMinuta?.classList.add("hidden");
+      
+      abrirModalWhatsApp({
+        titulo: "Notificar Minuta / Plan Piloto",
+        subtitulo: `Proyecto: ${proyecto} (Jefatura de Desarrollo)`,
+        mensajeTexto: `⚡ *MINUTA / PLAN PILOTO - BATA BOLIVIA*\n• Proyecto: ${proyecto}\n• Artículo: ${articulo}\n• Semana: ${semana}\n• Instrucciones: ${boxCambio}`
+      });
+    } catch (err) {
+      alert("Error al publicar minuta: " + err.message);
+    }
+  };
+}
+
+// Procurement placeholder
+function escucharProcurement() {}
+
+// ==================== MÓDULO TARJETAS (PD) ====================
+function initModuloTarjetas() {
+  const inputFecha = document.getElementById("card-fecha");
+  if (inputFecha && !inputFecha.value) {
+    inputFecha.value = "9/9/2026";
+  }
+
+  const fileInput = document.getElementById("card-croquis-file");
+  if (fileInput) {
+    fileInput.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        croquisTarjetaBase64 = await comprimirImagen(file, 400, 0.8);
+        renderTarjetasPreview();
+      }
+    };
+  }
+
+  const fileInputPlantilla = document.getElementById("card-plantilla-img-file");
+  if (fileInputPlantilla) {
+    fileInputPlantilla.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        plantillaCorteTarjetaBase64 = await comprimirImagen(file, 400, 0.8);
+        renderTarjetasPreview();
+      }
+    };
+  }
+
+  safeClick("btn-quick-distribute", () => {
+    const raw = document.getElementById("input-quick-paste-row")?.value.trim() || "";
+    if (!raw) {
+      alert("Copia una fila de Excel y pégala aquí.");
+      return;
+    }
+    let cols = raw.split("\t").map(c => c.trim()).filter(c => c !== "");
+    if (cols.length < 4) {
+      cols = raw.split(/\s{2,}/).map(c => c.trim()).filter(c => c !== "");
+    }
+
+    if (cols.length >= 4) {
+      document.getElementById("card-costo-articulo").value = cols[0] || "";
+      document.getElementById("card-costo-linea").value = cols[2] || "";
+      document.getElementById("card-costo-marca").value = cols[3] || "TEENER";
+      document.getElementById("card-costo-budret").value = cols[10] || "37.39%";
+      document.getElementById("card-costo-precio").value = cols[8] || "259.00";
+      document.getElementById("card-costo-margen").value = cols[9] || "55.00%";
+      renderTarjetasPreview();
+    } else {
+      alert("Columnas insuficientes. Pega directamente la fila copiada de Excel.");
+    }
+  });
+
+  ["count-card-corte", "count-card-prod", "count-card-verde", "count-card-amarilla", "count-card-rosada"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.oninput = renderTarjetasPreview;
+  });
+
+  [
+    "card-costo-articulo", "card-costo-linea", "card-costo-marca", "card-costo-budret", 
+    "card-costo-precio", "card-costo-margen", "card-serie", "card-fecha", "card-material-corte", 
+    "card-forro", "card-plant-int", "card-tecnico", "card-horma-suela", "card-construccion", "card-observaciones"
+  ].forEach(id => {
+    const elem = document.getElementById(id);
+    if (elem) elem.oninput = renderTarjetasPreview;
+  });
+
+  safeClick("btn-imprimir-tarjetas-action", () => {
+    const previewHTML = document.getElementById("contenedor-tarjetas-preview")?.innerHTML || "";
+    const hTarj = document.getElementById("hoja-impresion-tarjetas");
+    if (hTarj) hTarj.innerHTML = previewHTML;
+    modalImpresionTarjetas?.classList.remove("hidden");
+  });
+
+  safeClick("btn-ejecutar-print-tarjetas", () => {
+    const contenidoHTML = document.getElementById("contenedor-tarjetas-preview")?.innerHTML || "";
+    if (!contenidoHTML) return;
+    const ventanaPrint = window.open("", "_blank", "width=900,height=650");
+    if (!ventanaPrint) {
+      alert("Permite las ventanas emergentes para imprimir.");
+      return;
+    }
+    ventanaPrint.document.open();
+    ventanaPrint.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Impresión de Tarjetas - Bata Bolivia</title>
+        <style>
+          @page { size: letter portrait; margin: 8mm; }
+          * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          html, body { margin: 0; padding: 0; background: #fff; font-family: sans-serif; }
+          .shoe-card-container { width: 200mm !important; height: 34mm !important; max-height: 34mm !important; border: 1px solid #000 !important; margin: 0 !important; padding: 0 !important; display: flex; page-break-inside: avoid !important; break-inside: avoid !important; background: #fff; }
+          .shoe-panel { width: 66.66mm !important; height: 100% !important; box-sizing: border-box !important; }
+        </style>
+      </head>
+      <body>
+        <div style="display:flex; flex-direction:column; align-items:flex-start; margin:0; padding:0;">
+          ${contenidoHTML}
+        </div>
+      </body>
+      </html>
+    `);
+    ventanaPrint.document.close();
+    setTimeout(() => { ventanaPrint.focus(); ventanaPrint.print(); ventanaPrint.close(); }, 250);
+  });
+
+  renderTarjetasPreview();
+}
+
+function renderTarjetasPreview() {
+  const container = document.getElementById("contenedor-tarjetas-preview");
+  if (!container) return;
+
+  const cCortes = parseInt(document.getElementById("count-card-corte")?.value) || 0;
+  const cProd = parseInt(document.getElementById("count-card-prod")?.value) || 0;
+  const cVerdes = parseInt(document.getElementById("count-card-verde")?.value) || 0;
+  const cAmarillas = parseInt(document.getElementById("count-card-amarilla")?.value) || 0;
+  const cRosadas = parseInt(document.getElementById("count-card-rosada")?.value) || 0;
+
+  const totalTarjetas = cCortes + cProd + cVerdes + cAmarillas + cRosadas;
+  const lblTotal = document.getElementById("label-total-tarjetas-count");
+  if (lblTotal) lblTotal.textContent = totalTarjetas;
+
+  const articulo = document.getElementById("card-costo-articulo")?.value || "34461836";
+  const linea = (document.getElementById("card-costo-linea")?.value || "QUIQUE").toUpperCase();
+  const marca = (document.getElementById("card-costo-marca")?.value || "TEENER").toUpperCase();
+  const precio = document.getElementById("card-costo-precio")?.value || "259.00";
+  const margen = document.getElementById("card-costo-margen")?.value || "55.00%";
+  const budRet = document.getElementById("card-costo-budret")?.value || "37.39%";
+
+  const serie = document.getElementById("card-serie")?.value || "37-44";
+  const fecha = document.getElementById("card-fecha")?.value || "9/9/2026";
+  const materialCorte = (document.getElementById("card-material-corte")?.value || "IMITACION").toUpperCase();
+  const forro = (document.getElementById("card-forro")?.value || "PIQUE NEGRO").toUpperCase();
+  const plantInt = (document.getElementById("card-plant-int")?.value || "PIQUE NEGRO / CRETONE").toUpperCase();
+  const modelista = (document.getElementById("card-tecnico")?.value || "CARLOS ARCE").toUpperCase();
+  const construccion = (document.getElementById("card-construccion")?.value || "TRUE MOC").toUpperCase();
+  const suela = (document.getElementById("card-horma-suela")?.value || "QUIQUE").toUpperCase();
+  const observaciones = document.getElementById("card-observaciones")?.value || "Sin observaciones adicionales";
+
+  const siluetaCalzadoHTML = croquisTarjetaBase64 
+    ? `<img src="${croquisTarjetaBase64}" style="width:100%; height:32px; object-fit:contain; margin:auto;">`
+    : `<div style="height:32px; display:flex; align-items:center; justify-content:center; font-size:8px; color:#999; border:1px dashed #ccc;">Croquis</div>`;
+
+  const listaAImprimir = [];
+  for (let i = 1; i <= cCortes; i++) listaAImprimir.push({ color: "#FFFFFF", esCorte: true });
+  for (let i = 1; i <= cProd; i++) listaAImprimir.push({ color: "#FFFFFF", esCorte: false });
+  for (let i = 1; i <= cVerdes; i++) listaAImprimir.push({ color: "#80C342", esCorte: false });
+  for (let i = 1; i <= cAmarillas; i++) listaAImprimir.push({ color: "#FFF200", esCorte: false });
+  for (let i = 1; i <= cRosadas; i++) listaAImprimir.push({ color: "#E06D8A", esCorte: false });
+
+  let tarjetasHTML = "";
+  listaAImprimir.forEach((tarj) => {
+    const moduloInfo = `
+      <div class="shoe-panel" style="display:flex; border-right:1px solid #000; overflow:hidden;">
+        <div class="lateral-tab" style="width:16px; border-right:1px solid #000; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:9px; writing-mode:vertical-rl; transform:rotate(180deg); background-color:${tarj.color} !important;">
+          ${linea}
+        </div>
+        <div style="flex:1; display:flex; flex-direction:column; justify-content:space-between; padding:1px;">
+          <div style="font-size:7.5px; font-weight:900; color:#dc2626; text-align:center; border-bottom:1px solid #000; padding-bottom:1px;">
+            MANUFACTURA BOLIVIANA S.A.
+          </div>
+          <div style="display:flex; flex:1; align-items:center;">
+            <div style="width:45px; display:flex; flex-direction:column; justify-content:center; border-right:1px solid #000; padding-right:1px; height:100%;">
+              ${siluetaCalzadoHTML}
+            </div>
+            <div style="flex:1; height:100%;">
+              <table style="width:100%; height:100%; border-collapse:collapse; font-size:6px; font-weight:900;">
+                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; width:35%; text-align:center;">ART:</td><td style="text-align:center; font-family:monospace; font-size:7px;">${articulo}</td></tr>
+                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; width:35%; text-align:center;">MARCA:</td><td style="text-align:center;">${marca}</td></tr>
+                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; width:35%; text-align:center;">SERIE:</td><td style="text-align:center;">${serie}</td></tr>
+                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; width:35%; text-align:center;">CORTE:</td><td style="text-align:center; font-size:5px;">${materialCorte}</td></tr>
+                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; width:35%; text-align:center;">FORRO:</td><td style="text-align:center; font-size:5px;">${forro}</td></tr>
+                <tr><td style="border-right:1px solid #000; width:35%; text-align:center;">PLANT:</td><td style="text-align:center; font-size:5px;">${plantInt}</td></tr>
+              </table>
+            </div>
+          </div>
+          <div style="display:flex; border-top:1px solid #000; font-size:5.5px; font-weight:bold; padding:1px 2px; justify-content:space-between; background:#fff;">
+            <span>${fecha}</span>
+          </div>
+          <div style="display:flex; border-top:1px solid #000; font-size:5px; font-weight:800; padding:1px 0;">
+            <div style="width:50%; border-right:1px solid #000; padding-left:1px;">TEC: ${modelista}<br>CONTR: ${construccion}<br>SUELA: ${suela}</div>
+            <div style="width:50%; padding-left:2px;">PRECIO: ${precio}<br>MRG BUD: ${budRet}<br>MRG: ${margen}</div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const moduloFirmas = `
+      <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:2px 4px; font-size:5.5px; ${tarj.esCorte ? '' : 'border-right:1px solid #000;'}">
+        <div style="font-size:7px; font-weight:900; text-align:center; color:#000; text-transform:uppercase; border-bottom:1px solid #000; padding-bottom:1px;">
+          APROBACIONES
+        </div>
+        <div style="display:flex; flex-direction:column; justify-content:space-between; flex:1; padding-top:22px; padding-bottom:2px;">
+          <div style="display:flex; justify-content:space-between;">
+            <div>
+              <div style="border-bottom:1px solid #000; width:28mm; height:5px;"></div>
+              <span style="font-weight:bold; font-size:4.5px;">PD. CHIEF</span><br><span style="font-size:4px;">DATE: &nbsp; / &nbsp; / &nbsp;</span>
+            </div>
+            <div>
+              <div style="border-bottom:1px solid #000; width:28mm; height:5px;"></div>
+              <span style="font-weight:bold; font-size:4.5px;">MERCHANDISING MAN.</span><br><span style="font-size:4px;">DATE: &nbsp; / &nbsp; / &nbsp;</span>
+            </div>
+          </div>
+          <div style="text-align:center; margin: 1px 0;">
+            <div style="border-bottom:1px solid #000; width:30mm; height:5px; margin:auto;"></div>
+            <span style="font-weight:bold; font-size:4.5px;">PURCHASING MANAGER</span><br><span style="font-size:4px;">DATE: &nbsp; / &nbsp; / &nbsp;</span>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <div>
+              <div style="border-bottom:1px solid #000; width:28mm; height:5px;"></div>
+              <span style="font-weight:bold; font-size:4.5px;">PRODUCTION MANAGER</span><br><span style="font-size:4px;">DATE: &nbsp; / &nbsp; / &nbsp;</span>
+            </div>
+            <div>
+              <div style="border-bottom:1px solid #000; width:28mm; height:5px;"></div>
+              <span style="font-weight:bold; font-size:4.5px;">COUNTRY MANAGER</span><br><span style="font-size:4px;">DATE: &nbsp; / &nbsp; / &nbsp;</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const moduloObservaciones = `
+      <div class="shoe-panel" style="padding:4px; display:flex; flex-direction:column; justify-content:space-between; font-size:7px; border-right:1px solid #000;">
+        <div>
+          <span style="font-weight:900; color:#000; text-transform:uppercase; display:block; margin-bottom:1px;">OBSERVACIONES:</span>
+          <p style="font-size:6.5px; color:#000; font-style:italic; line-height:1.2;">${observaciones}</p>
+        </div>
+        <div style="text-align:right; font-size:6px; color:#000; font-weight:bold;">BATA BOLIVIA PD</div>
+      </div>
+    `;
+
+    const panelCentro = tarj.esCorte ? moduloObservaciones : moduloFirmas;
+    const panelDerecha = tarj.esCorte ? moduloFirmas : moduloObservaciones;
+
+    tarjetasHTML += `
+      <div class="shoe-card-container" style="background:#fff; display:flex; font-size:7px; line-height:1.1; color:#000;">
+        ${moduloInfo}
+        ${panelCentro}
+        ${panelDerecha}
+      </div>
+    `;
+  });
+
+  container.innerHTML = tarjetasHTML;
+}
