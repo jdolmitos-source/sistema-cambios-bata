@@ -214,6 +214,9 @@ window.abrirModalEliminarPlan = () => {
   document.getElementById("modal-eliminar-plan")?.classList.remove("hidden");
 };
 
+// Enlace directo del botón principal de Cambios
+safeClick("btn-open-new-change", window.abrirModalCambio);
+
 // Inicializador de semanas 01 a 52 para Work Planner
 function inicializarSemanas01a52() {
   const selects = [
