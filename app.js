@@ -109,14 +109,22 @@ function esSuperAdmin() {
   return currentUser.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
 }
 
+// Función multirol robusta
+function tieneRol(rolBuscado) {
+  if (esSuperAdmin()) return true;
+  if (!userData) return false;
+  const listaRoles = Array.isArray(userData.roles) ? userData.roles : (userData.rol ? [userData.rol] : []);
+  return listaRoles.some(r => r.toLowerCase().includes(rolBuscado.toLowerCase()));
+}
+
 function esComprasAdmin() {
   if (esSuperAdmin()) return true;
-  return userData && (userData.rol === "Compras Admin" || userData.rol === "Compras");
+  return tieneRol("Compras Admin") || tieneRol("Compras");
 }
 
 function esDesarrollo() {
   if (esSuperAdmin()) return true;
-  return userData && (userData.rol || "").includes("Desarrollo");
+  return tieneRol("Desarrollo de producto");
 }
 
 // Modal WhatsApp Dinámico listando TODOS los usuarios registrados
@@ -138,6 +146,7 @@ async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto }) {
       const u = d.data();
       if (u.celular) {
         count++;
+        const rolesStr = Array.isArray(u.roles) ? u.roles.join(', ') : (u.rol || 'Usuario');
         const item = document.createElement("a");
         item.href = `https://wa.me/591${u.celular}?text=${encodedMsg}`;
         item.target = "_blank";
@@ -145,7 +154,7 @@ async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto }) {
         item.innerHTML = `
           <div>
             <span class="font-bold">${u.nombre}</span>
-            <span class="text-[10px] text-gray-400 block">${u.rol || 'Usuario'} - +591 ${u.celular}</span>
+            <span class="text-[10px] text-gray-400 block">${rolesStr} - +591 ${u.celular}</span>
           </div>
           <span class="bg-[#25D366] text-white px-2.5 py-1 rounded-lg font-bold text-[10px] flex items-center space-x-1">
             <i class="fa-brands fa-whatsapp"></i>
@@ -236,7 +245,6 @@ function inicializarSemanas01a52() {
   });
 }
 
-// Actualizador dinámico del filtro de semanas de aplicabilidad en la vista de Cambios
 function actualizarSelectSemanasAplica() {
   const sel = document.getElementById("filtro-semana-aplica-cambios");
   if (!sel) return;
@@ -257,7 +265,6 @@ function actualizarSelectSemanasAplica() {
   if (valorActual) sel.value = valorActual;
 }
 
-// ==================== INFORME / IMPRESIÓN DIRECTA DESDE CAMBIOS ====================
 window.abrirModalInformeResumenCambios = () => {
   const fSemAplica = document.getElementById("filtro-semana-aplica-cambios")?.value || "";
   let items = solicitudes;
@@ -325,7 +332,6 @@ window.abrirModalInformeResumenCambios = () => {
   document.getElementById("modal-resumen-reporte")?.classList.remove("hidden");
 };
 
-// ==================== REPORTES DE ENTREGAS ====================
 window.abrirReporteImpresoEntregas = () => {
   const items = entregas.filter(item => (categoriaEntregaActiva === "todas") || 
     ((item.tipo || "").toUpperCase().trim() === categoriaEntregaActiva.toUpperCase().trim()));
@@ -366,6 +372,8 @@ window.abrirReporteImpresoEntregas = () => {
     if (it.copias) elementoTexto += ` (${it.copias} copias)`;
     if (it.notas) elementoTexto += ` - ${it.notas}`;
 
+    let rolesEmisor = Array.isArray(it.entregadoPorRoles) ? it.entregadoPorRoles.join(', ') : it.entregadoPorRol;
+
     html += `
       <tr class="border-b">
         <td class="p-1 border text-center">${fotoPrint}</td>
@@ -374,7 +382,7 @@ window.abrirReporteImpresoEntregas = () => {
         <td class="p-2 border font-bold text-gray-800">${it.proyecto || '—'}</td>
         <td class="p-2 border font-mono">${it.articulo || '—'}</td>
         <td class="p-2 border">${elementoTexto}</td>
-        <td class="p-2 border">${it.entregadoPorNombre} <span class="text-[10px] text-gray-400">(${it.entregadoPorRol})</span></td>
+        <td class="p-2 border">${it.entregadoPorNombre} <span class="text-[10px] text-gray-400">(${rolesEmisor})</span></td>
         <td class="p-2 border font-bold">${it.destino}</td>
         <td class="p-2 border text-center font-bold ${it.recibido ? 'text-green-600' : 'text-amber-600'}">
           ${it.recibido ? 'Recibido' : 'En Tránsito'}
@@ -410,7 +418,7 @@ window.abrirResumenTextoEntregas = () => {
     let extra = it.copias ? ` (${it.copias} copias)` : '';
     texto += `${idx + 1}. [Sem: ${it.semana}] ${it.proyecto.toUpperCase()} ${it.articulo ? '| Art: ' + it.articulo : ''}\n`;
     texto += `   • Elemento: ${it.tipo}${extra}\n`;
-    texto += `   • Entregado por: ${it.entregadoPorNombre} (${it.entregadoPorRol}) -> Destino: ${it.destino}\n`;
+    texto += `   • Entregado por: ${it.entregadoPorNombre} -> Destino: ${it.destino}\n`;
     texto += `   • Estado: ${it.recibido ? 'RECIBIDO' : 'EN TRÁNSITO'}\n\n`;
   });
 
@@ -572,10 +580,12 @@ if (formRegister) {
         celular: phone,
         email: email,
         rol: role,
+        roles: [role], // Guardamos también en formato array multirol
         foto: photoBase64,
         fechaCreacion: serverTimestamp()
       });
       modalRegister?.classList.add("hidden");
+      alert("¡Registro exitoso!");
     } catch (err) {
       alert("Error de registro: " + err.message);
     }
@@ -608,8 +618,11 @@ function actualizarHeaderUsuario() {
   const esAdmin = esSuperAdmin();
   const uName = document.getElementById("user-display-name");
   const uRole = document.getElementById("user-display-role");
+  
   if (uName) uName.textContent = (userData && userData.nombre) || (currentUser && currentUser.email) || "Usuario";
-  if (uRole) uRole.textContent = esAdmin ? "SUPER ADMIN" : ((userData && userData.rol) || "Usuario");
+  
+  let rolesArray = userData && userData.roles ? userData.roles : (userData && userData.rol ? [userData.rol] : []);
+  if (uRole) uRole.textContent = esAdmin ? "SUPER ADMIN" : (rolesArray.length > 0 ? rolesArray.join(' • ') : "Usuario");
   
   const avatarImg = document.getElementById("user-display-avatar");
   const avatarIcon = document.getElementById("user-display-avatar-icon");
@@ -633,8 +646,7 @@ function actualizarHeaderUsuario() {
     }
   }
 
-  const rolActual = (userData && userData.rol) || "";
-  const esJefe = rolActual === "Desarrollo de producto - Jefe" || rolActual.includes("Jefe");
+  const esJefe = tieneRol("Jefe") || tieneRol("Desarrollo de producto - Jefe");
   const btnMinutaHeader = document.getElementById("btn-open-minuta-header");
   if (btnMinutaHeader) {
     if (esJefe || esAdmin) {
@@ -647,7 +659,7 @@ function actualizarHeaderUsuario() {
   aplicarPermisosRol();
 }
 
-// Control estricto de visibilidad por rol en el menú lateral
+// Control estricto de visibilidad multirol en el menú lateral
 function aplicarPermisosRol() {
   if (esSuperAdmin()) {
     document.querySelectorAll("aside .sidebar-section-item").forEach(el => el.classList.remove("hidden"));
@@ -655,7 +667,7 @@ function aplicarPermisosRol() {
     return;
   }
 
-  const rol = (userData && userData.rol) || "";
+  const roles = userData && userData.roles ? userData.roles : (userData && userData.rol ? [userData.rol] : []);
 
   const bloqueEntregas = document.getElementById("bloque-menu-entregas");
   const bloqueProd = document.getElementById("bloque-menu-produccion");
@@ -663,28 +675,37 @@ function aplicarPermisosRol() {
   const bloqueTarjetas = document.getElementById("bloque-menu-tarjetas");
   const bloqueSolicitudes = document.getElementById("bloque-menu-solicitudes");
 
+  // Ocultamos inicialmente
   if (bloqueEntregas) bloqueEntregas.classList.add("hidden");
   if (bloqueProd) bloqueProd.classList.add("hidden");
   if (bloqueCompras) bloqueCompras.classList.add("hidden");
   if (bloqueTarjetas) bloqueTarjetas.classList.add("hidden");
   if (bloqueSolicitudes) bloqueSolicitudes.classList.remove("hidden");
 
-  if (rol.includes("Desarrollo")) {
-    if (bloqueEntregas) bloqueEntregas.classList.remove("hidden");
-    if (bloqueTarjetas) bloqueTarjetas.classList.remove("hidden");
-  } else if (rol.includes("Compras")) {
-    if (bloqueCompras) bloqueCompras.classList.remove("hidden");
-    if (bloqueEntregas) bloqueEntregas.classList.remove("hidden");
-  } else if (rol === "Planeamiento") {
-    if (bloqueProd) bloqueProd.classList.remove("hidden");
-    if (bloqueEntregas) bloqueEntregas.classList.remove("hidden");
-  } else if (rol === "Producción") {
-    if (bloqueProd) bloqueProd.classList.remove("hidden");
-    if (bloqueEntregas) bloqueEntregas.classList.remove("hidden");
-    if (bloqueCompras) bloqueCompras.classList.remove("hidden");
-  } else if (rol === "Costos") {
-    if (bloqueEntregas) bloqueEntregas.classList.remove("hidden");
-  }
+  // Evaluamos cada rol asignado de forma acumulativa (Multirol)
+  roles.forEach(rol => {
+    const rLower = rol.toLowerCase();
+    if (rLower.includes("desarrollo")) {
+      if (bloqueEntregas) bloqueEntregas.classList.remove("hidden");
+      if (bloqueTarjetas) bloqueTarjetas.classList.remove("hidden");
+    }
+    if (rLower.includes("compras")) {
+      if (bloqueCompras) bloqueCompras.classList.remove("hidden");
+      if (bloqueEntregas) bloqueEntregas.classList.remove("hidden");
+    }
+    if (rLower.includes("planeamiento")) {
+      if (bloqueProd) bloqueProd.classList.remove("hidden");
+      if (bloqueEntregas) bloqueEntregas.classList.remove("hidden");
+    }
+    if (rLower.includes("producción") || rLower.includes("produccion")) {
+      if (bloqueProd) bloqueProd.classList.remove("hidden");
+      if (bloqueEntregas) bloqueEntregas.classList.remove("hidden");
+      if (bloqueCompras) bloqueCompras.classList.remove("hidden");
+    }
+    if (rLower.includes("costos") || rLower.includes("almacén") || rLower.includes("almacen") || rLower.includes("calidad") || rLower.includes("retail")) {
+      if (bloqueEntregas) bloqueEntregas.classList.remove("hidden");
+    }
+  });
 }
 
 onAuthStateChanged(auth, async (user) => {
@@ -695,10 +716,12 @@ onAuthStateChanged(auth, async (user) => {
       if (docSnap.exists()) {
         userData = docSnap.data();
       } else {
+        const rolDef = esSuperAdmin() ? "Super Admin" : "Desarrollo de producto";
         userData = {
           nombre: esSuperAdmin() ? "Super Admin" : (user.email.split("@")[0]),
           email: user.email,
-          rol: esSuperAdmin() ? "Super Admin" : "Desarrollo de producto",
+          rol: rolDef,
+          roles: [rolDef],
           celular: ""
         };
       }
@@ -707,7 +730,8 @@ onAuthStateChanged(auth, async (user) => {
       userData = {
         nombre: esSuperAdmin() ? "Super Admin" : (user.email.split("@")[0]),
         email: user.email,
-        rol: esSuperAdmin() ? "Super Admin" : "Desarrollo de producto",
+        rol: "Desarrollo de producto",
+        roles: ["Desarrollo de producto"],
         celular: ""
       };
     }
@@ -929,7 +953,7 @@ if (formNuevaSolicitudHelpDesk) {
     try {
       await addDoc(collection(db, "solicitudes_helpdesk"), {
         remitenteNombre: (userData && userData.nombre) || "Usuario",
-        remitenteRol: (userData && userData.rol) || "Planta",
+        remitenteRol: (userData && userData.roles ? userData.roles.join(', ') : (userData && userData.rol) || "Planta"),
         destino,
         pregunta,
         respuesta: "",
@@ -966,7 +990,6 @@ function renderHelpDeskView() {
   empty?.classList.add("hidden");
 
   const ahora = new Date();
-  const rolUsuario = (userData && userData.rol) || "";
   const esAdmin = esSuperAdmin();
 
   solicitudesHelpDesk.forEach(sol => {
@@ -985,7 +1008,7 @@ function renderHelpDeskView() {
       estadoBadge = `<span class="bg-amber-100 text-amber-800 font-bold px-2.5 py-1 rounded-full border border-amber-200 flex items-center justify-center space-x-1"><span class="w-2 h-2 rounded-full bg-amber-500"></span><span>Pendiente</span></span>`;
     }
 
-    const esDelDepartamento = esAdmin || rolUsuario.includes(sol.destino) || sol.destino.includes(rolUsuario);
+    const esDelDepartamento = esAdmin || tieneRol(sol.destino);
 
     let respuestaHTML = "";
     if (sol.estado === "Resuelto") {
@@ -1012,7 +1035,7 @@ function renderHelpDeskView() {
 
     tr.innerHTML = `
       <td class="p-3 border-r whitespace-nowrap text-gray-600">${formatearFecha(sol.fechaCreacion)}</td>
-      <td class="p-3 border-r font-bold text-gray-800">${sol.remitenteNombre} <span class="text-[10px] text-gray-400 block">(${sol.remitenteRol})</span></td>
+      <td class="p-3 border-r font-bold text-gray-800">${sol.remitenteNombre} <span class="text-[10px] text-gray-400 block">(${sol.remitenteRol || 'Planta'})</span></td>
       <td class="p-3 border-r font-bold text-[#D61B28]">${sol.destino}</td>
       <td class="p-3 border-r text-gray-800 font-medium">${sol.pregunta}</td>
       <td class="p-3 border-r text-center whitespace-nowrap">${estadoBadge}</td>
@@ -1211,7 +1234,6 @@ window.imprimirSemanaProduccion = () => {
         table { width: 100% !important; border-collapse: collapse !important; font-size: 9px !important; }
         th, td { border: 1px solid #999 !important; padding: 4px !important; text-align: center !important; }
         th { background-color: #f1f5f9 !important; color: #333 !important; }
-        select { border: none !important; background: transparent !important; font-weight: bold !important; appearance: none; }
       </style>
     </head>
     <body>
@@ -1257,7 +1279,6 @@ function renderProduccionView() {
     return semMatch && proyMatch && linMatch;
   });
 
-  // KPIs
   let totCortado = 0, totAparado = 0, totArmado = 0, totInyeccion = 0, totEntregado = 0;
   filtrados.forEach(l => {
     const p = parseInt(l.pares) || 0;
@@ -1443,7 +1464,7 @@ function renderTablaEntregas() {
     const tr = document.createElement("tr");
     tr.className = "hover:bg-gray-50/80 transition border-b border-gray-100";
 
-    const puedeConfirmar = (userData && userData.rol === ent.destino) || esAdmin;
+    const puedeConfirmar = tieneRol(ent.destino) || esAdmin;
 
     let recepcionHTML = "";
     if (ent.recibido) {
@@ -1476,6 +1497,8 @@ function renderTablaEntregas() {
     if (ent.copias) detalleExtra += `<span class="bg-rose-100 text-rose-800 font-bold text-[9px] px-1.5 py-0.2 rounded ml-1">${ent.copias} copias</span>`;
     if (ent.notas) detalleExtra += `<p class="text-[10px] text-gray-400 mt-0.5">${ent.notas}</p>`;
 
+    let rolesEmisorStr = Array.isArray(ent.entregadoPorRoles) ? ent.entregadoPorRoles.join(', ') : (ent.entregadoPorRol || 'Desarrollo');
+
     tr.innerHTML = `
       ${tdFotoHTML}
       <td class="p-3 font-bold text-gray-700 border-r border-gray-100 font-mono">${ent.semana || '—'}</td>
@@ -1488,7 +1511,7 @@ function renderTablaEntregas() {
       </td>
       <td class="p-3 border-r border-gray-100 whitespace-nowrap">
         <span class="font-bold text-gray-800 block">${ent.entregadoPorNombre}</span>
-        <span class="text-[10px] text-gray-400">(${ent.entregadoPorRol})</span>
+        <span class="text-[10px] text-gray-400">(${rolesEmisorStr})</span>
       </td>
       <td class="p-3 border-r border-gray-100 font-bold text-gray-700">${ent.destino}</td>
       <td class="p-3 text-center whitespace-nowrap">${recepcionHTML}</td>
@@ -1507,7 +1530,6 @@ window.confirmarRecepcionEntrega = async (id, tipo, proyecto) => {
   }
 };
 
-// Escucha en tiempo real de Solicitudes y Cambios
 function escucharCambios() {
   const q = collection(db, "solicitudes_cambios");
   onSnapshot(q, (snapshot) => {
@@ -1547,7 +1569,7 @@ function renderTabla() {
 
   const esAdmin = esSuperAdmin();
   const esDesarrolloUsuario = esDesarrollo() || esAdmin;
-  const esCostos = (userData && userData.rol === "Costos") || esAdmin;
+  const esCostos = tieneRol("Costos") || esAdmin;
 
   listaFiltrada.forEach((item) => {
     const tr = document.createElement("tr");
@@ -1633,7 +1655,7 @@ window.confirmarValidacionCostos = async (id, checkboxElem) => {
   }
 };
 
-// Panel Super Admin
+// Panel Super Admin con Checkboxes Multirol
 async function cargarPanelSuperAdmin() {
   if (!esSuperAdmin()) return;
   const tbodyUsers = document.getElementById("table-users-body");
@@ -1651,6 +1673,7 @@ async function cargarPanelSuperAdmin() {
           "Desarrollo de producto", 
           "Desarrollo de producto - Jefe",
           "Compras", 
+          "Compras Admin",
           "Planeamiento", 
           "Producción", 
           "Costos", 
@@ -1660,18 +1683,26 @@ async function cargarPanelSuperAdmin() {
           "Super Admin"
         ];
         
-        let optionsHTML = rolesDisponibles.map(r => `<option value="${r}" ${u.rol === r ? 'selected' : ''}>${r}</option>`).join('');
+        const rolesUsuario = Array.isArray(u.roles) ? u.roles : (u.rol ? [u.rol] : []);
+
+        let checkboxesHTML = `<div class="grid grid-cols-2 gap-1.5 text-[11px] py-1">`;
+        rolesDisponibles.forEach(r => {
+          const marcado = rolesUsuario.includes(r) ? 'checked' : '';
+          checkboxesHTML += `
+            <label class="flex items-center space-x-1.5 cursor-pointer">
+              <input type="checkbox" value="${r}" ${marcado} onchange="window.actualizarRolesUsuario('${docU.id}', this)" class="accent-[#D61B28] h-3.5 w-3.5 rounded">
+              <span class="font-medium text-gray-700">${r}</span>
+            </label>
+          `;
+        });
+        checkboxesHTML += `</div>`;
 
         tr.innerHTML = `
           <td class="p-3"><img src="${u.foto || 'https://via.placeholder.com/30'}" class="w-7 h-7 rounded-full object-cover"></td>
           <td class="p-3 font-bold">${u.nombre || '—'}</td>
           <td class="p-3">${u.email || '—'}</td>
           <td class="p-3 font-mono">${u.celular || '—'}</td>
-          <td class="p-3">
-            <select onchange="window.cambiarRolUsuario('${docU.id}', this.value)" class="border border-gray-300 rounded px-2 py-1 text-xs font-bold text-[#D61B28] bg-white cursor-pointer shadow-sm">
-              ${optionsHTML}
-            </select>
-          </td>
+          <td class="p-3 min-w-[280px]">${checkboxesHTML}</td>
           <td class="p-3 text-center"><span class="text-xs text-green-600 font-bold">Activo</span></td>
         `;
         tbodyUsers.appendChild(tr);
@@ -1680,6 +1711,23 @@ async function cargarPanelSuperAdmin() {
     renderAdminTablas();
   } catch (e) { console.error(e); }
 }
+
+window.actualizarRolesUsuario = async (uid, checkboxElem) => {
+  try {
+    const fila = checkboxElem.closest('td');
+    const checkboxes = fila.querySelectorAll('input[type="checkbox"]');
+    const rolesSeleccionados = Array.from(checkboxes)
+      .filter(chk => chk.checked)
+      .map(chk => chk.value);
+
+    await updateDoc(doc(db, "usuarios", uid), { 
+      roles: rolesSeleccionados,
+      rol: rolesSeleccionados[0] || "" // Compatibilidad
+    });
+  } catch (err) {
+    alert("Error al actualizar los roles: " + err.message);
+  }
+};
 
 function renderAdminTablas() {
   if (!esSuperAdmin()) return;
@@ -1736,16 +1784,6 @@ window.eliminarRegistroAdmin = async (coleccion, id) => {
   }
 };
 
-window.cambiarRolUsuario = async (uid, nuevoRol) => {
-  try {
-    await updateDoc(doc(db, "usuarios", uid), { rol: nuevoRol });
-    alert(`¡Rol actualizado exitosamente a: ${nuevoRol}!`);
-  } catch (err) {
-    alert("Error al actualizar el rol: " + err.message);
-  }
-};
-
-// Configuración de campos dinámicos en Entrega
 const selEntTipo = document.getElementById("ent-tipo");
 if (selEntTipo) selEntTipo.onchange = actualizarCamposSegunTipoEntrega;
 
@@ -1805,7 +1843,7 @@ function actualizarCamposSegunTipoEntrega() {
   }
 }
 
-// Formulario Entrega con llamada automática a WhatsApp
+// Formulario Entrega con Multirol en Emisor
 const formEntrega = document.getElementById("form-nueva-entrega");
 if (formEntrega) {
   formEntrega.onsubmit = async (e) => {
@@ -1827,6 +1865,8 @@ if (formEntrega) {
         destinosAEntregar = [document.getElementById("ent-destino").value];
       }
 
+      const rolesActuales = userData && userData.roles ? userData.roles : (userData && userData.rol ? [userData.rol] : ["Desarrollo"]);
+
       for (const destino of destinosAEntregar) {
         await addDoc(collection(db, "entregas_departamentos"), {
           semana, proyecto,
@@ -1835,7 +1875,7 @@ if (formEntrega) {
           copias: tipo === "TIZADORES" ? (copias || "1") : null,
           foto: fotoBase64, notas,
           entregadoPorNombre: (userData && userData.nombre) || "Usuario",
-          entregadoPorRol: (userData && userData.rol) || "Desarrollo",
+          entregadoPorRoles: rolesActuales,
           recibido: false,
           fechaEntrega: new Date().toISOString()
         });
@@ -1854,7 +1894,6 @@ if (formEntrega) {
   };
 }
 
-// Formulario Nuevo Cambio con Semana que Aplica
 const formNewChange = document.getElementById("form-new-change");
 if (formNewChange) {
   formNewChange.onsubmit = async (e) => {
@@ -1892,7 +1931,6 @@ if (formNewChange) {
   };
 }
 
-// Formulario Minuta con Semana que Aplica
 const formMinuta = document.getElementById("form-minuta");
 if (formMinuta) {
   formMinuta.onsubmit = async (e) => {
@@ -1930,7 +1968,6 @@ if (formMinuta) {
   };
 }
 
-// Procurement placeholder
 function escucharProcurement() {}
 
 // ==================== MÓDULO TARJETAS (PD) ====================
