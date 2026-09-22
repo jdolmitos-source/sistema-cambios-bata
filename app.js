@@ -930,7 +930,7 @@ window.cambiarSubmenuEntrega = (categoria) => {
   renderTablaEntregas();
 };
 
-// ==================== MÓDULO HELPDESK ====================
+// ==================== MÓDULO HELPDESK CON FILTRO Y EDICIÓN RESTRINGIDA ====================
 function escucharHelpDesk() {
   const q = collection(db, "solicitudes_helpdesk");
   onSnapshot(q, (snapshot) => {
@@ -996,6 +996,7 @@ function renderHelpDeskView() {
 
   const ahora = new Date();
   const esAdmin = esSuperAdmin();
+  const nombreUsuarioActual = (userData && userData.nombre) ? userData.nombre.trim().toLowerCase() : "";
 
   solicitudesFiltradas.forEach(sol => {
     const tr = document.createElement("tr");
@@ -1014,11 +1015,15 @@ function renderHelpDeskView() {
     }
 
     const esDelDepartamento = esAdmin || tieneRol(sol.destino);
+    const respondidoPorUsuario = sol.respondidoPor ? sol.respondidoPor.trim().toLowerCase() : "";
+    
+    // Solo el autor exacto de la respuesta o el Super Admin pueden editarla
+    const puedeEditarRespuesta = esAdmin || (respondidoPorUsuario === nombreUsuarioActual && nombreUsuarioActual !== "");
 
     let respuestaHTML = "";
     if (sol.estado === "Resuelto") {
       let edicionInfo = sol.fechaEdicionRespuesta ? `<span class="text-[9px] text-amber-600 block">(Editado: ${formatearFecha(sol.fechaEdicionRespuesta)})</span>` : '';
-      let botonEditarResp = esDelDepartamento ? `<button onclick="window.abrirModalEditarRespuestaHelpDesk('${sol.id}', '${encodeURIComponent(sol.respuesta)}')" class="mt-1 text-[11px] font-bold text-blue-600 hover:underline flex items-center space-x-1 cursor-pointer"><i class="fa-solid fa-pen"></i><span>Editar Respuesta</span></button>` : '';
+      let botonEditarResp = puedeEditarRespuesta ? `<button onclick="window.abrirModalEditarRespuestaHelpDesk('${sol.id}', '${encodeURIComponent(sol.respuesta)}')" class="mt-1 text-[11px] font-bold text-blue-600 hover:underline flex items-center space-x-1 cursor-pointer"><i class="fa-solid fa-pen"></i><span>Editar mi respuesta</span></button>` : '';
 
       respuestaHTML = `
         <div class="text-gray-700 font-medium">
@@ -1107,7 +1112,6 @@ if (formEditarRespuestaHelpDesk) {
     try {
       await updateDoc(doc(db, "solicitudes_helpdesk", id), {
         respuesta: nuevoTexto,
-        respondidoPor: (userData && userData.nombre) || "Usuario",
         fechaEdicionRespuesta: new Date().toISOString()
       });
       modalEditarRespuestaHelpDesk?.classList.add("hidden");
@@ -1116,7 +1120,7 @@ if (formEditarRespuestaHelpDesk) {
       alert("Error al actualizar respuesta: " + err.message);
     }
   };
-}
+};
 
 // ==================== MÓDULO PRODUCCIÓN WORK PLANNER ====================
 function escucharProduccion() {
