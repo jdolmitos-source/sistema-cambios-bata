@@ -109,7 +109,6 @@ function esSuperAdmin() {
   return currentUser.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
 }
 
-// Función multirol robusta
 function tieneRol(rolBuscado) {
   if (esSuperAdmin()) return true;
   if (!userData) return false;
@@ -127,7 +126,6 @@ function esDesarrollo() {
   return tieneRol("Desarrollo de producto");
 }
 
-// Modal WhatsApp Dinámico listando TODOS los usuarios registrados
 async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto }) {
   const modalWA = document.getElementById("modal-whatsapp");
   const listContainer = document.getElementById("whatsapp-contacts-list");
@@ -175,7 +173,7 @@ async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto }) {
   }
 }
 
-// ==================== FUNCIONES GLOBALES EXpuestas en window ====================
+// ==================== FUNCIONES GLOBALES EN WINDOW ====================
 window.abrirModalCambio = () => {
   document.getElementById("modal-new-change")?.classList.remove("hidden");
 };
@@ -223,7 +221,6 @@ window.abrirModalEliminarPlan = () => {
   document.getElementById("modal-eliminar-plan")?.classList.remove("hidden");
 };
 
-// Inicializador de semanas 01 a 52 para Work Planner
 function inicializarSemanas01a52() {
   const selects = [
     document.getElementById("prod-filter-semana"),
@@ -447,7 +444,7 @@ window.abrirResumenTextoEntregas = () => {
   document.getElementById("modal-entregas-texto")?.classList.remove("hidden");
 };
 
-// Controles y Modales Base
+// Modales Base y Control
 const welcomeContainer = document.getElementById("welcome-container");
 const appContainer = document.getElementById("app-container");
 const modalLogin = document.getElementById("modal-login");
@@ -468,6 +465,7 @@ const modalNewChange = document.getElementById("modal-new-change");
 const modalNuevoLoteProd = document.getElementById("modal-nuevo-lote-prod");
 const modalEliminarPlan = document.getElementById("modal-eliminar-plan");
 const modalNuevaSolicitudHelpDesk = document.getElementById("modal-nueva-solicitud-helpdesk");
+const modalEditarRespuestaHelpDesk = document.getElementById("modal-editar-respuesta-helpdesk");
 
 safeClick("btn-close-whatsapp-modal", () => document.getElementById("modal-whatsapp")?.classList.add("hidden"));
 safeClick("btn-show-login", () => modalLogin?.classList.remove("hidden"));
@@ -497,6 +495,8 @@ safeClick("close-eliminar-plan", () => modalEliminarPlan?.classList.add("hidden"
 safeClick("cancel-eliminar-plan", () => modalEliminarPlan?.classList.add("hidden"));
 safeClick("close-nueva-solicitud-helpdesk", () => modalNuevaSolicitudHelpDesk?.classList.add("hidden"));
 safeClick("cancel-nueva-solicitud-helpdesk", () => modalNuevaSolicitudHelpDesk?.classList.add("hidden"));
+safeClick("close-editar-respuesta-helpdesk", () => modalEditarRespuestaHelpDesk?.classList.add("hidden"));
+safeClick("cancel-editar-respuesta-helpdesk", () => modalEditarRespuestaHelpDesk?.classList.add("hidden"));
 
 safeClick("btn-reporte-entregas-pdf", window.abrirReporteImpresoEntregas);
 safeClick("btn-reporte-entregas-texto", window.abrirResumenTextoEntregas);
@@ -580,7 +580,7 @@ if (formRegister) {
         celular: phone,
         email: email,
         rol: role,
-        roles: [role], // Guardamos también en formato array multirol
+        roles: [role],
         foto: photoBase64,
         fechaCreacion: serverTimestamp()
       });
@@ -659,7 +659,6 @@ function actualizarHeaderUsuario() {
   aplicarPermisosRol();
 }
 
-// Control estricto de visibilidad multirol en el menú lateral
 function aplicarPermisosRol() {
   if (esSuperAdmin()) {
     document.querySelectorAll("aside .sidebar-section-item").forEach(el => el.classList.remove("hidden"));
@@ -675,14 +674,12 @@ function aplicarPermisosRol() {
   const bloqueTarjetas = document.getElementById("bloque-menu-tarjetas");
   const bloqueSolicitudes = document.getElementById("bloque-menu-solicitudes");
 
-  // Ocultamos inicialmente
   if (bloqueEntregas) bloqueEntregas.classList.add("hidden");
   if (bloqueProd) bloqueProd.classList.add("hidden");
   if (bloqueCompras) bloqueCompras.classList.add("hidden");
   if (bloqueTarjetas) bloqueTarjetas.classList.add("hidden");
   if (bloqueSolicitudes) bloqueSolicitudes.classList.remove("hidden");
 
-  // Evaluamos cada rol asignado de forma acumulativa (Multirol)
   roles.forEach(rol => {
     const rLower = rol.toLowerCase();
     if (rLower.includes("desarrollo")) {
@@ -960,6 +957,7 @@ if (formNuevaSolicitudHelpDesk) {
         respondidoPor: "",
         fechaCreacion: new Date().toISOString(),
         fechaRespuesta: null,
+        fechaEdicionRespuesta: null,
         estado: "Pendiente"
       });
 
@@ -983,7 +981,14 @@ function renderHelpDeskView() {
   if (!tbody) return;
   tbody.innerHTML = "";
 
-  if (solicitudesHelpDesk.length === 0) {
+  const filtroDepto = document.getElementById("filtro-depto-helpdesk")?.value || "";
+
+  let solicitudesFiltradas = solicitudesHelpDesk.filter(sol => {
+    if (!filtroDepto) return true;
+    return (sol.destino || "").trim().toLowerCase() === filtroDepto.trim().toLowerCase();
+  });
+
+  if (solicitudesFiltradas.length === 0) {
     empty?.classList.remove("hidden");
     return;
   }
@@ -992,7 +997,7 @@ function renderHelpDeskView() {
   const ahora = new Date();
   const esAdmin = esSuperAdmin();
 
-  solicitudesHelpDesk.forEach(sol => {
+  solicitudesFiltradas.forEach(sol => {
     const tr = document.createElement("tr");
     tr.className = "hover:bg-gray-50/80 transition border-b border-gray-100";
 
@@ -1012,10 +1017,15 @@ function renderHelpDeskView() {
 
     let respuestaHTML = "";
     if (sol.estado === "Resuelto") {
+      let edicionInfo = sol.fechaEdicionRespuesta ? `<span class="text-[9px] text-amber-600 block">(Editado: ${formatearFecha(sol.fechaEdicionRespuesta)})</span>` : '';
+      let botonEditarResp = esDelDepartamento ? `<button onclick="window.abrirModalEditarRespuestaHelpDesk('${sol.id}', '${encodeURIComponent(sol.respuesta)}')" class="mt-1 text-[11px] font-bold text-blue-600 hover:underline flex items-center space-x-1 cursor-pointer"><i class="fa-solid fa-pen"></i><span>Editar Respuesta</span></button>` : '';
+
       respuestaHTML = `
         <div class="text-gray-700 font-medium">
           <p class="italic">${sol.respuesta}</p>
           <span class="text-[10px] text-gray-400 block mt-1">Por: ${sol.respondidoPor} (${formatearFecha(sol.fechaRespuesta)})</span>
+          ${edicionInfo}
+          ${botonEditarResp}
         </div>
       `;
     } else {
@@ -1048,6 +1058,14 @@ function renderHelpDeskView() {
   });
 }
 
+const filtroDeptoHelpDesk = document.getElementById("filtro-depto-helpdesk");
+if (filtroDeptoHelpDesk) filtroDeptoHelpDesk.onchange = renderHelpDeskView;
+
+safeClick("btn-limpiar-filtro-helpdesk", () => {
+  if (filtroDeptoHelpDesk) filtroDeptoHelpDesk.value = "";
+  renderHelpDeskView();
+});
+
 window.guardarRespuestaHelpDesk = async (id) => {
   const input = document.getElementById(`resp-input-${id}`);
   if (!input) return;
@@ -1069,6 +1087,36 @@ window.guardarRespuestaHelpDesk = async (id) => {
     alert("Error al responder: " + err.message);
   }
 };
+
+window.abrirModalEditarRespuestaHelpDesk = (id, respuestaActualEncoded) => {
+  const respActual = decodeURIComponent(respuestaActualEncoded);
+  document.getElementById("edit-helpdesk-id").value = id;
+  document.getElementById("edit-helpdesk-texto").value = respActual;
+  modalEditarRespuestaHelpDesk?.classList.remove("hidden");
+};
+
+const formEditarRespuestaHelpDesk = document.getElementById("form-editar-respuesta-helpdesk");
+if (formEditarRespuestaHelpDesk) {
+  formEditarRespuestaHelpDesk.onsubmit = async (e) => {
+    e.preventDefault();
+    const id = document.getElementById("edit-helpdesk-id").value;
+    const nuevoTexto = document.getElementById("edit-helpdesk-texto").value.trim();
+
+    if (!id || !nuevoTexto) return;
+
+    try {
+      await updateDoc(doc(db, "solicitudes_helpdesk", id), {
+        respuesta: nuevoTexto,
+        respondidoPor: (userData && userData.nombre) || "Usuario",
+        fechaEdicionRespuesta: new Date().toISOString()
+      });
+      modalEditarRespuestaHelpDesk?.classList.add("hidden");
+      alert("Respuesta actualizada correctamente.");
+    } catch (err) {
+      alert("Error al actualizar respuesta: " + err.message);
+    }
+  };
+}
 
 // ==================== MÓDULO PRODUCCIÓN WORK PLANNER ====================
 function escucharProduccion() {
@@ -1655,7 +1703,6 @@ window.confirmarValidacionCostos = async (id, checkboxElem) => {
   }
 };
 
-// Panel Super Admin con Checkboxes Multirol
 async function cargarPanelSuperAdmin() {
   if (!esSuperAdmin()) return;
   const tbodyUsers = document.getElementById("table-users-body");
@@ -1722,7 +1769,7 @@ window.actualizarRolesUsuario = async (uid, checkboxElem) => {
 
     await updateDoc(doc(db, "usuarios", uid), { 
       roles: rolesSeleccionados,
-      rol: rolesSeleccionados[0] || "" // Compatibilidad
+      rol: rolesSeleccionados[0] || ""
     });
   } catch (err) {
     alert("Error al actualizar los roles: " + err.message);
@@ -1843,7 +1890,6 @@ function actualizarCamposSegunTipoEntrega() {
   }
 }
 
-// Formulario Entrega con Multirol en Emisor
 const formEntrega = document.getElementById("form-nueva-entrega");
 if (formEntrega) {
   formEntrega.onsubmit = async (e) => {
