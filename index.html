@@ -402,7 +402,7 @@
                 <i class="fa-solid fa-headset text-amber-600"></i>
                 <span>Gestor de Solicitudes y HelpDesk de Planta</span>
               </h2>
-              <p class="text-xs text-gray-400">Seguimiento de requerimientos entre departamentos con alertas de semáforo automático (>3 días rojo).</p>
+              <p class="text-xs text-gray-400">Seguimiento de requerimientos entre departamentos con filtros y alertas automáticas.</p>
             </div>
             <div class="flex items-center space-x-2">
               <button type="button" onclick="window.abrirModalNuevaSolicitudHelpDesk()" class="bg-[#D61B28] hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center space-x-2 transition cursor-pointer">
@@ -410,6 +410,21 @@
                 <span>Nueva Solicitud Interdepartamental</span>
               </button>
             </div>
+          </div>
+
+          <!-- BARRA DE FILTRADO POR DEPARTAMENTO DESTINO -->
+          <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex items-center space-x-3">
+            <span class="font-bold text-xs text-gray-600"><i class="fa-solid fa-filter text-amber-600 mr-1"></i> Filtrar por Departamento Destino:</span>
+            <select id="filtro-depto-helpdesk" class="px-3 py-1.5 border border-gray-300 rounded-lg font-bold bg-white text-gray-800 text-xs">
+              <option value="">Todos los Departamentos</option>
+              <option value="Compras">Compras</option>
+              <option value="Planeamiento">Planeamiento</option>
+              <option value="Producción">Producción</option>
+              <option value="Costos">Costos</option>
+              <option value="Desarrollo de producto">Desarrollo de producto</option>
+              <option value="Almacén">Almacén</option>
+            </select>
+            <button type="button" id="btn-limpiar-filtro-helpdesk" class="bg-gray-200 hover:bg-gray-300 px-3 py-1.5 rounded-lg font-bold text-gray-700 text-xs cursor-pointer">Limpiar</button>
           </div>
 
           <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
@@ -431,7 +446,7 @@
             </div>
             <div id="solicitudes-empty-state" class="hidden p-8 text-center text-gray-400 text-xs">
               <i class="fa-regular fa-comments text-3xl mb-2 text-gray-300"></i>
-              <p>No hay solicitudes interdepartamentales registradas.</p>
+              <p>No hay solicitudes interdepartamentales que coincidan con el filtro.</p>
             </div>
           </div>
         </section>
@@ -951,6 +966,33 @@
           </div>
         </section>
       </main>
+    </div>
+  </div>
+
+  <!-- MODAL: EDITAR RESPUESTA HELPDESK -->
+  <div id="modal-editar-respuesta-helpdesk" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden text-xs">
+      <div class="bg-emerald-700 px-6 py-4 flex justify-between items-center text-white">
+        <h3 class="font-bold text-sm flex items-center space-x-2">
+          <i class="fa-solid fa-pen-to-square"></i>
+          <span>Editar Respuesta de HelpDesk</span>
+        </h3>
+        <button type="button" id="close-editar-respuesta-helpdesk" class="text-white hover:text-gray-200 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="form-editar-respuesta-helpdesk" class="p-6 space-y-3">
+        <input type="hidden" id="edit-helpdesk-id">
+        <div>
+          <label class="block font-bold text-gray-700 mb-1">Nueva Respuesta Actualizada</label>
+          <textarea id="edit-helpdesk-texto" rows="4" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"></textarea>
+        </div>
+        <div class="pt-2 flex justify-end space-x-2">
+          <button type="button" id="cancel-editar-respuesta-helpdesk" class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg font-bold cursor-pointer">Cancelar</button>
+          <button type="submit" class="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold flex items-center space-x-2 shadow cursor-pointer">
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span>Guardar Cambios</span>
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
