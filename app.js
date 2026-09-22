@@ -214,48 +214,58 @@ window.abrirModalEliminarPlan = () => {
   document.getElementById("modal-eliminar-plan")?.classList.remove("hidden");
 };
 
-// Inicializador de semanas 01 a 52
+// Inicializador de semanas 01 a 52 para Work Planner
 function inicializarSemanas01a52() {
   const selects = [
     document.getElementById("prod-filter-semana"),
-    document.getElementById("lote-semana"),
-    document.getElementById("filtro-semana-aplica-cambios"),
-    document.getElementById("change-semana"),
-    document.getElementById("change-semana-aplica"),
-    document.getElementById("minuta-semana"),
-    document.getElementById("minuta-semana-aplica")
+    document.getElementById("lote-semana")
   ];
 
   selects.forEach(sel => {
     if (!sel) return;
     const valorActual = sel.value;
-    const esSelectFiltro = sel.tagName === "SELECT" && (sel.id === "prod-filter-semana" || sel.id === "filtro-semana-aplica-cambios");
-    
-    if (sel.tagName === "SELECT") {
-      if (sel.id === "prod-filter-semana") {
-        sel.innerHTML = '<option value="">Todas las Semanas (01-52)</option>';
-      } else if (sel.id === "filtro-semana-aplica-cambios") {
-        sel.innerHTML = '<option value="">Todas las Semanas</option>';
-      } else {
-        sel.innerHTML = '';
-      }
+    const esFiltro = sel.id === "prod-filter-semana";
+    sel.innerHTML = esFiltro ? '<option value="">Todas las Semanas (01-52)</option>' : '';
 
-      for (let i = 1; i <= 52; i++) {
-        const numStr = i < 10 ? `0${i}` : `${i}`;
-        const val = `Semana ${numStr}`;
-        sel.innerHTML += `<option value="${val}">Semana ${numStr}</option>`;
-      }
+    for (let i = 1; i <= 52; i++) {
+      const numStr = i < 10 ? `0${i}` : `${i}`;
+      const val = `Semana ${numStr}`;
+      sel.innerHTML += `<option value="${val}">Semana ${numStr}</option>`;
     }
     if (valorActual) sel.value = valorActual;
   });
 }
 
-// ==================== REPORTES Y ENTREGAS ====================
+// Actualizador dinámico del filtro de semanas de aplicabilidad en la vista de Cambios
+function actualizarSelectSemanasAplica() {
+  const sel = document.getElementById("filtro-semana-aplica-cambios");
+  if (!sel) return;
+  const valorActual = sel.value;
+  
+  const semanasUnicas = new Set();
+  solicitudes.forEach(s => {
+    if (s.semanaAplica) semanasUnicas.add(s.semanaAplica.trim());
+    else if (s.semana) semanasUnicas.add(s.semana.trim());
+  });
+
+  let optionsHTML = '<option value="">Todas las Semanas</option>';
+  Array.from(semanasUnicas).sort().forEach(sem => {
+    optionsHTML += `<option value="${sem}">${sem}</option>`;
+  });
+  
+  sel.innerHTML = optionsHTML;
+  if (valorActual) sel.value = valorActual;
+}
+
+// ==================== INFORME / IMPRESIÓN DIRECTA DESDE CAMBIOS ====================
 window.abrirModalInformeResumenCambios = () => {
   const fSemAplica = document.getElementById("filtro-semana-aplica-cambios")?.value || "";
   let items = solicitudes;
   if (fSemAplica) {
-    items = solicitudes.filter(s => (s.semanaAplica || s.semana) === fSemAplica);
+    items = solicitudes.filter(s => {
+      const semAplica = (s.semanaAplica || s.semana || "").trim().toLowerCase();
+      return semAplica === fSemAplica.trim().toLowerCase();
+    });
   }
 
   if (items.length === 0) {
@@ -315,6 +325,7 @@ window.abrirModalInformeResumenCambios = () => {
   document.getElementById("modal-resumen-reporte")?.classList.remove("hidden");
 };
 
+// ==================== REPORTES DE ENTREGAS ====================
 window.abrirReporteImpresoEntregas = () => {
   const items = entregas.filter(item => (categoriaEntregaActiva === "todas") || 
     ((item.tipo || "").toUpperCase().trim() === categoriaEntregaActiva.toUpperCase().trim()));
@@ -898,7 +909,7 @@ window.cambiarSubmenuEntrega = (categoria) => {
   renderTablaEntregas();
 };
 
-// ==================== MÓDULO HELPDESK (Con restricción exacta por departamento) ====================
+// ==================== MÓDULO HELPDESK ====================
 function escucharHelpDesk() {
   const q = collection(db, "solicitudes_helpdesk");
   onSnapshot(q, (snapshot) => {
@@ -974,7 +985,6 @@ function renderHelpDeskView() {
       estadoBadge = `<span class="bg-amber-100 text-amber-800 font-bold px-2.5 py-1 rounded-full border border-amber-200 flex items-center justify-center space-x-1"><span class="w-2 h-2 rounded-full bg-amber-500"></span><span>Pendiente</span></span>`;
     }
 
-    // Validar si el usuario actual pertenece al departamento cuestionado o es Super Admin
     const esDelDepartamento = esAdmin || rolUsuario.includes(sol.destino) || sol.destino.includes(rolUsuario);
 
     let respuestaHTML = "";
@@ -1503,6 +1513,7 @@ function escucharCambios() {
   onSnapshot(q, (snapshot) => {
     solicitudes = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
     solicitudes.sort((a, b) => (b.fechaCreacion || "").localeCompare(a.fechaCreacion || ""));
+    actualizarSelectSemanasAplica();
     renderTabla();
     renderAdminTablas();
   });
@@ -1524,8 +1535,8 @@ function renderTabla() {
 
   let listaFiltrada = solicitudes.filter(item => {
     if (!fSemAplica) return true;
-    const semItem = item.semanaAplica || item.semana || "";
-    return semItem.trim().toLowerCase() === fSemAplica.trim().toLowerCase();
+    const semAplicaItem = (item.semanaAplica || item.semana || "").trim().toLowerCase();
+    return semAplicaItem === fSemAplica.trim().toLowerCase();
   });
 
   if (listaFiltrada.length === 0) {
