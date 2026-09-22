@@ -111,12 +111,27 @@ function esSuperAdmin() {
 
 function esComprasAdmin() {
   if (esSuperAdmin()) return true;
-  return userData && (userData.rol === "Compras Admin" || userData.rol === "Compras");
+  return userData && (userData.rol === "Compras Admin" || userData.rol === "Compras" || (userData.rolesMultiples && userData.rolesMultiples.includes("Compras")));
 }
 
 function esDesarrollo() {
   if (esSuperAdmin()) return true;
-  return userData && (userData.rol || "").includes("Desarrollo");
+  return userData && ((userData.rol || "").includes("Desarrollo") || (userData.rolesMultiples && userData.rolesMultiples.some(r => r.includes("Desarrollo"))));
+}
+
+// Validación inteligente multi-rol para HelpDesk o áreas
+function usuarioTieneAccesoArea(areaDestino) {
+  if (esSuperAdmin()) return true;
+  if (!userData) return false;
+
+  const rolPrincipal = userData.rol || "";
+  if (rolPrincipal === areaDestino || rolPrincipal.includes(areaDestino)) return true;
+
+  if (userData.rolesMultiples && Array.isArray(userData.rolesMultiples)) {
+    return userData.rolesMultiples.some(r => r === areaDestino || r.includes(areaDestino));
+  }
+
+  return false;
 }
 
 // Modal WhatsApp Dinámico listando TODOS los usuarios registrados
@@ -166,7 +181,7 @@ async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto }) {
   }
 }
 
-// ==================== FUNCIONES GLOBALES EXuestas al HTML (Window) ====================
+// ==================== FUNCIONES GLOBALES EXpuestas en window ====================
 window.abrirModalCambio = () => {
   document.getElementById("modal-new-change")?.classList.remove("hidden");
 };
@@ -572,6 +587,7 @@ if (formRegister) {
         celular: phone,
         email: email,
         rol: role,
+        rolesMultiples: [role], // Inicializar array multi-rol
         foto: photoBase64,
         fechaCreacion: serverTimestamp()
       });
@@ -609,7 +625,12 @@ function actualizarHeaderUsuario() {
   const uName = document.getElementById("user-display-name");
   const uRole = document.getElementById("user-display-role");
   if (uName) uName.textContent = (userData && userData.nombre) || (currentUser && currentUser.email) || "Usuario";
-  if (uRole) uRole.textContent = esAdmin ? "SUPER ADMIN" : ((userData && userData.rol) || "Usuario");
+  
+  let rolTexto = esAdmin ? "SUPER ADMIN" : ((userData && userData.rol) || "Usuario");
+  if (userData && userData.rolesMultiples && userData.rolesMultiples.length > 1) {
+    rolTexto = userData.rolesMultiples.join(" + ");
+  }
+  if (uRole) uRole.textContent = rolTexto;
   
   const avatarImg = document.getElementById("user-display-avatar");
   const avatarIcon = document.getElementById("user-display-avatar-icon");
@@ -634,7 +655,7 @@ function actualizarHeaderUsuario() {
   }
 
   const rolActual = (userData && userData.rol) || "";
-  const esJefe = rolActual === "Desarrollo de producto - Jefe" || rolActual.includes("Jefe");
+  const esJefe = rolActual === "Desarrollo de producto - Jefe" || rolActual.includes("Jefe") || (userData && userData.rolesMultiples && userData.rolesMultiples.some(r => r.includes("Jefe")));
   const btnMinutaHeader = document.getElementById("btn-open-minuta-header");
   if (btnMinutaHeader) {
     if (esJefe || esAdmin) {
@@ -647,15 +668,13 @@ function actualizarHeaderUsuario() {
   aplicarPermisosRol();
 }
 
-// Control estricto de visibilidad por rol en el menú lateral
+// Control de visibilidad por rol en el menú lateral
 function aplicarPermisosRol() {
   if (esSuperAdmin()) {
     document.querySelectorAll("aside .sidebar-section-item").forEach(el => el.classList.remove("hidden"));
     document.getElementById("menu-btn-usuarios")?.classList.remove("hidden");
     return;
   }
-
-  const rol = (userData && userData.rol) || "";
 
   const bloqueEntregas = document.getElementById("bloque-menu-entregas");
   const bloqueProd = document.getElementById("bloque-menu-produccion");
@@ -669,20 +688,21 @@ function aplicarPermisosRol() {
   if (bloqueTarjetas) bloqueTarjetas.classList.add("hidden");
   if (bloqueSolicitudes) bloqueSolicitudes.classList.remove("hidden");
 
-  if (rol.includes("Desarrollo")) {
+  const tieneAcceso = (area) => usuarioTieneAccesoArea(area);
+
+  if (tieneAcceso("Desarrollo")) {
     if (bloqueEntregas) bloqueEntregas.classList.remove("hidden");
     if (bloqueTarjetas) bloqueTarjetas.classList.remove("hidden");
-  } else if (rol.includes("Compras")) {
+  } 
+  if (tieneAcceso("Compras")) {
     if (bloqueCompras) bloqueCompras.classList.remove("hidden");
     if (bloqueEntregas) bloqueEntregas.classList.remove("hidden");
-  } else if (rol === "Planeamiento") {
+  } 
+  if (tieneAcceso("Planeamiento") || tieneAcceso("Producción")) {
     if (bloqueProd) bloqueProd.classList.remove("hidden");
     if (bloqueEntregas) bloqueEntregas.classList.remove("hidden");
-  } else if (rol === "Producción") {
-    if (bloqueProd) bloqueProd.classList.remove("hidden");
-    if (bloqueEntregas) bloqueEntregas.classList.remove("hidden");
-    if (bloqueCompras) bloqueCompras.classList.remove("hidden");
-  } else if (rol === "Costos") {
+  }
+  if (tieneAcceso("Costos")) {
     if (bloqueEntregas) bloqueEntregas.classList.remove("hidden");
   }
 }
@@ -699,6 +719,7 @@ onAuthStateChanged(auth, async (user) => {
           nombre: esSuperAdmin() ? "Super Admin" : (user.email.split("@")[0]),
           email: user.email,
           rol: esSuperAdmin() ? "Super Admin" : "Desarrollo de producto",
+          rolesMultiples: ["Desarrollo de producto"],
           celular: ""
         };
       }
@@ -708,6 +729,7 @@ onAuthStateChanged(auth, async (user) => {
         nombre: esSuperAdmin() ? "Super Admin" : (user.email.split("@")[0]),
         email: user.email,
         rol: esSuperAdmin() ? "Super Admin" : "Desarrollo de producto",
+        rolesMultiples: ["Desarrollo de producto"],
         celular: ""
       };
     }
@@ -730,7 +752,7 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// Navegación
+// Navegación principal
 const viewCambios = document.getElementById("view-cambios");
 const viewEntregas = document.getElementById("view-entregas");
 const viewProduccion = document.getElementById("view-produccion");
@@ -778,39 +800,31 @@ function activarVistaCambios() {
 }
 
 safeClick("menu-btn-cambios", activarVistaCambios);
-
-safeClick("menu-btn-entregas-todas", () => {
-  window.cambiarSubmenuEntrega("todas");
-});
-
+safeClick("menu-btn-entregas-todas", () => window.cambiarSubmenuEntrega("todas"));
 safeClick("menu-btn-produccion", () => {
   resetMenuStyles();
   viewProduccion?.classList.remove("hidden");
   if (menuBtnProduccion) menuBtnProduccion.className = CLASE_ACTIVO_PASTILLA;
   renderProduccionView();
 });
-
 safeClick("menu-btn-procurement", () => {
   resetMenuStyles();
   viewProcurement?.classList.remove("hidden");
   if (menuBtnProcurement) menuBtnProcurement.className = CLASE_ACTIVO_PASTILLA;
   renderProcurementView();
 });
-
 safeClick("menu-btn-tarjetas", () => {
   resetMenuStyles();
   viewTarjetas?.classList.remove("hidden");
   if (menuBtnTarjetas) menuBtnTarjetas.className = CLASE_ACTIVO_PASTILLA;
   initModuloTarjetas();
 });
-
 safeClick("menu-btn-solicitudes", () => {
   resetMenuStyles();
   viewSolicitudes?.classList.remove("hidden");
   if (menuBtnSolicitudes) menuBtnSolicitudes.className = CLASE_ACTIVO_PASTILLA;
   renderHelpDeskView();
 });
-
 safeClick("menu-btn-usuarios", () => {
   if (!esSuperAdmin()) {
     alert("Acceso denegado.");
@@ -821,6 +835,10 @@ safeClick("menu-btn-usuarios", () => {
   if (menuBtnUsuarios) menuBtnUsuarios.className = CLASE_ACTIVO_PASTILLA;
   cargarPanelSuperAdmin();
 });
+
+// Enlace directo de los botones de apertura de modales de Cambios
+safeClick("btn-open-new-change", window.abrirModalCambio);
+safeClick("btn-open-minuta-header", window.abrirModalMinuta);
 
 // Submenús entregas
 safeClick("sub-btn-MATERIALES", () => window.cambiarSubmenuEntrega("MATERIALES"));
@@ -966,8 +984,6 @@ function renderHelpDeskView() {
   empty?.classList.add("hidden");
 
   const ahora = new Date();
-  const rolUsuario = (userData && userData.rol) || "";
-  const esAdmin = esSuperAdmin();
 
   solicitudesHelpDesk.forEach(sol => {
     const tr = document.createElement("tr");
@@ -985,7 +1001,8 @@ function renderHelpDeskView() {
       estadoBadge = `<span class="bg-amber-100 text-amber-800 font-bold px-2.5 py-1 rounded-full border border-amber-200 flex items-center justify-center space-x-1"><span class="w-2 h-2 rounded-full bg-amber-500"></span><span>Pendiente</span></span>`;
     }
 
-    const esDelDepartamento = esAdmin || rolUsuario.includes(sol.destino) || sol.destino.includes(rolUsuario);
+    // Validación multi-rol: verifica si el usuario actual tiene acceso al área de destino
+    const esDelDepartamento = usuarioTieneAccesoArea(sol.destino);
 
     let respuestaHTML = "";
     if (sol.estado === "Resuelto") {
@@ -1443,7 +1460,7 @@ function renderTablaEntregas() {
     const tr = document.createElement("tr");
     tr.className = "hover:bg-gray-50/80 transition border-b border-gray-100";
 
-    const puedeConfirmar = (userData && userData.rol === ent.destino) || esAdmin;
+    const puedeConfirmar = usuarioTieneAccesoArea(ent.destino) || esAdmin;
 
     let recepcionHTML = "";
     if (ent.recibido) {
@@ -1547,7 +1564,7 @@ function renderTabla() {
 
   const esAdmin = esSuperAdmin();
   const esDesarrolloUsuario = esDesarrollo() || esAdmin;
-  const esCostos = (userData && userData.rol === "Costos") || esAdmin;
+  const esCostos = usuarioTieneAccesoArea("Costos") || esAdmin;
 
   listaFiltrada.forEach((item) => {
     const tr = document.createElement("tr");
@@ -1596,7 +1613,7 @@ function renderTabla() {
       <td class="p-3 border-r whitespace-nowrap"><span class="font-bold block">${item.solicitanteNombre || '—'}</span></td>
       <td class="p-3.5 font-bold border-r">${badgeMinuta}${item.proyecto}</td>
       <td class="p-3.5 font-mono border-r">${item.articulo}</td>
-      <td class="p-3.5 border-r">${item.boxCambio}</td>
+      <td class="p-3.5 font-r">${item.boxCambio}</td>
       <td class="p-3.5 text-center border-r whitespace-nowrap">${estadoHTML}</td>
       <td class="p-3.5 text-center border-r whitespace-nowrap">${fechaRealizadoHTML}</td>
       <td class="p-3.5 border-r text-center">${semanaAplicaBadge}</td>
@@ -1633,7 +1650,7 @@ window.confirmarValidacionCostos = async (id, checkboxElem) => {
   }
 };
 
-// Panel Super Admin
+// Panel Super Admin (Con selector de Multi-Roles)
 async function cargarPanelSuperAdmin() {
   if (!esSuperAdmin()) return;
   const tbodyUsers = document.getElementById("table-users-body");
@@ -1738,446 +1755,12 @@ window.eliminarRegistroAdmin = async (coleccion, id) => {
 
 window.cambiarRolUsuario = async (uid, nuevoRol) => {
   try {
-    await updateDoc(doc(db, "usuarios", uid), { rol: nuevoRol });
+    await updateDoc(doc(db, "usuarios", uid), { 
+      rol: nuevoRol,
+      rolesMultiples: [nuevoRol] 
+    });
     alert(`¡Rol actualizado exitosamente a: ${nuevoRol}!`);
   } catch (err) {
     alert("Error al actualizar el rol: " + err.message);
   }
 };
-
-// Configuración de campos dinámicos en Entrega
-const selEntTipo = document.getElementById("ent-tipo");
-if (selEntTipo) selEntTipo.onchange = actualizarCamposSegunTipoEntrega;
-
-function actualizarCamposSegunTipoEntrega() {
-  const tipo = document.getElementById("ent-tipo")?.value || "";
-  const selectDestino = document.getElementById("ent-destino");
-  const boxArticulo = document.getElementById("box-field-articulo");
-  const labelProy = document.getElementById("label-field-proyecto");
-  const inputProy = document.getElementById("ent-proyecto");
-  const boxFoto = document.getElementById("box-field-foto");
-  const boxCopias = document.getElementById("box-field-copias");
-  const containerSingle = document.getElementById("container-destino-single");
-  const containerMultiple = document.getElementById("container-destino-multiple");
-
-  if (!selectDestino) return;
-  selectDestino.innerHTML = "";
-  boxCopias?.classList.add("hidden");
-  containerMultiple?.classList.add("hidden");
-  containerSingle?.classList.remove("hidden");
-  boxFoto?.classList.add("hidden");
-
-  if (tipo === "MATERIALES") {
-    if (labelProy) labelProy.textContent = "Nombre del Material / Insumo";
-    if (inputProy) inputProy.placeholder = "Ej: Badana Beige 1.2mm";
-    boxArticulo?.classList.add("hidden");
-    selectDestino.innerHTML += `<option value="Desarrollo de producto">Desarrollo de producto</option>`;
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-    return;
-  }
-
-  boxArticulo?.classList.remove("hidden");
-  if (labelProy) labelProy.textContent = "Nombre del Proyecto";
-  if (inputProy) inputProy.placeholder = "Ej: SKATER";
-
-  if (tipo === "GUÍA DE PRODUCCIÓN") {
-    boxFoto?.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
-  } else if (tipo === "CORTE") {
-    boxFoto?.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-  } else if (tipo === "MUESTRA DEFINITIVA") {
-    boxFoto?.classList.remove("hidden");
-    containerSingle?.classList.add("hidden");
-    containerMultiple?.classList.remove("hidden");
-  } else if (tipo === "HOJA DE DESBASTE") {
-    boxFoto?.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-  } else if (tipo === "TIZADORES") {
-    boxCopias?.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-  } else {
-    boxFoto?.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
-  }
-}
-
-// Formulario Entrega con llamada automática a WhatsApp
-const formEntrega = document.getElementById("form-nueva-entrega");
-if (formEntrega) {
-  formEntrega.onsubmit = async (e) => {
-    e.preventDefault();
-    const semana = document.getElementById("ent-semana").value.trim();
-    const proyecto = document.getElementById("ent-proyecto").value.trim();
-    const articulo = document.getElementById("ent-articulo").value.trim();
-    const tipo = document.getElementById("ent-tipo").value;
-    const notas = document.getElementById("ent-notas").value.trim();
-    const copias = document.getElementById("ent-copias").value.trim();
-    const photoFile = document.getElementById("ent-photo").files[0];
-    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
-
-    try {
-      let destinosAEntregar = [];
-      if (tipo === "MUESTRA DEFINITIVA") {
-        destinosAEntregar = Array.from(document.querySelectorAll(".chk-muestras-dest:checked")).map(c => c.value);
-      } else {
-        destinosAEntregar = [document.getElementById("ent-destino").value];
-      }
-
-      for (const destino of destinosAEntregar) {
-        await addDoc(collection(db, "entregas_departamentos"), {
-          semana, proyecto,
-          articulo: tipo === "MATERIALES" ? "" : articulo,
-          tipo, destino,
-          copias: tipo === "TIZADORES" ? (copias || "1") : null,
-          foto: fotoBase64, notas,
-          entregadoPorNombre: (userData && userData.nombre) || "Usuario",
-          entregadoPorRol: (userData && userData.rol) || "Desarrollo",
-          recibido: false,
-          fechaEntrega: new Date().toISOString()
-        });
-      }
-      formEntrega.reset();
-      modalNuevaEntrega?.classList.add("hidden");
-      
-      abrirModalWhatsApp({
-        titulo: `Notificar Entrega (${tipo})`,
-        subtitulo: `Proyecto: ${proyecto} (Semana ${semana})`,
-        mensajeTexto: `📦 *NUEVA ENTREGA EN BATA BOLIVIA*\n• Elemento: ${tipo}\n• Proyecto: ${proyecto}\n• Semana: ${semana}\n• Entregado por: ${(userData && userData.nombre) || 'Usuario'}`
-      });
-    } catch (err) {
-      alert("Error: " + err.message);
-    }
-  };
-}
-
-// Formulario Nuevo Cambio con Semana que Aplica
-const formNewChange = document.getElementById("form-new-change");
-if (formNewChange) {
-  formNewChange.onsubmit = async (e) => {
-    e.preventDefault();
-    const semana = document.getElementById("change-semana").value.trim();
-    const semanaAplica = document.getElementById("change-semana-aplica").value.trim();
-    const proyecto = document.getElementById("change-project").value.trim();
-    const articulo = document.getElementById("change-article").value.trim();
-    const boxCambio = document.getElementById("change-box").value.trim();
-    const photoFile = document.getElementById("change-photo").files[0];
-    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
-
-    try {
-      await addDoc(collection(db, "solicitudes_cambios"), {
-        semana, semanaAplica, proyecto, articulo, boxCambio,
-        foto: fotoBase64,
-        estado: "En proceso",
-        solicitanteNombre: (userData && userData.nombre) || "Usuario",
-        solicitanteEmail: currentUser?.email || "",
-        fechaCreacion: new Date().toISOString(),
-        validadoCostos: false,
-        esMinuta: false
-      });
-      formNewChange.reset();
-      modalNewChange?.classList.add("hidden");
-      
-      abrirModalWhatsApp({
-        titulo: "Notificar Solicitud de Cambio",
-        subtitulo: `Proyecto: ${proyecto} | Aplica: ${semanaAplica}`,
-        mensajeTexto: `🔄 *NUEVA SOLICITUD DE CAMBIO - BATA*\n• Proyecto: ${proyecto}\n• Artículo: ${articulo}\n• Semana Solicitud: ${semana}\n• Semana que Aplica: ${semanaAplica}\n• Detalle: ${boxCambio}`
-      });
-    } catch (err) {
-      alert("Error al registrar solicitud: " + err.message);
-    }
-  };
-}
-
-// Formulario Minuta con Semana que Aplica
-const formMinuta = document.getElementById("form-minuta");
-if (formMinuta) {
-  formMinuta.onsubmit = async (e) => {
-    e.preventDefault();
-    const semana = document.getElementById("minuta-semana").value.trim();
-    const semanaAplica = document.getElementById("minuta-semana-aplica").value.trim();
-    const proyecto = document.getElementById("minuta-proyecto").value.trim();
-    const articulo = document.getElementById("minuta-articulo").value.trim();
-    const boxCambio = document.getElementById("minuta-box").value.trim();
-    const photoFile = document.getElementById("minuta-photo").files[0];
-    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
-
-    try {
-      await addDoc(collection(db, "solicitudes_cambios"), {
-        semana, semanaAplica, proyecto, articulo, boxCambio,
-        foto: fotoBase64,
-        estado: "En proceso",
-        solicitanteNombre: (userData && userData.nombre) || "Jefe de Desarrollo",
-        solicitanteEmail: currentUser?.email || "",
-        fechaCreacion: new Date().toISOString(),
-        validadoCostos: false,
-        esMinuta: true
-      });
-      formMinuta.reset();
-      modalMinuta?.classList.add("hidden");
-      
-      abrirModalWhatsApp({
-        titulo: "Notificar Minuta / Plan Piloto",
-        subtitulo: `Proyecto: ${proyecto} (Jefatura de Desarrollo)`,
-        mensajeTexto: `⚡ *MINUTA / PLAN PILOTO - BATA BOLIVIA*\n• Proyecto: ${proyecto}\n• Artículo: ${articulo}\n• Semana Solicitud: ${semana}\n• Semana que Aplica: ${semanaAplica}\n• Instrucciones: ${boxCambio}`
-      });
-    } catch (err) {
-      alert("Error al publicar minuta: " + err.message);
-    }
-  };
-}
-
-// Procurement placeholder
-function escucharProcurement() {}
-
-// ==================== MÓDULO TARJETAS (PD) ====================
-function initModuloTarjetas() {
-  const inputFecha = document.getElementById("card-fecha");
-  if (inputFecha && !inputFecha.value) {
-    inputFecha.value = "9/9/2026";
-  }
-
-  const fileInput = document.getElementById("card-croquis-file");
-  if (fileInput) {
-    fileInput.onchange = async (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        croquisTarjetaBase64 = await comprimirImagen(file, 400, 0.8);
-        renderTarjetasPreview();
-      }
-    };
-  }
-
-  const fileInputPlantilla = document.getElementById("card-plantilla-img-file");
-  if (fileInputPlantilla) {
-    fileInputPlantilla.onchange = async (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        plantillaCorteTarjetaBase64 = await comprimirImagen(file, 400, 0.8);
-        renderTarjetasPreview();
-      }
-    };
-  }
-
-  safeClick("btn-quick-distribute", () => {
-    const raw = document.getElementById("input-quick-paste-row")?.value.trim() || "";
-    if (!raw) {
-      alert("Copia una fila de Excel y pégala aquí.");
-      return;
-    }
-    let cols = raw.split("\t").map(c => c.trim()).filter(c => c !== "");
-    if (cols.length < 4) {
-      cols = raw.split(/\s{2,}/).map(c => c.trim()).filter(c => c !== "");
-    }
-
-    if (cols.length >= 4) {
-      document.getElementById("card-costo-articulo").value = cols[0] || "";
-      document.getElementById("card-costo-linea").value = cols[2] || "";
-      document.getElementById("card-costo-marca").value = cols[3] || "TEENER";
-      document.getElementById("card-costo-budret").value = cols[10] || "37.39%";
-      document.getElementById("card-costo-precio").value = cols[8] || "259.00";
-      document.getElementById("card-costo-margen").value = cols[9] || "55.00%";
-      renderTarjetasPreview();
-    } else {
-      alert("Columnas insuficientes. Pega directamente la fila copiada de Excel.");
-    }
-  });
-
-  ["count-card-corte", "count-card-prod", "count-card-verde", "count-card-amarilla", "count-card-rosada"].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.oninput = renderTarjetasPreview;
-  });
-
-  [
-    "card-costo-articulo", "card-costo-linea", "card-costo-marca", "card-costo-budret", 
-    "card-costo-precio", "card-costo-margen", "card-serie", "card-fecha", "card-material-corte", 
-    "card-forro", "card-plant-int", "card-tecnico", "card-horma-suela", "card-construccion", "card-observaciones"
-  ].forEach(id => {
-    const elem = document.getElementById(id);
-    if (elem) elem.oninput = renderTarjetasPreview;
-  });
-
-  safeClick("btn-imprimir-tarjetas-action", () => {
-    const previewHTML = document.getElementById("contenedor-tarjetas-preview")?.innerHTML || "";
-    const hTarj = document.getElementById("hoja-impresion-tarjetas");
-    if (hTarj) hTarj.innerHTML = previewHTML;
-    modalImpresionTarjetas?.classList.remove("hidden");
-  });
-
-  safeClick("btn-ejecutar-print-tarjetas", () => {
-    const contenidoHTML = document.getElementById("contenedor-tarjetas-preview")?.innerHTML || "";
-    if (!contenidoHTML) return;
-    const ventanaPrint = window.open("", "_blank", "width=900,height=650");
-    if (!ventanaPrint) {
-      alert("Permite las ventanas emergentes para imprimir.");
-      return;
-    }
-    ventanaPrint.document.open();
-    ventanaPrint.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <title>Impresión de Tarjetas - Bata Bolivia</title>
-        <style>
-          @page { size: letter portrait; margin: 8mm; }
-          * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          html, body { margin: 0; padding: 0; background: #fff; font-family: sans-serif; }
-          .shoe-card-container { width: 200mm !important; height: 34mm !important; max-height: 34mm !important; border: 1px solid #000 !important; margin: 0 !important; padding: 0 !important; display: flex; page-break-inside: avoid !important; break-inside: avoid !important; background: #fff; }
-          .shoe-panel { width: 66.66mm !important; height: 100% !important; box-sizing: border-box !important; }
-        </style>
-      </head>
-      <body>
-        <div style="display:flex; flex-direction:column; align-items:flex-start; margin:0; padding:0;">
-          ${contenidoHTML}
-        </div>
-      </body>
-      </html>
-    `);
-    ventanaPrint.document.close();
-    setTimeout(() => { ventanaPrint.focus(); ventanaPrint.print(); ventanaPrint.close(); }, 250);
-  });
-
-  renderTarjetasPreview();
-}
-
-function renderTarjetasPreview() {
-  const container = document.getElementById("contenedor-tarjetas-preview");
-  if (!container) return;
-
-  const cCortes = parseInt(document.getElementById("count-card-corte")?.value) || 0;
-  const cProd = parseInt(document.getElementById("count-card-prod")?.value) || 0;
-  const cVerdes = parseInt(document.getElementById("count-card-verde")?.value) || 0;
-  const cAmarillas = parseInt(document.getElementById("count-card-amarilla")?.value) || 0;
-  const cRosadas = parseInt(document.getElementById("count-card-rosada")?.value) || 0;
-
-  const totalTarjetas = cCortes + cProd + cVerdes + cAmarillas + cRosadas;
-  const lblTotal = document.getElementById("label-total-tarjetas-count");
-  if (lblTotal) lblTotal.textContent = totalTarjetas;
-
-  const articulo = document.getElementById("card-costo-articulo")?.value || "34461836";
-  const linea = (document.getElementById("card-costo-linea")?.value || "QUIQUE").toUpperCase();
-  const marca = (document.getElementById("card-costo-marca")?.value || "TEENER").toUpperCase();
-  const precio = document.getElementById("card-costo-precio")?.value || "259.00";
-  const margen = document.getElementById("card-costo-margen")?.value || "55.00%";
-  const budRet = document.getElementById("card-costo-budret")?.value || "37.39%";
-
-  const serie = document.getElementById("card-serie")?.value || "37-44";
-  const fecha = document.getElementById("card-fecha")?.value || "9/9/2026";
-  const materialCorte = (document.getElementById("card-material-corte")?.value || "IMITACION").toUpperCase();
-  const forro = (document.getElementById("card-forro")?.value || "PIQUE NEGRO").toUpperCase();
-  const plantInt = (document.getElementById("card-plant-int")?.value || "PIQUE NEGRO / CRETONE").toUpperCase();
-  const modelista = (document.getElementById("card-tecnico")?.value || "CARLOS ARCE").toUpperCase();
-  const construccion = (document.getElementById("card-construccion")?.value || "TRUE MOC").toUpperCase();
-  const suela = (document.getElementById("card-horma-suela")?.value || "QUIQUE").toUpperCase();
-  const observaciones = document.getElementById("card-observaciones")?.value || "Sin observaciones adicionales";
-
-  const siluetaCalzadoHTML = croquisTarjetaBase64 
-    ? `<img src="${croquisTarjetaBase64}" style="width:100%; height:32px; object-fit:contain; margin:auto;">`
-    : `<div style="height:32px; display:flex; align-items:center; justify-content:center; font-size:8px; color:#999; border:1px dashed #ccc;">Croquis</div>`;
-
-  const listaAImprimir = [];
-  for (let i = 1; i <= cCortes; i++) listaAImprimir.push({ color: "#FFFFFF", esCorte: true });
-  for (let i = 1; i <= cProd; i++) listaAImprimir.push({ color: "#FFFFFF", esCorte: false });
-  for (let i = 1; i <= cVerdes; i++) listaAImprimir.push({ color: "#80C342", esCorte: false });
-  for (let i = 1; i <= cAmarillas; i++) listaAImprimir.push({ color: "#FFF200", esCorte: false });
-  for (let i = 1; i <= cRosadas; i++) listaAImprimir.push({ color: "#E06D8A", esCorte: false });
-
-  let tarjetasHTML = "";
-  listaAImprimir.forEach((tarj) => {
-    const moduloInfo = `
-      <div class="shoe-panel" style="display:flex; border-right:1px solid #000; overflow:hidden;">
-        <div class="lateral-tab" style="width:16px; border-right:1px solid #000; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:9px; writing-mode:vertical-rl; transform:rotate(180deg); background-color:${tarj.color} !important;">
-          ${linea}
-        </div>
-        <div style="flex:1; display:flex; flex-direction:column; justify-content:space-between; padding:1px;">
-          <div style="font-size:7.5px; font-weight:900; color:#dc2626; text-align:center; border-bottom:1px solid #000; padding-bottom:1px;">
-            MANUFACTURA BOLIVIANA S.A.
-          </div>
-          <div style="display:flex; flex:1; align-items:center;">
-            <div style="width:45px; display:flex; flex-direction:column; justify-content:center; border-right:1px solid #000; padding-right:1px; height:100%;">
-              ${siluetaCalzadoHTML}
-            </div>
-            <div style="flex:1; height:100%;">
-              <table style="width:100%; height:100%; border-collapse:collapse; font-size:6px; font-weight:900;">
-                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; width:35%; text-align:center;">ART:</td><td style="text-align:center; font-family:monospace; font-size:7px;">${articulo}</td></tr>
-                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; width:35%; text-align:center;">MARCA:</td><td style="text-align:center;">${marca}</td></tr>
-                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; width:35%; text-align:center;">SERIE:</td><td style="text-align:center;">${serie}</td></tr>
-                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; width:35%; text-align:center;">CORTE:</td><td style="text-align:center; font-size:5px;">${materialCorte}</td></tr>
-                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; width:35%; text-align:center;">FORRO:</td><td style="text-align:center; font-size:5px;">${forro}</td></tr>
-                <tr><td style="border-right:1px solid #000; width:35%; text-align:center;">PLANT:</td><td style="text-align:center; font-size:5px;">${plantInt}</td></tr>
-              </table>
-            </div>
-          </div>
-          <div style="display:flex; border-top:1px solid #000; font-size:5.5px; font-weight:bold; padding:1px 2px; justify-content:space-between; background:#fff;">
-            <span>${fecha}</span>
-          </div>
-          <div style="display:flex; border-top:1px solid #000; font-size:5px; font-weight:800; padding:1px 0;">
-            <div style="width:50%; border-right:1px solid #000; padding-left:1px;">TEC: ${modelista}<br>CONTR: ${construccion}<br>SUELA: ${suela}</div>
-            <div style="width:50%; padding-left:2px;">PRECIO: ${precio}<br>MRG BUD: ${budRet}<br>MRG: ${margen}</div>
-          </div>
-        </div>
-      </div>
-    `;
-
-    const moduloFirmas = `
-      <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:2px 4px; font-size:5.5px; ${tarj.esCorte ? '' : 'border-right:1px solid #000;'}">
-        <div style="font-size:7px; font-weight:900; text-align:center; color:#000; text-transform:uppercase; border-bottom:1px solid #000; padding-bottom:1px;">
-          APROBACIONES
-        </div>
-        <div style="display:flex; flex-direction:column; justify-content:space-between; flex:1; padding-top:22px; padding-bottom:2px;">
-          <div style="display:flex; justify-content:space-between;">
-            <div>
-              <div style="border-bottom:1px solid #000; width:28mm; height:5px;"></div>
-              <span style="font-weight:bold; font-size:4.5px;">PD. CHIEF</span><br><span style="font-size:4px;">DATE: &nbsp; / &nbsp; / &nbsp;</span>
-            </div>
-            <div>
-              <div style="border-bottom:1px solid #000; width:28mm; height:5px;"></div>
-              <span style="font-weight:bold; font-size:4.5px;">MERCHANDISING MAN.</span><br><span style="font-size:4px;">DATE: &nbsp; / &nbsp; / &nbsp;</span>
-            </div>
-          </div>
-          <div style="text-align:center; margin: 1px 0;">
-            <div style="border-bottom:1px solid #000; width:30mm; height:5px; margin:auto;"></div>
-            <span style="font-weight:bold; font-size:4.5px;">PURCHASING MANAGER</span><br><span style="font-size:4px;">DATE: &nbsp; / &nbsp; / &nbsp;</span>
-          </div>
-          <div style="display:flex; justify-content:space-between;">
-            <div>
-              <div style="border-bottom:1px solid #000; width:28mm; height:5px;"></div>
-              <span style="font-weight:bold; font-size:4.5px;">PRODUCTION MANAGER</span><br><span style="font-size:4px;">DATE: &nbsp; / &nbsp; / &nbsp;</span>
-            </div>
-            <div>
-              <div style="border-bottom:1px solid #000; width:28mm; height:5px;"></div>
-              <span style="font-weight:bold; font-size:4.5px;">COUNTRY MANAGER</span><br><span style="font-size:4px;">DATE: &nbsp; / &nbsp; / &nbsp;</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-
-    const moduloObservaciones = `
-      <div class="shoe-panel" style="padding:4px; display:flex; flex-direction:column; justify-content:space-between; font-size:7px; border-right:1px solid #000;">
-        <div>
-          <span style="font-weight:900; color:#000; text-transform:uppercase; display:block; margin-bottom:1px;">OBSERVACIONES:</span>
-          <p style="font-size:6.5px; color:#000; font-style:italic; line-height:1.2;">${observaciones}</p>
-        </div>
-        <div style="text-align:right; font-size:6px; color:#000; font-weight:bold;">BATA BOLIVIA PD</div>
-      </div>
-    `;
-
-    const panelCentro = tarj.esCorte ? moduloObservaciones : moduloFirmas;
-    const panelDerecha = tarj.esCorte ? moduloFirmas : moduloObservaciones;
-
-    tarjetasHTML += `
-      <div class="shoe-card-container" style="background:#fff; display:flex; font-size:7px; line-height:1.1; color:#000;">
-        ${moduloInfo}
-        ${panelCentro}
-        ${panelDerecha}
-      </div>
-    `;
-  });
-
-  container.innerHTML = tarjetasHTML;
-}
