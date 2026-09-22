@@ -522,7 +522,7 @@ const modalImpresionTarjetas = document.getElementById("modal-impresion-tarjetas
 const modalNewChange = document.getElementById("modal-new-change");
 const modalNuevoLoteProd = document.getElementById("modal-nuevo-lote-prod");
 const modalEliminarPlan = document.getElementById("modal-eliminar-plan");
-const modalNuevaSolicitudHelpDesk = document.getElementById("modal-nueva-solicitud-helpdesk");
+const modalнь = document.getElementById("modal-nueva-solicitud-helpdesk");
 
 safeClick("btn-close-whatsapp-modal", () => document.getElementById("modal-whatsapp")?.classList.add("hidden"));
 safeClick("btn-show-login", () => modalLogin?.classList.remove("hidden"));
@@ -550,8 +550,8 @@ safeClick("close-nuevo-lote-prod", () => modalNuevoLoteProd?.classList.add("hidd
 safeClick("cancel-nuevo-lote-prod", () => modalNuevoLoteProd?.classList.add("hidden"));
 safeClick("close-eliminar-plan", () => modalEliminarPlan?.classList.add("hidden"));
 safeClick("cancel-eliminar-plan", () => modalEliminarPlan?.classList.add("hidden"));
-safeClick("close-nueva-solicitud-helpdesk", () => modalNuevaSolicitudHelpDesk?.classList.add("hidden"));
-safeClick("cancel-nueva-solicitud-helpdesk", () => modalNuevaSolicitudHelpDesk?.classList.add("hidden"));
+safeClick("close-nueva-solicitud-helpdesk", () => document.getElementById("modal-nueva-solicitud-helpdesk")?.classList.add("hidden"));
+safeClick("cancel-nueva-solicitud-helpdesk", () => document.getElementById("modal-nueva-solicitud-helpdesk")?.classList.add("hidden"));
 
 safeClick("btn-reporte-entregas-pdf", window.abrirReporteImpresoEntregas);
 safeClick("btn-reporte-entregas-texto", window.abrirResumenTextoEntregas);
@@ -587,7 +587,8 @@ safeClick("btn-edit-profile", () => {
   const pPhone = document.getElementById("prof-phone");
   if (pName) pName.value = userData.nombre || "";
   if (pPhone) pPhone.value = userData.celular || "";
-  modalProfile?.classList.remove("hidden");
+  modalProfile?.classList.add("hidden");
+  document.getElementById("modal-profile")?.classList.remove("hidden");
 });
 
 const formProfile = document.getElementById("form-update-profile");
@@ -856,14 +857,6 @@ safeClick("menu-btn-informe", () => {
   resetMenuStyles();
   viewInforme?.classList.remove("hidden");
   if (menuBtnInforme) menuBtnInforme.className = CLASE_ACTIVO_PASTILLA;
-  
-  colFiltroSemanaInforme = "";
-  colFiltroProyectoInforme = "";
-  const inSem = document.getElementById("col-filter-semana-informe");
-  const inProy = document.getElementById("col-filter-proyecto-informe");
-  if (inSem) inSem.value = "";
-  if (inProy) inProy.value = "";
-  
   renderInformeView();
 });
 
