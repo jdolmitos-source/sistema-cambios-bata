@@ -44,6 +44,7 @@ let entregas = [];
 let bloqueosMateriales = [];
 let llegadasMateriales = [];
 let lotesProduccion = [];
+let solicitudesHelpDesk = [];
 let bitacoraBorrados = [];
 
 let categoriaEntregaActiva = "todas";
@@ -118,7 +119,7 @@ function esDesarrollo() {
   return userData && (userData.rol || "").includes("Desarrollo");
 }
 
-// Validación segura de multi-roles para áreas y HelpDesk
+// Validación segura de multi-roles para HelpDesk y áreas
 function usuarioTieneAccesoArea(areaDestino) {
   if (esSuperAdmin()) return true;
   if (!userData) return false;
@@ -150,10 +151,6 @@ async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro =
 
     usuariosSnap.forEach(d => {
       const u = d.data();
-      const coincideRol = !rolFiltro || u.rol === rolFiltro || 
-        (rolFiltro === "Desarrollo de producto - Técnico" && (u.rol || "").includes("Técnico")) ||
-        (rolFiltro === "Compras" && ((u.rol || "").includes("Compras")));
-
       if (u.celular) {
         count++;
         const item = document.createElement("a");
@@ -191,6 +188,10 @@ window.abrirModalCambio = () => {
 
 window.abrirModalMinuta = () => {
   document.getElementById("modal-minuta")?.classList.remove("hidden");
+};
+
+window.abrirModalNuevaSolicitudHelpDesk = () => {
+  document.getElementById("modal-nueva-solicitud-helpdesk")?.classList.remove("hidden");
 };
 
 window.abrirModalEntrega = () => {
@@ -249,6 +250,143 @@ function inicializarSemanas01a52() {
     if (valorActual) sel.value = valorActual;
   });
 }
+
+// ==================== MÓDULO HELPDESK ====================
+function escucharHelpDesk() {
+  const q = collection(db, "solicitudes_helpdesk");
+  onSnapshot(q, (snapshot) => {
+    solicitudesHelpDesk = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    solicitudesHelpDesk.sort((a, b) => (b.fechaCreacion || "").localeCompare(a.fechaCreacion || ""));
+    renderHelpDeskView();
+  }, (err) => console.log("Aviso HelpDesk:", err.message));
+}
+
+const formNuevaSolicitudHelpDesk = document.getElementById("form-nueva-solicitud-helpdesk");
+if (formNuevaSolicitudHelpDesk) {
+  formNuevaSolicitudHelpDesk.onsubmit = async (e) => {
+    e.preventDefault();
+    const destino = document.getElementById("helpdesk-destino").value;
+    const pregunta = document.getElementById("helpdesk-pregunta").value.trim();
+
+    try {
+      await addDoc(collection(db, "solicitudes_helpdesk"), {
+        remitenteNombre: (userData && userData.nombre) || "Usuario",
+        remitenteRol: (userData && userData.rol) || "Planta",
+        destino,
+        pregunta,
+        respuesta: "",
+        respondidoPor: "",
+        fechaCreacion: new Date().toISOString(),
+        fechaRespuesta: null,
+        estado: "Pendiente"
+      });
+
+      formNuevaSolicitudHelpDesk.reset();
+      modalNuevaSolicitudHelpDesk?.classList.add("hidden");
+
+      abrirModalWhatsApp({
+        titulo: `Notificar Solicitud (${destino})`,
+        subtitulo: `Requerimiento enviado a ${destino}`,
+        mensajeTexto: `💬 *NUEVA SOLICITUD INTERDEPARTAMENTAL*\n• De: ${(userData && userData.nombre) || 'Usuario'}\n• Para: ${destino}\n• Pregunta: ${pregunta}`
+      });
+    } catch (err) {
+      alert("Error al enviar solicitud: " + err.message);
+    }
+  };
+}
+
+function renderHelpDeskView() {
+  const tbody = document.getElementById("table-solicitudes-helpdesk-body");
+  const empty = document.getElementById("solicitudes-empty-state");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  if (solicitudesHelpDesk.length === 0) {
+    empty?.classList.remove("hidden");
+    return;
+  }
+  empty?.classList.add("hidden");
+
+  const ahora = new Date();
+  const esAdmin = esSuperAdmin();
+
+  solicitudesHelpDesk.forEach(sol => {
+    const tr = document.createElement("tr");
+    tr.className = "hover:bg-gray-50/80 transition border-b border-gray-100";
+
+    const fechaCreacion = new Date(sol.fechaCreacion);
+    const diffDias = (ahora - fechaCreacion) / (1000 * 60 * 60 * 24);
+
+    let estadoBadge = "";
+    if (sol.estado === "Resuelto") {
+      estadoBadge = `<span class="bg-green-100 text-green-800 font-bold px-2.5 py-1 rounded-full border border-green-200 flex items-center justify-center space-x-1"><span class="w-2 h-2 rounded-full bg-green-500"></span><span>Resuelto</span></span>`;
+    } else if (diffDias > 3) {
+      estadoBadge = `<span class="bg-red-100 text-red-800 font-bold px-2.5 py-1 rounded-full border border-red-200 flex items-center justify-center space-x-1 animate-pulse"><span class="w-2 h-2 rounded-full bg-red-600"></span><span>Rojo (>3 días)</span></span>`;
+    } else {
+      estadoBadge = `<span class="bg-amber-100 text-amber-800 font-bold px-2.5 py-1 rounded-full border border-amber-200 flex items-center justify-center space-x-1"><span class="w-2 h-2 rounded-full bg-amber-500"></span><span>Pendiente</span></span>`;
+    }
+
+    const esDelDepartamento = usuarioTieneAccesoArea(sol.destino) || esAdmin;
+
+    let respuestaHTML = "";
+    if (sol.estado === "Resuelto") {
+      respuestaHTML = `
+        <div class="text-gray-700 font-medium">
+          <p class="italic">${sol.respuesta}</p>
+          <span class="text-[10px] text-gray-400 block mt-1">Por: ${sol.respondidoPor} (${formatearFecha(sol.fechaRespuesta)})</span>
+        </div>
+      `;
+    } else {
+      if (esDelDepartamento) {
+        respuestaHTML = `
+          <div class="space-y-1.5">
+            <input type="text" id="resp-input-${sol.id}" placeholder="Escribe tu respuesta / fecha / ítem..." class="w-full px-2 py-1 border border-gray-300 rounded text-xs bg-white">
+            <button onclick="window.guardarRespuestaHelpDesk('${sol.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1 rounded text-[11px] cursor-pointer">
+              Responder y Resolver
+            </button>
+          </div>
+        `;
+      } else {
+        respuestaHTML = `<span class="text-gray-400 italic text-[11px]">Pendiente de respuesta por el Dpto. de ${sol.destino}</span>`;
+      }
+    }
+
+    tr.innerHTML = `
+      <td class="p-3 border-r whitespace-nowrap text-gray-600">${formatearFecha(sol.fechaCreacion)}</td>
+      <td class="p-3 border-r font-bold text-gray-800">${sol.remitenteNombre} <span class="text-[10px] text-gray-400 block">(${sol.remitenteRol})</span></td>
+      <td class="p-3 border-r font-bold text-[#D61B28]">${sol.destino}</td>
+      <td class="p-3 border-r text-gray-800 font-medium">${sol.pregunta}</td>
+      <td class="p-3 border-r text-center whitespace-nowrap">${estadoBadge}</td>
+      <td class="p-3 border-r">${respuestaHTML}</td>
+      <td class="p-3 text-center">
+        ${sol.estado === "Resuelto" ? '<i class="fa-solid fa-circle-check text-green-600 text-base"></i>' : '<span class="text-gray-300">—</span>'}
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+window.guardarRespuestaHelpDesk = async (id) => {
+  const input = document.getElementById(`resp-input-${id}`);
+  if (!input) return;
+  const textoRespuesta = input.value.trim();
+  if (!textoRespuesta) {
+    alert("Por favor escribe una respuesta antes de guardar.");
+    return;
+  }
+
+  try {
+    await updateDoc(doc(db, "solicitudes_helpdesk", id), {
+      respuesta: textoRespuesta,
+      respondidoPor: (userData && userData.nombre) || "Usuario",
+      fechaRespuesta: new Date().toISOString(),
+      estado: "Resuelto"
+    });
+    alert("Respuesta registrada y marcada como resuelta.");
+  } catch (err) {
+    alert("Error al responder: " + err.message);
+  }
+};
 
 // ==================== REPORTES DE ENTREGAS ====================
 window.abrirReporteImpresoEntregas = () => {
@@ -384,6 +522,7 @@ const modalImpresionTarjetas = document.getElementById("modal-impresion-tarjetas
 const modalNewChange = document.getElementById("modal-new-change");
 const modalNuevoLoteProd = document.getElementById("modal-nuevo-lote-prod");
 const modalEliminarPlan = document.getElementById("modal-eliminar-plan");
+const modalNuevaSolicitudHelpDesk = document.getElementById("modal-nueva-solicitud-helpdesk");
 
 safeClick("btn-close-whatsapp-modal", () => document.getElementById("modal-whatsapp")?.classList.add("hidden"));
 safeClick("btn-show-login", () => modalLogin?.classList.remove("hidden"));
@@ -411,6 +550,8 @@ safeClick("close-nuevo-lote-prod", () => modalNuevoLoteProd?.classList.add("hidd
 safeClick("cancel-nuevo-lote-prod", () => modalNuevoLoteProd?.classList.add("hidden"));
 safeClick("close-eliminar-plan", () => modalEliminarPlan?.classList.add("hidden"));
 safeClick("cancel-eliminar-plan", () => modalEliminarPlan?.classList.add("hidden"));
+safeClick("close-nueva-solicitud-helpdesk", () => modalNuevaSolicitudHelpDesk?.classList.add("hidden"));
+safeClick("cancel-nueva-solicitud-helpdesk", () => modalNuevaSolicitudHelpDesk?.classList.add("hidden"));
 
 safeClick("btn-reporte-entregas-pdf", window.abrirReporteImpresoEntregas);
 safeClick("btn-reporte-entregas-texto", window.abrirResumenTextoEntregas);
@@ -587,11 +728,13 @@ function aplicarPermisosRol() {
   const bloqueProd = document.getElementById("bloque-menu-produccion");
   const bloqueCompras = document.getElementById("bloque-menu-compras");
   const bloqueTarjetas = document.getElementById("bloque-menu-tarjetas");
+  const bloqueSolicitudes = document.getElementById("bloque-menu-solicitudes");
 
   if (bloqueEntregas) bloqueEntregas.classList.add("hidden");
   if (bloqueProd) bloqueProd.classList.add("hidden");
   if (bloqueCompras) bloqueCompras.classList.add("hidden");
   if (bloqueTarjetas) bloqueTarjetas.classList.add("hidden");
+  if (bloqueSolicitudes) bloqueSolicitudes.classList.remove("hidden");
 
   const tieneAcceso = (area) => usuarioTieneAccesoArea(area);
 
@@ -647,6 +790,7 @@ onAuthStateChanged(auth, async (user) => {
     escucharCambios();
     escucharEntregas();
     escucharProduccion();
+    escucharHelpDesk();
     escucharBitacoraBorrados();
     escucharProcurement();
   } else {
@@ -665,6 +809,7 @@ const viewProduccion = document.getElementById("view-produccion");
 const viewProcurement = document.getElementById("view-procurement");
 const viewTarjetas = document.getElementById("view-tarjetas");
 const viewUsuarios = document.getElementById("view-usuarios");
+const viewSolicitudes = document.getElementById("view-solicitudes");
 
 const menuBtnCambios = document.getElementById("menu-btn-cambios");
 const menuBtnInforme = document.getElementById("menu-btn-informe");
@@ -673,6 +818,7 @@ const menuBtnProduccion = document.getElementById("menu-btn-produccion");
 const menuBtnProcurement = document.getElementById("menu-btn-procurement");
 const menuBtnTarjetas = document.getElementById("menu-btn-tarjetas");
 const menuBtnUsuarios = document.getElementById("menu-btn-usuarios");
+const menuBtnSolicitudes = document.getElementById("menu-btn-solicitudes");
 
 const CLASE_INACTIVO_PRINCIPAL = "sidebar-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white hover:bg-white/15 transition cursor-pointer";
 const CLASE_INACTIVO_SUB = "sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white/90 hover:bg-white/15 hover:text-white transition cursor-pointer pl-5";
@@ -680,7 +826,7 @@ const CLASE_ACTIVO_PASTILLA = "sidebar-btn w-full flex items-center space-x-3 px
 const CLASE_ACTIVO_SUB_PASTILLA = "sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-black bg-white text-[#D61B28] shadow-md transition cursor-pointer pl-5 scale-[1.02]";
 
 function resetMenuStyles() {
-  [menuBtnCambios, menuBtnInforme, menuBtnEntregasTodas, menuBtnProduccion, menuBtnProcurement, menuBtnTarjetas, menuBtnUsuarios].forEach(b => {
+  [menuBtnCambios, menuBtnInforme, menuBtnEntregasTodas, menuBtnProduccion, menuBtnProcurement, menuBtnTarjetas, menuBtnUsuarios, menuBtnSolicitudes].forEach(b => {
     if (b) b.className = CLASE_INACTIVO_PRINCIPAL;
   });
 
@@ -695,6 +841,7 @@ function resetMenuStyles() {
   viewProcurement?.classList.add("hidden");
   viewTarjetas?.classList.add("hidden");
   viewUsuarios?.classList.add("hidden");
+  viewSolicitudes?.classList.add("hidden");
 }
 
 function activarVistaCambios() {
@@ -743,6 +890,13 @@ safeClick("menu-btn-tarjetas", () => {
   viewTarjetas?.classList.remove("hidden");
   if (menuBtnTarjetas) menuBtnTarjetas.className = CLASE_ACTIVO_PASTILLA;
   initModuloTarjetas();
+});
+
+safeClick("menu-btn-solicitudes", () => {
+  resetMenuStyles();
+  viewSolicitudes?.classList.remove("hidden");
+  if (menuBtnSolicitudes) menuBtnSolicitudes.className = CLASE_ACTIVO_PASTILLA;
+  renderHelpDeskView();
 });
 
 safeClick("menu-btn-usuarios", () => {
@@ -842,1121 +996,3 @@ window.cambiarSubmenuEntrega = (categoria) => {
 
   renderTablaEntregas();
 };
-
-// ==================== MÓDULO PRODUCCIÓN WORK PLANNER ====================
-function escucharProduccion() {
-  const q = collection(db, "produccion_lotes");
-  onSnapshot(q, (snapshot) => {
-    lotesProduccion = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderProduccionView();
-  }, (err) => console.log("Aviso Firestore Producción:", err.message));
-}
-
-function escucharBitacoraBorrados() {
-  const q = collection(db, "bitacora_borrados");
-  onSnapshot(q, (snapshot) => {
-    bitacoraBorrados = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    bitacoraBorrados.sort((a, b) => (b.fecha || "").localeCompare(a.fecha || ""));
-    renderBitacoraBorrados();
-  }, (err) => console.log("Aviso Bitácora:", err.message));
-}
-
-function renderBitacoraBorrados() {
-  const container = document.getElementById("bitacora-borrados-container");
-  if (!container) return;
-  if (bitacoraBorrados.length === 0) {
-    container.innerHTML = `<p class="italic text-gray-400">No hay registros de eliminación recientes.</p>`;
-    return;
-  }
-  let html = "";
-  bitacoraBorrados.forEach(b => {
-    html += `<div class="border-b border-gray-100 pb-1 flex justify-between items-center">
-      <span>• Usuario <strong>${b.usuario}</strong> borró el plan <strong>${b.plan}</strong> en fecha ${formatearFecha(b.fecha)}</span>
-    </div>`;
-  });
-  container.innerHTML = html;
-}
-
-window.limpiarBitacoraBorrados = async () => {
-  if (!esSuperAdmin()) {
-    alert("Acceso denegado. Solo el Super Admin puede limpiar la bitácora.");
-    return;
-  }
-  if (confirm("¿Estás seguro de vaciar la bitácora de registros eliminados?")) {
-    try {
-      const snap = await getDocs(collection(db, "bitacora_borrados"));
-      const promises = snap.docs.map(d => deleteDoc(doc(db, "bitacora_borrados", d.id)));
-      await Promise.all(promises);
-      alert("Bitácora limpiada correctamente.");
-    } catch (err) {
-      alert("Error: " + err.message);
-    }
-  }
-};
-
-const formLoteProd = document.getElementById("form-nuevo-lote-prod");
-if (formLoteProd) {
-  formLoteProd.onsubmit = async (e) => {
-    e.preventDefault();
-    const semana = document.getElementById("lote-semana").value;
-    const dia = document.getElementById("lote-dia").value;
-    const linea = document.getElementById("lote-linea").value;
-    const plan = document.getElementById("lote-plan").value.trim();
-    const proyecto = document.getElementById("lote-proyecto").value.trim();
-    const articulo = document.getElementById("lote-articulo").value.trim();
-    const estado = document.getElementById("lote-estado").value;
-    const pares = parseInt(document.getElementById("lote-pares").value) || 0;
-
-    try {
-      await addDoc(collection(db, "produccion_lotes"), {
-        semana, dia, linea, plan, proyecto, articulo, estado, pares,
-        fechaRegistro: new Date().toISOString()
-      });
-      formLoteProd.reset();
-      modalNuevoLoteProd?.classList.add("hidden");
-      renderProduccionView();
-    } catch (err) {
-      alert("Error al registrar lote: " + err.message);
-    }
-  };
-}
-
-const formEliminarPlan = document.getElementById("form-eliminar-plan");
-if (formEliminarPlan) {
-  formEliminarPlan.onsubmit = async (e) => {
-    e.preventDefault();
-    const codigoPlan = document.getElementById("eliminar-plan-codigo").value.trim();
-    const password = document.getElementById("eliminar-plan-pass").value;
-
-    if (password !== "prod.2026") {
-      alert("Contraseña incorrecta. Autorización denegada.");
-      return;
-    }
-
-    try {
-      const snap = await getDocs(collection(db, "produccion_lotes"));
-      let encontrados = [];
-      snap.forEach(d => {
-        const data = d.data();
-        if (String(data.plan).trim().toLowerCase() === codigoPlan.toLowerCase()) {
-          encontrados.push({ id: d.id, semana: data.semana });
-        }
-      });
-
-      if (encontrados.length === 0) {
-        alert(`No se encontró ningún lote con el número de plan "${codigoPlan}".`);
-        return;
-      }
-
-      if (confirm(`Se encontraron ${encontrados.length} registros con el plan "${codigoPlan}". ¿Proceder con la eliminación?`)) {
-        const promises = encontrados.map(item => deleteDoc(doc(db, "produccion_lotes", item.id)));
-        await Promise.all(promises);
-
-        await addDoc(collection(db, "bitacora_borrados"), {
-          usuario: (userData && userData.nombre) || currentUser?.email || "Usuario",
-          plan: codigoPlan,
-          fecha: new Date().toISOString()
-        });
-
-        formEliminarPlan.reset();
-        modalEliminarPlan.classList.add("hidden");
-        alert(`Plan "${codigoPlan}" eliminado correctamente.`);
-        renderProduccionView();
-      }
-    } catch (err) {
-      alert("Error al eliminar plan: " + err.message);
-    }
-  };
-}
-
-window.actualizarEstadoDiaLote = async (id, nuevoEstado) => {
-  if (!id) return;
-  await updateDoc(doc(db, "produccion_lotes", id), {
-    estado: nuevoEstado,
-    fechaActualizacion: new Date().toISOString()
-  });
-};
-
-window.imprimirSemanaProduccion = () => {
-  const fSem = document.getElementById("prod-filter-semana")?.value || "Todas las Semanas";
-  const fTaller = document.getElementById("prod-filter-taller")?.value || "";
-  const tituloPeriodo = fTaller ? `Taller ${fTaller} (Todas las Semanas)` : fSem;
-  const kpiTotales = document.getElementById("prod-total-pares-kpi")?.textContent || "";
-  const matrizHTML = document.getElementById("tabla-export-excel")?.outerHTML || "";
-  
-  const ventanaPrint = window.open("", "_blank", "width=1000,height=700");
-  if (!ventanaPrint) {
-    alert("Por favor permite las ventanas emergentes para imprimir.");
-    return;
-  }
-
-  ventanaPrint.document.open();
-  ventanaPrint.document.write(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8">
-      <title>Reporte de Producción - Bata Bolivia</title>
-      <script src="https://cdn.tailwindcss.com"></script>
-      <style>
-        @page { size: letter landscape; margin: 10mm; }
-        body { font-family: sans-serif; background: #fff; color: #000; padding: 10px; }
-        .print-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #D61B28; padding-bottom: 10px; }
-        .print-header h1 { font-size: 18px; font-weight: bold; color: #D61B28; text-transform: uppercase; }
-        .print-header p { font-size: 12px; color: #555; }
-        table { width: 100% !important; border-collapse: collapse !important; font-size: 9px !important; }
-        th, td { border: 1px solid #999 !important; padding: 4px !important; text-align: center !important; }
-        th { background-color: #f1f5f9 !important; color: #333 !important; }
-        select { border: none !important; background: transparent !important; font-weight: bold !important; appearance: none; }
-      </style>
-    </head>
-    <body>
-      <div class="print-header">
-        <h1>Bata Bolivia - Work Planner de Producción</h1>
-        <p>Período: <strong>${tituloPeriodo}</strong> | Total Registrado: <strong>${kpiTotales}</strong> | Fecha de Emisión: ${new Date().toLocaleDateString("es-BO")}</p>
-      </div>
-      <div>
-        ${matrizHTML}
-      </div>
-      <script>
-        window.onload = () => {
-          setTimeout(() => { window.print(); window.close(); }, 300);
-        };
-      </script>
-    </body>
-    </html>
-  `);
-  ventanaPrint.document.close();
-};
-
-function renderProduccionView() {
-  const table = document.getElementById("tabla-matriz-produccion");
-  const labelSemanaGrande = document.getElementById("label-semana-grande");
-  if (!table) return;
-
-  const fSem = document.getElementById("prod-filter-semana")?.value || "";
-  const fTaller = document.getElementById("prod-filter-taller")?.value || "";
-  const fProy = document.getElementById("prod-filter-proyecto")?.value.trim().toLowerCase() || "";
-
-  if (labelSemanaGrande) {
-    if (fTaller) {
-      labelSemanaGrande.textContent = `TALLER ${fTaller} (TODAS LAS SEMANAS)`;
-    } else {
-      labelSemanaGrande.textContent = fSem ? fSem.toUpperCase() : "TODAS LAS SEMANAS";
-    }
-  }
-
-  let filtrados = lotesProduccion.filter(l => {
-    const semMatch = fTaller ? true : (!fSem || (l.semana || "") === fSem);
-    const proyMatch = !fProy || (l.proyecto || "").toLowerCase().includes(fProy) || (l.plan || "").toLowerCase().includes(fProy) || (l.articulo || "").toLowerCase().includes(fProy);
-    const linMatch = !fTaller || String(l.linea || "") === String(fTaller);
-    return semMatch && proyMatch && linMatch;
-  });
-
-  // KPIs
-  let totCortado = 0, totAparado = 0, totArmado = 0, totInyeccion = 0, totEntregado = 0;
-  filtrados.forEach(l => {
-    const p = parseInt(l.pares) || 0;
-    if (l.estado === "CORTADO") totCortado += p;
-    else if (l.estado === "APARADO") totAparado += p;
-    else if (l.estado === "ARMADO") totArmado += p;
-    else if (l.estado === "INYECCIÓN") totInyeccion += p;
-    else if (l.estado === "ENTREGADO") totEntregado += p;
-  });
-
-  const grandTotal = totCortado + totAparado + totArmado + totInyeccion + totEntregado;
-  const setKpi = (idVal, idBar, val) => {
-    const vEl = document.getElementById(idVal);
-    const bEl = document.getElementById(idBar);
-    if (vEl) vEl.textContent = val.toLocaleString();
-    if (bEl && grandTotal > 0) bEl.style.width = `${Math.round((val / grandTotal) * 100)}%`;
-  };
-
-  const elTotKpi = document.getElementById("prod-total-pares-kpi");
-  if (elTotKpi) {
-    const textoPeriodoLabel = fTaller ? `(Taller ${fTaller} - Todas las Semanas)` : (fSem ? `(${fSem})` : "(Todas las Semanas)");
-    elTotKpi.textContent = `${grandTotal.toLocaleString()} Pares Totales ${textoPeriodoLabel}`;
-  }
-
-  setKpi("kpi-cortado", "bar-cortado", totCortado);
-  setKpi("kpi-aparado", "bar-aparado", totAparado);
-  setKpi("kpi-armado", "bar-armado", totArmado);
-  setKpi("kpi-inyeccion", "bar-inyeccion", totInyeccion);
-  setKpi("kpi-entregado", "bar-entregado", totEntregado);
-
-  const seccionesDisponibles = fTaller ? [fTaller] : ["330", "331", "332", "251", "252", "254"];
-  const diasSemana = ["LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES"];
-
-  let html = "";
-  let rowIndexGlobal = 0;
-
-  seccionesDisponibles.forEach(seccion => {
-    const lotesSeccion = filtrados.filter(l => String(l.linea) === String(seccion));
-    
-    const semanasEnSeccion = {};
-    lotesSeccion.forEach(l => {
-      const sem = l.semana || "Sin Semana";
-      if (!semanasEnSeccion[sem]) semanasEnSeccion[sem] = [];
-      semanasEnSeccion[sem].push(l);
-    });
-
-    const listaSemanas = Object.keys(semanasEnSeccion).sort();
-
-    if (listaSemanas.length === 0) {
-      listaSemanas.push(fSem || "Semana Actual");
-      semanasEnSeccion[listaSemanas[0]] = [];
-    }
-
-    listaSemanas.forEach(semKey => {
-      const lotesSemana = semanasEnSeccion[semKey];
-      const planesUnicos = {};
-      lotesSemana.forEach(l => {
-        const pKey = l.plan || l.proyecto;
-        if (!planesUnicos[pKey]) {
-          planesUnicos[pKey] = { plan: l.plan, articulo: l.articulo, proyecto: l.proyecto, dias: {} };
-        }
-        planesUnicos[pKey].dias[l.dia] = l;
-      });
-
-      const listaPlanes = Object.values(planesUnicos);
-      let sumaParesBloque = 0;
-
-      for (let i = 0; i < 6; i++) {
-        const datosPlan = listaPlanes[i] || null;
-        let totalFila = 0;
-        rowIndexGlobal++;
-        const colorBg = rowIndexGlobal % 2 === 0 ? 'bg-white' : 'bg-slate-50';
-
-        html += `<tr class="${colorBg} border-b border-gray-300 text-center">`;
-
-        if (i === 0) {
-          html += `<td rowspan="6" class="p-2 font-black font-mono border border-gray-300 bg-gray-100 text-gray-900 align-middle text-xs leading-tight">
-            <span class="text-red-600 block text-sm font-black">${seccion}</span>
-            <span class="text-[10px] text-gray-500 font-semibold">${semKey}</span>
-          </td>`;
-        }
-
-        diasSemana.forEach(dia => {
-          const loteDia = datosPlan && datosPlan.dias ? datosPlan.dias[dia] : null;
-          if (loteDia) {
-            const p = parseInt(loteDia.pares) || 0;
-            totalFila += p;
-            sumaParesBloque += p;
-            let colorEstado = 'text-amber-700 bg-amber-50 border-amber-200';
-            if (loteDia.estado === 'APARADO') colorEstado = 'text-blue-700 bg-blue-50 border-blue-200';
-            else if (loteDia.estado === 'ARMADO') colorEstado = 'text-purple-700 bg-purple-50 border-purple-200';
-            else if (loteDia.estado === 'INYECCIÓN') colorEstado = 'text-orange-700 bg-orange-50 border-orange-200';
-            else if (loteDia.estado === 'ENTREGADO') colorEstado = 'text-green-700 bg-green-50 border-green-200';
-
-            html += `
-              <td class="p-1 border border-gray-300 font-mono text-[10px] font-bold text-red-600">${loteDia.plan || '—'}</td>
-              <td class="p-1 border border-gray-300 font-mono text-[10px]">${loteDia.articulo || '—'}</td>
-              <td class="p-1 border border-gray-300 font-bold text-[10px] truncate max-w-[65px]">${loteDia.proyecto || '—'}</td>
-              <td class="p-1 border border-gray-300 font-black text-cyan-900 bg-cyan-50/30">${p.toLocaleString()}</td>
-              <td class="p-1 border border-gray-300">
-                <select onchange="window.actualizarEstadoDiaLote('${loteDia.id}', this.value)" class="text-[10px] font-bold rounded px-1 py-0.5 border ${colorEstado}">
-                  <option value="CORTADO" ${loteDia.estado === 'CORTADO' ? 'selected' : ''}>CORTADO</option>
-                  <option value="APARADO" ${loteDia.estado === 'APARADO' ? 'selected' : ''}>APARADO</option>
-                  <option value="ARMADO" ${loteDia.estado === 'ARMADO' ? 'selected' : ''}>ARMADO</option>
-                  <option value="INYECCIÓN" ${loteDia.estado === 'INYECCIÓN' ? 'selected' : ''}>INYECCIÓN</option>
-                  <option value="ENTREGADO" ${loteDia.estado === 'ENTREGADO' ? 'selected' : ''}>ENTREGADO</option>
-                </select>
-              </td>
-            `;
-          } else {
-            html += `
-              <td class="p-1 border border-gray-300 text-gray-300">—</td>
-              <td class="p-1 border border-gray-300 text-gray-300">—</td>
-              <td class="p-1 border border-gray-300 text-gray-300">—</td>
-              <td class="p-1 border border-gray-300 text-gray-300">—</td>
-              <td class="p-1 border border-gray-300 text-gray-300">—</td>
-            `;
-          }
-        });
-
-        html += `<td class="p-2 border border-gray-300 font-black text-xs bg-gray-100 text-[#D61B28] align-middle">${totalFila > 0 ? totalFila.toLocaleString() : '—'}</td>`;
-        html += `</tr>`;
-      }
-
-      html += `
-        <tr class="bg-gray-200 font-black text-[11px] text-gray-800 border-b-2 border-gray-400 text-center">
-          <td colspan="26" class="p-1.5 text-right pr-4">SUBTOTAL ${seccion} (${semKey}):</td>
-          <td class="p-1.5 border border-gray-300 text-[#D61B28]">${sumaParesBloque > 0 ? sumaParesBloque.toLocaleString() : '0'}</td>
-        </tr>
-      `;
-    });
-  });
-
-  table.innerHTML = html;
-}
-
-const filtroSemanaProd = document.getElementById("prod-filter-semana");
-const filtroTallerProd = document.getElementById("prod-filter-taller");
-const filtroProyectoProd = document.getElementById("prod-filter-proyecto");
-
-if (filtroSemanaProd) filtroSemanaProd.onchange = renderProduccionView;
-if (filtroTallerProd) filtroTallerProd.onchange = renderProduccionView;
-if (filtroProyectoProd) filtroProyectoProd.oninput = renderProduccionView;
-
-safeClick("btn-limpiar-filtros-prod", () => {
-  if (filtroSemanaProd) filtroSemanaProd.value = "";
-  if (filtroTallerProd) filtroTallerProd.value = "";
-  if (filtroProyectoProd) filtroProyectoProd.value = "";
-  renderProduccionView();
-});
-
-// ==================== TABLA GENERAL DE ENTREGAS ====================
-function escucharEntregas() {
-  const q = collection(db, "entregas_departamentos");
-  onSnapshot(q, (snapshot) => {
-    entregas = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    entregas.sort((a, b) => (b.fechaEntrega || "").localeCompare(a.fechaEntrega || ""));
-    renderTablaEntregas();
-  }, (err) => console.error("Error al escuchar entregas:", err));
-}
-
-function renderTablaEntregas() {
-  const tbody = document.getElementById("table-entregas-body");
-  const empty = document.getElementById("entregas-empty-state");
-  if (!tbody) return;
-  tbody.innerHTML = "";
-
-  let entregasFiltradas = entregas.filter(item => {
-    const coincideCategoria = (categoriaEntregaActiva === "todas") || 
-      ((item.tipo || "").toUpperCase().trim() === categoriaEntregaActiva.toUpperCase().trim());
-    return coincideCategoria;
-  });
-
-  if (entregasFiltradas.length === 0) {
-    empty?.classList.remove("hidden");
-    return;
-  }
-  empty?.classList.add("hidden");
-
-  const esAdmin = esSuperAdmin();
-
-  entregasFiltradas.forEach(ent => {
-    const tr = document.createElement("tr");
-    tr.className = "hover:bg-gray-50/80 transition border-b border-gray-100";
-
-    // Usar la validación segura de multi-rol para confirmar recepciones de entregas
-    const puedeConfirmar = usuarioTieneAccesoArea(ent.destino) || esAdmin;
-
-    let recepcionHTML = "";
-    if (ent.recibido) {
-      recepcionHTML = `
-        <span class="text-green-700 font-bold flex items-center justify-center space-x-1">
-          <i class="fa-solid fa-circle-check text-green-600"></i>
-          <span>Recibido</span>
-        </span>
-      `;
-    } else {
-      if (puedeConfirmar) {
-        recepcionHTML = `
-          <button onclick="window.confirmarRecepcionEntrega('${ent.id}', '${ent.tipo}', '${ent.proyecto}')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-2.5 py-1 rounded-lg border border-blue-200 transition cursor-pointer">
-            Confirmar Recepción
-          </button>
-        `;
-      } else {
-        recepcionHTML = `<span class="text-amber-600 font-semibold italic text-[11px]">En tránsito a ${ent.destino}</span>`;
-      }
-    }
-
-    const fotoHTML = ent.foto 
-      ? `<img src="${ent.foto}" onclick="window.verFotoGrande('${ent.foto}', '${ent.proyecto} - ${ent.articulo || ent.tipo}')" class="w-10 h-7 object-cover rounded border border-gray-200 shadow-xs cursor-pointer hover:opacity-80 transition mx-auto" title="Click para ampliar">`
-      : `<div class="w-10 h-7 rounded border border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-[10px] mx-auto"><i class="fa-regular fa-image"></i></div>`;
-
-    const tdFotoHTML = (categoriaEntregaActiva !== "MATERIALES" && categoriaEntregaActiva !== "TIZADORES") ? `<td class="p-2 border-r border-gray-100 text-center">${fotoHTML}</td>` : '';
-    const tdArticuloHTML = categoriaEntregaActiva !== "MATERIALES" ? `<td class="p-3 font-mono text-gray-700 border-r border-gray-100">${ent.articulo || '—'}</td>` : '';
-
-    let detalleExtra = "";
-    if (ent.copias) detalleExtra += `<span class="bg-rose-100 text-rose-800 font-bold text-[9px] px-1.5 py-0.2 rounded ml-1">${ent.copias} copias</span>`;
-    if (ent.notas) detalleExtra += `<p class="text-[10px] text-gray-400 mt-0.5">${ent.notas}</p>`;
-
-    tr.innerHTML = `
-      ${tdFotoHTML}
-      <td class="p-3 font-bold text-gray-700 border-r border-gray-100 font-mono">${ent.semana || '—'}</td>
-      <td class="p-3 text-gray-600 border-r border-gray-100 whitespace-nowrap">${formatearFecha(ent.fechaEntrega)}</td>
-      <td class="p-3 font-bold text-gray-800 border-r border-gray-100">${ent.proyecto || '—'}</td>
-      ${tdArticuloHTML}
-      <td class="p-3 border-r border-gray-100">
-        <span class="bg-red-50 text-[#D61B28] px-2 py-0.5 rounded font-bold text-[10px] border border-red-100">${ent.tipo}</span>
-        ${detalleExtra}
-      </td>
-      <td class="p-3 border-r border-gray-100 whitespace-nowrap">
-        <span class="font-bold text-gray-800 block">${ent.entregadoPorNombre}</span>
-        <span class="text-[10px] text-gray-400">(${ent.entregadoPorRol})</span>
-      </td>
-      <td class="p-3 border-r border-gray-100 font-bold text-gray-700">${ent.destino}</td>
-      <td class="p-3 text-center whitespace-nowrap">${recepcionHTML}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-window.confirmarRecepcionEntrega = async (id, tipo, proyecto) => {
-  if (confirm(`¿Confirmar que has recibido físicamente "${tipo}" (${proyecto})?`)) {
-    await updateDoc(doc(db, "entregas_departamentos", id), {
-      recibido: true,
-      fechaRecepcion: new Date().toISOString(),
-      recibidoPorNombre: (userData && userData.nombre) || "Usuario"
-    });
-  }
-};
-
-// Escucha en tiempo real de Solicitudes
-function escucharCambios() {
-  const q = collection(db, "solicitudes_cambios");
-  onSnapshot(q, (snapshot) => {
-    solicitudes = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
-    solicitudes.sort((a, b) => (b.fechaCreacion || "").localeCompare(a.fechaCreacion || ""));
-    renderTabla();
-    renderAdminTablas();
-  });
-}
-
-function formatearFecha(iso) {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  return d.toLocaleDateString("es-BO", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
-}
-
-function renderTabla() {
-  const tbody = document.getElementById("table-cambios-body");
-  const empty = document.getElementById("table-empty-state");
-  if (!tbody) return;
-  tbody.innerHTML = "";
-
-  if (solicitudes.length === 0) {
-    empty?.classList.remove("hidden");
-    return;
-  }
-  empty?.classList.add("hidden");
-
-  const esAdmin = esSuperAdmin();
-  const esDesarrolloUsuario = esDesarrollo() || esAdmin;
-  const esCostos = usuarioTieneAccesoArea("Costos") || esAdmin;
-
-  solicitudes.forEach((item) => {
-    const tr = document.createElement("tr");
-    tr.className = item.esMinuta ? "bg-amber-50/70 border-b border-amber-200" : "hover:bg-gray-50/80 transition border-b border-gray-100";
-
-    let badgeMinuta = item.esMinuta ? `<span class="bg-amber-500 text-white font-black text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider block mb-1 w-fit">PLAN PILOTO</span>` : '';
-
-    let estadoHTML = "";
-    if (esDesarrolloUsuario) {
-      estadoHTML = `
-        <div class="flex items-center space-x-1.5">
-          <select id="sel-estado-${item.id}" class="border border-orange-200 text-orange-600 bg-orange-50 font-semibold rounded-lg px-2 py-1 text-xs">
-            <option value="En proceso" ${item.estado === "En proceso" ? "selected" : ""}>En proceso</option>
-            <option value="Realizado" ${item.estado === "Realizado" ? "selected" : ""}>Realizado</option>
-            <option value="Retrasado" ${item.estado === "Retrasado" ? "selected" : ""}>Retrasado</option>
-          </select>
-          <button onclick="window.guardarCambioEstado('${item.id}', '${item.proyecto}', '${item.articulo}', '${item.semana || ''}')" class="bg-gray-100 hover:bg-[#D61B28] hover:text-white text-gray-600 p-1.5 rounded-lg text-xs transition cursor-pointer">
-            <i class="fa-solid fa-floppy-disk"></i>
-          </button>
-        </div>
-      `;
-    } else {
-      estadoHTML = `<span class="border px-3 py-1 rounded-lg font-bold text-xs">${item.estado}</span>`;
-    }
-
-    const fechaRealizadoHTML = item.fechaRealizado ? `<span class="font-bold text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200">${formatearFecha(item.fechaRealizado)}</span>` : `<span class="text-gray-300 text-[11px]">—</span>`;
-
-    let costosHTML = "";
-    if (item.estado === "Realizado") {
-      if (item.validadoCostos) {
-        costosHTML = `<span class="text-green-700 font-bold text-xs"><i class="fa-solid fa-circle-check"></i> Validado</span>`;
-      } else {
-        costosHTML = `<input type="checkbox" ${!esCostos ? "disabled" : ""} onchange="window.confirmarValidacionCostos('${item.id}', '${item.proyecto}', '${item.articulo}', this)" class="h-4 w-4 accent-[#D61B28] rounded border-gray-300 cursor-pointer">`;
-      }
-    } else {
-      costosHTML = `<input type="checkbox" disabled class="h-4 w-4 text-gray-300 rounded border-gray-200 opacity-40">`;
-    }
-
-    const fotoHTML = item.foto ? `<img src="${item.foto}" onclick="window.verFotoGrande('${item.foto}', '${item.proyecto}')" class="w-10 h-7 object-cover rounded border cursor-pointer mx-auto">` : '—';
-
-    tr.innerHTML = `
-      <td class="p-2 border-r text-center">${fotoHTML}</td>
-      <td class="p-3 font-bold border-r font-mono">${item.semana || '—'}</td>
-      <td class="p-3 text-gray-600 border-r whitespace-nowrap">${formatearFecha(item.fechaCreacion)}</td>
-      <td class="p-3 border-r whitespace-nowrap"><span class="font-bold block">${item.solicitanteNombre || '—'}</span></td>
-      <td class="p-3.5 font-bold border-r">${badgeMinuta}${item.proyecto}</td>
-      <td class="p-3.5 font-mono border-r">${item.articulo}</td>
-      <td class="p-3.5 border-r">${item.boxCambio}</td>
-      <td class="p-3.5 text-center border-r whitespace-nowrap">${estadoHTML}</td>
-      <td class="p-3.5 text-center border-r whitespace-nowrap">${fechaRealizadoHTML}</td>
-      <td class="p-3.5 text-center whitespace-nowrap">${costosHTML}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-window.guardarCambioEstado = async (id, proyecto, articulo, semana) => {
-  const select = document.getElementById(`sel-estado-${id}`);
-  if (!select) return;
-  const nuevoEstado = select.value;
-  await updateDoc(doc(db, "solicitudes_cambios", id), {
-    estado: nuevoEstado,
-    fechaRealizado: nuevoEstado === "Realizado" ? new Date().toISOString() : null
-  });
-  alert("Estado guardado correctamente.");
-};
-
-window.confirmarValidacionCostos = async (id, proyecto, articulo, checkboxElem) => {
-  if (confirm(`¿Validar costos de "${proyecto}"?`)) {
-    await updateDoc(doc(db, "solicitudes_cambios", id), { validadoCostos: true });
-  } else {
-    checkboxElem.checked = false;
-  }
-};
-
-// Panel Super Admin
-async function cargarPanelSuperAdmin() {
-  if (!esSuperAdmin()) return;
-  const tbodyUsers = document.getElementById("table-users-body");
-
-  try {
-    const snap = await getDocs(collection(db, "usuarios"));
-    if (tbodyUsers) {
-      tbodyUsers.innerHTML = "";
-      snap.forEach(docU => {
-        const u = docU.data();
-        const tr = document.createElement("tr");
-        tr.className = "border-b";
-
-        const rolesDisponibles = [
-          "Desarrollo de producto", 
-          "Desarrollo de producto - Jefe",
-          "Compras", 
-          "Planeamiento", 
-          "Producción", 
-          "Costos", 
-          "Calidad", 
-          "Almacén", 
-          "Retail", 
-          "Super Admin"
-        ];
-        
-        let optionsHTML = rolesDisponibles.map(r => `<option value="${r}" ${u.rol === r ? 'selected' : ''}>${r}</option>`).join('');
-
-        tr.innerHTML = `
-          <td class="p-3"><img src="${u.foto || 'https://via.placeholder.com/30'}" class="w-7 h-7 rounded-full object-cover"></td>
-          <td class="p-3 font-bold">${u.nombre || '—'}</td>
-          <td class="p-3">${u.email || '—'}</td>
-          <td class="p-3 font-mono">${u.celular || '—'}</td>
-          <td class="p-3">
-            <select onchange="window.cambiarRolUsuario('${docU.id}', this.value)" class="border border-gray-300 rounded px-2 py-1 text-xs font-bold text-[#D61B28] bg-white cursor-pointer shadow-sm">
-              ${optionsHTML}
-            </select>
-          </td>
-          <td class="p-3 text-center"><span class="text-xs text-green-600 font-bold">Activo</span></td>
-        `;
-        tbodyUsers.appendChild(tr);
-      });
-    }
-    renderAdminTablas();
-  } catch (e) { console.error(e); }
-}
-
-function renderAdminTablas() {
-  if (!esSuperAdmin()) return;
-  const tbodySol = document.getElementById("table-admin-solicitudes-body");
-  const tbodyEnt = document.getElementById("table-admin-entregas-body");
-
-  if (tbodySol) {
-    tbodySol.innerHTML = "";
-    solicitudes.forEach(s => {
-      const tr = document.createElement("tr");
-      tr.className = "border-b hover:bg-gray-50";
-      tr.innerHTML = `
-        <td class="p-3 font-mono font-bold">${s.semana || '—'}</td>
-        <td class="p-3">${formatearFecha(s.fechaCreacion)}</td>
-        <td class="p-3">${s.esMinuta ? 'Minuta' : 'Cambio'}</td>
-        <td class="p-3 font-bold">${s.proyecto}</td>
-        <td class="p-3 font-mono">${s.articulo}</td>
-        <td class="p-3">${s.solicitanteNombre || '—'}</td>
-        <td class="p-3">${s.estado}</td>
-        <td class="p-3 text-center"><button onclick="window.eliminarRegistroAdmin('solicitudes_cambios', '${s.id}')" class="text-red-600 hover:text-red-800 font-bold cursor-pointer"><i class="fa-solid fa-trash"></i></button></td>
-      `;
-      tbodySol.appendChild(tr);
-    });
-  }
-
-  if (tbodyEnt) {
-    tbodyEnt.innerHTML = "";
-    entregas.forEach(en => {
-      const tr = document.createElement("tr");
-      tr.className = "border-b hover:bg-gray-50";
-      tr.innerHTML = `
-        <td class="p-3 font-mono font-bold">${en.semana || '—'}</td>
-        <td class="p-3">${formatearFecha(en.fechaEntrega)}</td>
-        <td class="p-3">${en.tipo}</td>
-        <td class="p-3 font-bold">${en.proyecto}</td>
-        <td class="p-3 font-mono">${en.articulo || '—'}</td>
-        <td class="p-3">${en.destino}</td>
-        <td class="p-3 text-center"><button onclick="window.eliminarRegistroAdmin('entregas_departamentos', '${en.id}')" class="text-red-600 hover:text-red-800 font-bold cursor-pointer"><i class="fa-solid fa-trash"></i></button></td>
-      `;
-      tbodyEnt.appendChild(tr);
-    });
-  }
-}
-
-window.eliminarRegistroAdmin = async (coleccion, id) => {
-  if (confirm("¿Estás seguro de eliminar permanentemente este registro de la base de datos?")) {
-    try {
-      await deleteDoc(doc(db, coleccion, id));
-      alert("Registro eliminado correctamente.");
-      cargarPanelSuperAdmin();
-    } catch (err) {
-      alert("Error: " + err.message);
-    }
-  }
-};
-
-window.cambiarRolUsuario = async (uid, nuevoRol) => {
-  try {
-    await updateDoc(doc(db, "usuarios", uid), { 
-      rol: nuevoRol,
-      rolesMultiples: [nuevoRol] 
-    });
-    alert(`¡Rol actualizado exitosamente a: ${nuevoRol}!`);
-  } catch (err) {
-    alert("Error al actualizar el rol: " + err.message);
-  }
-};
-
-// Configuración de campos dinámicos en Entrega
-const selEntTipo = document.getElementById("ent-tipo");
-if (selEntTipo) selEntTipo.onchange = actualizarCamposSegunTipoEntrega;
-
-function actualizarCamposSegunTipoEntrega() {
-  const tipo = document.getElementById("ent-tipo")?.value || "";
-  const selectDestino = document.getElementById("ent-destino");
-  const boxArticulo = document.getElementById("box-field-articulo");
-  const labelProy = document.getElementById("label-field-proyecto");
-  const inputProy = document.getElementById("ent-proyecto");
-  const boxFoto = document.getElementById("box-field-foto");
-  const boxCopias = document.getElementById("box-field-copias");
-  const containerSingle = document.getElementById("container-destino-single");
-  const containerMultiple = document.getElementById("container-destino-multiple");
-
-  if (!selectDestino) return;
-  selectDestino.innerHTML = "";
-  boxCopias?.classList.add("hidden");
-  containerMultiple?.classList.add("hidden");
-  containerSingle?.classList.remove("hidden");
-  boxFoto?.classList.add("hidden");
-
-  if (tipo === "MATERIALES") {
-    if (labelProy) labelProy.textContent = "Nombre del Material / Insumo";
-    if (inputProy) inputProy.placeholder = "Ej: Badana Beige 1.2mm";
-    boxArticulo?.classList.add("hidden");
-    selectDestino.innerHTML += `<option value="Desarrollo de producto">Desarrollo de producto</option>`;
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-    return;
-  }
-
-  boxArticulo?.classList.remove("hidden");
-  if (labelProy) labelProy.textContent = "Nombre del Proyecto";
-  if (inputProy) inputProy.placeholder = "Ej: SKATER";
-
-  if (tipo === "GUÍA DE PRODUCCIÓN") {
-    boxFoto?.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
-  } else if (tipo === "CORTE") {
-    boxFoto?.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-  } else if (tipo === "MUESTRA DEFINITIVA") {
-    boxFoto?.classList.remove("hidden");
-    containerSingle?.classList.add("hidden");
-    containerMultiple?.classList.remove("hidden");
-  } else if (tipo === "HOJA DE DESBASTE") {
-    boxFoto?.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-  } else if (tipo === "TIZADORES") {
-    boxCopias?.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-  } else {
-    boxFoto?.classList.remove("hidden");
-    selectDestino.innerHTML += `<option value="Producción">Producción</option>`;
-    selectDestino.innerHTML += `<option value="Costos">Costos</option>`;
-  }
-}
-
-// Formulario Entrega con llamada automática a WhatsApp
-const formEntrega = document.getElementById("form-nueva-entrega");
-if (formEntrega) {
-  formEntrega.onsubmit = async (e) => {
-    e.preventDefault();
-    const semana = document.getElementById("ent-semana").value.trim();
-    const proyecto = document.getElementById("ent-proyecto").value.trim();
-    const articulo = document.getElementById("ent-articulo").value.trim();
-    const tipo = document.getElementById("ent-tipo").value;
-    const notas = document.getElementById("ent-notas").value.trim();
-    const copias = document.getElementById("ent-copias").value.trim();
-    const photoFile = document.getElementById("ent-photo").files[0];
-    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
-
-    try {
-      let destinosAEntregar = [];
-      if (tipo === "MUESTRA DEFINITIVA") {
-        destinosAEntregar = Array.from(document.querySelectorAll(".chk-muestras-dest:checked")).map(c => c.value);
-      } else {
-        destinosAEntregar = [document.getElementById("ent-destino").value];
-      }
-
-      for (const destino of destinosAEntregar) {
-        await addDoc(collection(db, "entregas_departamentos"), {
-          semana, proyecto,
-          articulo: tipo === "MATERIALES" ? "" : articulo,
-          tipo, destino,
-          copias: tipo === "TIZADORES" ? (copias || "1") : null,
-          foto: fotoBase64, notas,
-          entregadoPorNombre: (userData && userData.nombre) || "Usuario",
-          entregadoPorRol: (userData && userData.rol) || "Desarrollo",
-          recibido: false,
-          fechaEntrega: new Date().toISOString()
-        });
-      }
-      formEntrega.reset();
-      modalNuevaEntrega?.classList.add("hidden");
-      
-      abrirModalWhatsApp({
-        titulo: `Notificar Entrega (${tipo})`,
-        subtitulo: `Proyecto: ${proyecto} (Semana ${semana})`,
-        mensajeTexto: `📦 *NUEVA ENTREGA EN BATA BOLIVIA*\n• Elemento: ${tipo}\n• Proyecto: ${proyecto}\n• Semana: ${semana}\n• Entregado por: ${(userData && userData.nombre) || 'Usuario'}`
-      });
-    } catch (err) {
-      alert("Error: " + err.message);
-    }
-  };
-}
-
-// Formulario Nuevo Cambio con llamada automática a WhatsApp
-const formNewChange = document.getElementById("form-new-change");
-if (formNewChange) {
-  formNewChange.onsubmit = async (e) => {
-    e.preventDefault();
-    const semana = document.getElementById("change-semana").value.trim();
-    const proyecto = document.getElementById("change-project").value.trim();
-    const articulo = document.getElementById("change-article").value.trim();
-    const boxCambio = document.getElementById("change-box").value.trim();
-    const photoFile = document.getElementById("change-photo").files[0];
-    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
-
-    try {
-      await addDoc(collection(db, "solicitudes_cambios"), {
-        semana, proyecto, articulo, boxCambio,
-        foto: fotoBase64,
-        estado: "En proceso",
-        solicitanteNombre: (userData && userData.nombre) || "Usuario",
-        solicitanteEmail: currentUser?.email || "",
-        fechaCreacion: new Date().toISOString(),
-        validadoCostos: false,
-        esMinuta: false
-      });
-      formNewChange.reset();
-      modalNewChange?.classList.add("hidden");
-      
-      abrirModalWhatsApp({
-        titulo: "Notificar Solicitud de Cambio",
-        subtitulo: `Proyecto: ${proyecto} | Art: ${articulo}`,
-        mensajeTexto: `🔄 *NUEVA SOLICITUD DE CAMBIO - BATA*\n• Proyecto: ${proyecto}\n• Artículo: ${articulo}\n• Semana: ${semana}\n• Detalle: ${boxCambio}`
-      });
-    } catch (err) {
-      alert("Error al registrar solicitud: " + err.message);
-    }
-  };
-}
-
-// Formulario Minuta con llamada automática a WhatsApp
-const formMinuta = document.getElementById("form-minuta");
-if (formMinuta) {
-  formMinuta.onsubmit = async (e) => {
-    e.preventDefault();
-    const semana = document.getElementById("minuta-semana").value.trim();
-    const proyecto = document.getElementById("minuta-proyecto").value.trim();
-    const articulo = document.getElementById("minuta-articulo").value.trim();
-    const boxCambio = document.getElementById("minuta-box").value.trim();
-    const photoFile = document.getElementById("minuta-photo").files[0];
-    const fotoBase64 = photoFile ? await comprimirImagen(photoFile) : null;
-
-    try {
-      await addDoc(collection(db, "solicitudes_cambios"), {
-        semana, proyecto, articulo, boxCambio,
-        foto: fotoBase64,
-        estado: "En proceso",
-        solicitanteNombre: (userData && userData.nombre) || "Jefe de Desarrollo",
-        solicitanteEmail: currentUser?.email || "",
-        fechaCreacion: new Date().toISOString(),
-        validadoCostos: false,
-        esMinuta: true
-      });
-      formMinuta.reset();
-      modalMinuta?.classList.add("hidden");
-      
-      abrirModalWhatsApp({
-        titulo: "Notificar Minuta / Plan Piloto",
-        subtitulo: `Proyecto: ${proyecto} (Jefatura de Desarrollo)`,
-        mensajeTexto: `⚡ *MINUTA / PLAN PILOTO - BATA BOLIVIA*\n• Proyecto: ${proyecto}\n• Artículo: ${articulo}\n• Semana: ${semana}\n• Instrucciones: ${boxCambio}`
-      });
-    } catch (err) {
-      alert("Error al publicar minuta: " + err.message);
-    }
-  };
-}
-
-// Procurement placeholder
-function escucharProcurement() {}
-
-// ==================== MÓDULO TARJETAS (PD) ====================
-function initModuloTarjetas() {
-  const inputFecha = document.getElementById("card-fecha");
-  if (inputFecha && !inputFecha.value) {
-    inputFecha.value = "9/9/2026";
-  }
-
-  const fileInput = document.getElementById("card-croquis-file");
-  if (fileInput) {
-    fileInput.onchange = async (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        croquisTarjetaBase64 = await comprimirImagen(file, 400, 0.8);
-        renderTarjetasPreview();
-      }
-    };
-  }
-
-  const fileInputPlantilla = document.getElementById("card-plantilla-img-file");
-  if (fileInputPlantilla) {
-    fileInputPlantilla.onchange = async (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        plantillaCorteTarjetaBase64 = await comprimirImagen(file, 400, 0.8);
-        renderTarjetasPreview();
-      }
-    };
-  }
-
-  safeClick("btn-quick-distribute", () => {
-    const raw = document.getElementById("input-quick-paste-row")?.value.trim() || "";
-    if (!raw) {
-      alert("Copia una fila de Excel y pégala aquí.");
-      return;
-    }
-    let cols = raw.split("\t").map(c => c.trim()).filter(c => c !== "");
-    if (cols.length < 4) {
-      cols = raw.split(/\s{2,}/).map(c => c.trim()).filter(c => c !== "");
-    }
-
-    if (cols.length >= 4) {
-      document.getElementById("card-costo-articulo").value = cols[0] || "";
-      document.getElementById("card-costo-linea").value = cols[2] || "";
-      document.getElementById("card-costo-marca").value = cols[3] || "TEENER";
-      document.getElementById("card-costo-budret").value = cols[10] || "37.39%";
-      document.getElementById("card-costo-precio").value = cols[8] || "259.00";
-      document.getElementById("card-costo-margen").value = cols[9] || "55.00%";
-      renderTarjetasPreview();
-    } else {
-      alert("Columnas insuficientes. Pega directamente la fila copiada de Excel.");
-    }
-  });
-
-  ["count-card-corte", "count-card-prod", "count-card-verde", "count-card-amarilla", "count-card-rosada"].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.oninput = renderTarjetasPreview;
-  });
-
-  [
-    "card-costo-articulo", "card-costo-linea", "card-costo-marca", "card-costo-budret", 
-    "card-costo-precio", "card-costo-margen", "card-serie", "card-fecha", "card-material-corte", 
-    "card-forro", "card-plant-int", "card-tecnico", "card-horma-suela", "card-construccion", "card-observaciones"
-  ].forEach(id => {
-    const elem = document.getElementById(id);
-    if (elem) elem.oninput = renderTarjetasPreview;
-  });
-
-  safeClick("btn-imprimir-tarjetas-action", () => {
-    const previewHTML = document.getElementById("contenedor-tarjetas-preview")?.innerHTML || "";
-    const hTarj = document.getElementById("hoja-impresion-tarjetas");
-    if (hTarj) hTarj.innerHTML = previewHTML;
-    modalImpresionTarjetas?.classList.remove("hidden");
-  });
-
-  safeClick("btn-ejecutar-print-tarjetas", () => {
-    const contenidoHTML = document.getElementById("contenedor-tarjetas-preview")?.innerHTML || "";
-    if (!contenidoHTML) return;
-    const ventanaPrint = window.open("", "_blank", "width=900,height=650");
-    if (!ventanaPrint) {
-      alert("Permite las ventanas emergentes para imprimir.");
-      return;
-    }
-    ventanaPrint.document.open();
-    ventanaPrint.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <title>Impresión de Tarjetas - Bata Bolivia</title>
-        <style>
-          @page { size: letter portrait; margin: 8mm; }
-          * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          html, body { margin: 0; padding: 0; background: #fff; font-family: sans-serif; }
-          .shoe-card-container { width: 200mm !important; height: 34mm !important; max-height: 34mm !important; border: 1px solid #000 !important; margin: 0 !important; padding: 0 !important; display: flex; page-break-inside: avoid !important; break-inside: avoid !important; background: #fff; }
-          .shoe-panel { width: 66.66mm !important; height: 100% !important; box-sizing: border-box !important; }
-        </style>
-      </head>
-      <body>
-        <div style="display:flex; flex-direction:column; align-items:flex-start; margin:0; padding:0;">
-          ${contenidoHTML}
-        </div>
-      </body>
-      </html>
-    `);
-    ventanaPrint.document.close();
-    setTimeout(() => { ventanaPrint.focus(); ventanaPrint.print(); ventanaPrint.close(); }, 250);
-  });
-
-  renderTarjetasPreview();
-}
-
-function renderTarjetasPreview() {
-  const container = document.getElementById("contenedor-tarjetas-preview");
-  if (!container) return;
-
-  const cCortes = parseInt(document.getElementById("count-card-corte")?.value) || 0;
-  const cProd = parseInt(document.getElementById("count-card-prod")?.value) || 0;
-  const cVerdes = parseInt(document.getElementById("count-card-verde")?.value) || 0;
-  const cAmarillas = parseInt(document.getElementById("count-card-amarilla")?.value) || 0;
-  const cRosadas = parseInt(document.getElementById("count-card-rosada")?.value) || 0;
-
-  const totalTarjetas = cCortes + cProd + cVerdes + cAmarillas + cRosadas;
-  const lblTotal = document.getElementById("label-total-tarjetas-count");
-  if (lblTotal) lblTotal.textContent = totalTarjetas;
-
-  const articulo = document.getElementById("card-costo-articulo")?.value || "34461836";
-  const linea = (document.getElementById("card-costo-linea")?.value || "QUIQUE").toUpperCase();
-  const marca = (document.getElementById("card-costo-marca")?.value || "TEENER").toUpperCase();
-  const precio = document.getElementById("card-costo-precio")?.value || "259.00";
-  const margen = document.getElementById("card-costo-margen")?.value || "55.00%";
-  const budRet = document.getElementById("card-costo-budret")?.value || "37.39%";
-
-  const serie = document.getElementById("card-serie")?.value || "37-44";
-  const fecha = document.getElementById("card-fecha")?.value || "9/9/2026";
-  const materialCorte = (document.getElementById("card-material-corte")?.value || "IMITACION").toUpperCase();
-  const forro = (document.getElementById("card-forro")?.value || "PIQUE NEGRO").toUpperCase();
-  const plantInt = (document.getElementById("card-plant-int")?.value || "PIQUE NEGRO / CRETONE").toUpperCase();
-  const modelista = (document.getElementById("card-tecnico")?.value || "CARLOS ARCE").toUpperCase();
-  const construccion = (document.getElementById("card-construccion")?.value || "TRUE MOC").toUpperCase();
-  const suela = (document.getElementById("card-horma-suela")?.value || "QUIQUE").toUpperCase();
-  const observaciones = document.getElementById("card-observaciones")?.value || "Sin observaciones adicionales";
-
-  const siluetaCalzadoHTML = croquisTarjetaBase64 
-    ? `<img src="${croquisTarjetaBase64}" style="width:100%; height:32px; object-fit:contain; margin:auto;">`
-    : `<div style="height:32px; display:flex; align-items:center; justify-content:center; font-size:8px; color:#999; border:1px dashed #ccc;">Croquis</div>`;
-
-  const listaAImprimir = [];
-  for (let i = 1; i <= cCortes; i++) listaAImprimir.push({ color: "#FFFFFF", esCorte: true });
-  for (let i = 1; i <= cProd; i++) listaAImprimir.push({ color: "#FFFFFF", esCorte: false });
-  for (let i = 1; i <= cVerdes; i++) listaAImprimir.push({ color: "#80C342", esCorte: false });
-  for (let i = 1; i <= cAmarillas; i++) listaAImprimir.push({ color: "#FFF200", esCorte: false });
-  for (let i = 1; i <= cRosadas; i++) listaAImprimir.push({ color: "#E06D8A", esCorte: false });
-
-  let tarjetasHTML = "";
-  listaAImprimir.forEach((tarj) => {
-    const moduloInfo = `
-      <div class="shoe-panel" style="display:flex; border-right:1px solid #000; overflow:hidden;">
-        <div class="lateral-tab" style="width:16px; border-right:1px solid #000; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:9px; writing-mode:vertical-rl; transform:rotate(180deg); background-color:${tarj.color} !important;">
-          ${linea}
-        </div>
-        <div style="flex:1; display:flex; flex-direction:column; justify-content:space-between; padding:1px;">
-          <div style="font-size:7.5px; font-weight:900; color:#dc2626; text-align:center; border-bottom:1px solid #000; padding-bottom:1px;">
-            MANUFACTURA BOLIVIANA S.A.
-          </div>
-          <div style="display:flex; flex:1; align-items:center;">
-            <div style="width:45px; display:flex; flex-direction:column; justify-content:center; border-right:1px solid #000; padding-right:1px; height:100%;">
-              ${siluetaCalzadoHTML}
-            </div>
-            <div style="flex:1; height:100%;">
-              <table style="width:100%; height:100%; border-collapse:collapse; font-size:6px; font-weight:900;">
-                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; width:35%; text-align:center;">ART:</td><td style="text-align:center; font-family:monospace; font-size:7px;">${articulo}</td></tr>
-                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; width:35%; text-align:center;">MARCA:</td><td style="text-align:center;">${marca}</td></tr>
-                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; width:35%; text-align:center;">SERIE:</td><td style="text-align:center;">${serie}</td></tr>
-                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; width:35%; text-align:center;">CORTE:</td><td style="text-align:center; font-size:5px;">${materialCorte}</td></tr>
-                <tr style="border-bottom:1px solid #000;"><td style="border-right:1px solid #000; width:35%; text-align:center;">FORRO:</td><td style="text-align:center; font-size:5px;">${forro}</td></tr>
-                <tr><td style="border-right:1px solid #000; width:35%; text-align:center;">PLANT:</td><td style="text-align:center; font-size:5px;">${plantInt}</td></tr>
-              </table>
-            </div>
-          </div>
-          <div style="display:flex; border-top:1px solid #000; font-size:5.5px; font-weight:bold; padding:1px 2px; justify-content:space-between; background:#fff;">
-            <span>${fecha}</span>
-          </div>
-          <div style="display:flex; border-top:1px solid #000; font-size:5px; font-weight:800; padding:1px 0;">
-            <div style="width:50%; border-right:1px solid #000; padding-left:1px;">TEC: ${modelista}<br>CONTR: ${construccion}<br>SUELA: ${suela}</div>
-            <div style="width:50%; padding-left:2px;">PRECIO: ${precio}<br>MRG BUD: ${budRet}<br>MRG: ${margen}</div>
-          </div>
-        </div>
-      </div>
-    `;
-
-    const moduloFirmas = `
-      <div class="shoe-panel" style="display:flex; flex-direction:column; justify-content:space-between; padding:2px 4px; font-size:5.5px; ${tarj.esCorte ? '' : 'border-right:1px solid #000;'}">
-        <div style="font-size:7px; font-weight:900; text-align:center; color:#000; text-transform:uppercase; border-bottom:1px solid #000; padding-bottom:1px;">
-          APROBACIONES
-        </div>
-        <div style="display:flex; flex-direction:column; justify-content:space-between; flex:1; padding-top:22px; padding-bottom:2px;">
-          <div style="display:flex; justify-content:space-between;">
-            <div>
-              <div style="border-bottom:1px solid #000; width:28mm; height:5px;"></div>
-              <span style="font-weight:bold; font-size:4.5px;">PD. CHIEF</span><br><span style="font-size:4px;">DATE: &nbsp; / &nbsp; / &nbsp;</span>
-            </div>
-            <div>
-              <div style="border-bottom:1px solid #000; width:28mm; height:5px;"></div>
-              <span style="font-weight:bold; font-size:4.5px;">MERCHANDISING MAN.</span><br><span style="font-size:4px;">DATE: &nbsp; / &nbsp; / &nbsp;</span>
-            </div>
-          </div>
-          <div style="text-align:center; margin: 1px 0;">
-            <div style="border-bottom:1px solid #000; width:30mm; height:5px; margin:auto;"></div>
-            <span style="font-weight:bold; font-size:4.5px;">PURCHASING MANAGER</span><br><span style="font-size:4px;">DATE: &nbsp; / &nbsp; / &nbsp;</span>
-          </div>
-          <div style="display:flex; justify-content:space-between;">
-            <div>
-              <div style="border-bottom:1px solid #000; width:28mm; height:5px;"></div>
-              <span style="font-weight:bold; font-size:4.5px;">PRODUCTION MANAGER</span><br><span style="font-size:4px;">DATE: &nbsp; / &nbsp; / &nbsp;</span>
-            </div>
-            <div>
-              <div style="border-bottom:1px solid #000; width:28mm; height:5px;"></div>
-              <span style="font-weight:bold; font-size:4.5px;">COUNTRY MANAGER</span><br><span style="font-size:4px;">DATE: &nbsp; / &nbsp; / &nbsp;</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-
-    const moduloObservaciones = `
-      <div class="shoe-panel" style="padding:4px; display:flex; flex-direction:column; justify-content:space-between; font-size:7px; border-right:1px solid #000;">
-        <div>
-          <span style="font-weight:900; color:#000; text-transform:uppercase; display:block; margin-bottom:1px;">OBSERVACIONES:</span>
-          <p style="font-size:6.5px; color:#000; font-style:italic; line-height:1.2;">${observaciones}</p>
-        </div>
-        <div style="text-align:right; font-size:6px; color:#000; font-weight:bold;">BATA BOLIVIA PD</div>
-      </div>
-    `;
-
-    const panelCentro = tarj.esCorte ? moduloObservaciones : moduloFirmas;
-    const panelDerecha = tarj.esCorte ? moduloFirmas : moduloObservaciones;
-
-    tarjetasHTML += `
-      <div class="shoe-card-container" style="background:#fff; display:flex; font-size:7px; line-height:1.1; color:#000;">
-        ${moduloInfo}
-        ${panelCentro}
-        ${panelDerecha}
-      </div>
-    `;
-  });
-
-  container.innerHTML = tarjetasHTML;
-}
