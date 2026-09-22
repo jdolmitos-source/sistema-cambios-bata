@@ -135,7 +135,7 @@ function usuarioTieneAccesoArea(areaDestino) {
 }
 
 // Modal WhatsApp
-async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto, rolFiltro = null }) {
+async function abrirModalWhatsApp({ titulo, subtitulo, mensajeTexto }) {
   const modalWA = document.getElementById("modal-whatsapp");
   const listContainer = document.getElementById("whatsapp-contacts-list");
   if (!modalWA || !listContainer) return;
@@ -251,6 +251,27 @@ function inicializarSemanas01a52() {
   });
 }
 
+// Actualizador dinámico del filtro de semanas de aplicabilidad en la vista de Cambios
+function actualizarSelectSemanasAplica() {
+  const sel = document.getElementById("filtro-semana-aplica-cambios");
+  if (!sel) return;
+  const valorActual = sel.value;
+  
+  const semanasUnicas = new Set();
+  solicitudes.forEach(s => {
+    if (s.semanaAplica) semanasUnicas.add(s.semanaAplica.trim());
+    else if (s.semana) semanasUnicas.add(s.semana.trim());
+  });
+
+  let optionsHTML = '<option value="">Todas las Semanas</option>';
+  Array.from(semanasUnicas).sort().forEach(sem => {
+    optionsHTML += `<option value="${sem}">${sem}</option>`;
+  });
+  
+  sel.innerHTML = optionsHTML;
+  if (valorActual) sel.value = valorActual;
+}
+
 // ==================== MÓDULO HELPDESK ====================
 function escucharHelpDesk() {
   const q = collection(db, "solicitudes_helpdesk");
@@ -282,7 +303,7 @@ if (formNuevaSolicitudHelpDesk) {
       });
 
       formNuevaSolicitudHelpDesk.reset();
-      modalNuevaSolicitudHelpDesk?.classList.add("hidden");
+      document.getElementById("modal-nueva-solicitud-helpdesk")?.classList.add("hidden");
 
       abrirModalWhatsApp({
         titulo: `Notificar Solicitud (${destino})`,
@@ -522,7 +543,7 @@ const modalImpresionTarjetas = document.getElementById("modal-impresion-tarjetas
 const modalNewChange = document.getElementById("modal-new-change");
 const modalNuevoLoteProd = document.getElementById("modal-nuevo-lote-prod");
 const modalEliminarPlan = document.getElementById("modal-eliminar-plan");
-const modalнь = document.getElementById("modal-nueva-solicitud-helpdesk");
+const modalNuevaSolicitudHelpDesk = document.getElementById("modal-nueva-solicitud-helpdesk");
 
 safeClick("btn-close-whatsapp-modal", () => document.getElementById("modal-whatsapp")?.classList.add("hidden"));
 safeClick("btn-show-login", () => modalLogin?.classList.remove("hidden"));
@@ -550,8 +571,8 @@ safeClick("close-nuevo-lote-prod", () => modalNuevoLoteProd?.classList.add("hidd
 safeClick("cancel-nuevo-lote-prod", () => modalNuevoLoteProd?.classList.add("hidden"));
 safeClick("close-eliminar-plan", () => modalEliminarPlan?.classList.add("hidden"));
 safeClick("cancel-eliminar-plan", () => modalEliminarPlan?.classList.add("hidden"));
-safeClick("close-nueva-solicitud-helpdesk", () => document.getElementById("modal-nueva-solicitud-helpdesk")?.classList.add("hidden"));
-safeClick("cancel-nueva-solicitud-helpdesk", () => document.getElementById("modal-nueva-solicitud-helpdesk")?.classList.add("hidden"));
+safeClick("close-nueva-solicitud-helpdesk", () => modalNuevaSolicitudHelpDesk?.classList.add("hidden"));
+safeClick("cancel-nueva-solicitud-helpdesk", () => modalNuevaSolicitudHelpDesk?.classList.add("hidden"));
 
 safeClick("btn-reporte-entregas-pdf", window.abrirReporteImpresoEntregas);
 safeClick("btn-reporte-entregas-texto", window.abrirResumenTextoEntregas);
@@ -587,8 +608,7 @@ safeClick("btn-edit-profile", () => {
   const pPhone = document.getElementById("prof-phone");
   if (pName) pName.value = userData.nombre || "";
   if (pPhone) pPhone.value = userData.celular || "";
-  modalProfile?.classList.add("hidden");
-  document.getElementById("modal-profile")?.classList.remove("hidden");
+  modalProfile?.classList.remove("hidden");
 });
 
 const formProfile = document.getElementById("form-update-profile");
@@ -717,7 +737,7 @@ function actualizarHeaderUsuario() {
   aplicarPermisosRol();
 }
 
-// Control estricto de visibilidad por rol en el menú lateral
+// Control de visibilidad por rol en el menú lateral
 function aplicarPermisosRol() {
   if (esSuperAdmin()) {
     document.querySelectorAll("aside .sidebar-section-item").forEach(el => el.classList.remove("hidden"));
@@ -804,7 +824,6 @@ onAuthStateChanged(auth, async (user) => {
 
 // Navegación
 const viewCambios = document.getElementById("view-cambios");
-const viewInforme = document.getElementById("view-informe");
 const viewEntregas = document.getElementById("view-entregas");
 const viewProduccion = document.getElementById("view-produccion");
 const viewProcurement = document.getElementById("view-procurement");
@@ -813,7 +832,6 @@ const viewUsuarios = document.getElementById("view-usuarios");
 const viewSolicitudes = document.getElementById("view-solicitudes");
 
 const menuBtnCambios = document.getElementById("menu-btn-cambios");
-const menuBtnInforme = document.getElementById("menu-btn-informe");
 const menuBtnEntregasTodas = document.getElementById("menu-btn-entregas-todas");
 const menuBtnProduccion = document.getElementById("menu-btn-produccion");
 const menuBtnProcurement = document.getElementById("menu-btn-procurement");
@@ -827,7 +845,7 @@ const CLASE_ACTIVO_PASTILLA = "sidebar-btn w-full flex items-center space-x-3 px
 const CLASE_ACTIVO_SUB_PASTILLA = "sidebar-btn sub-ent-btn w-full flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-black bg-white text-[#D61B28] shadow-md transition cursor-pointer pl-5 scale-[1.02]";
 
 function resetMenuStyles() {
-  [menuBtnCambios, menuBtnInforme, menuBtnEntregasTodas, menuBtnProduccion, menuBtnProcurement, menuBtnTarjetas, menuBtnUsuarios, menuBtnSolicitudes].forEach(b => {
+  [menuBtnCambios, menuBtnEntregasTodas, menuBtnProduccion, menuBtnProcurement, menuBtnTarjetas, menuBtnUsuarios, menuBtnSolicitudes].forEach(b => {
     if (b) b.className = CLASE_INACTIVO_PRINCIPAL;
   });
 
@@ -836,7 +854,6 @@ function resetMenuStyles() {
   });
 
   viewCambios?.classList.add("hidden");
-  viewInforme?.classList.add("hidden");
   viewEntregas?.classList.add("hidden");
   viewProduccion?.classList.add("hidden");
   viewProcurement?.classList.add("hidden");
@@ -849,49 +866,35 @@ function activarVistaCambios() {
   resetMenuStyles();
   viewCambios?.classList.remove("hidden");
   if (menuBtnCambios) menuBtnCambios.className = CLASE_ACTIVO_PASTILLA;
+  renderTabla();
 }
 
 safeClick("menu-btn-cambios", activarVistaCambios);
-
-safeClick("menu-btn-informe", () => {
-  resetMenuStyles();
-  viewInforme?.classList.remove("hidden");
-  if (menuBtnInforme) menuBtnInforme.className = CLASE_ACTIVO_PASTILLA;
-  renderInformeView();
-});
-
-safeClick("menu-btn-entregas-todas", () => {
-  window.cambiarSubmenuEntrega("todas");
-});
-
+safeClick("menu-btn-entregas-todas", () => window.cambiarSubmenuEntrega("todas"));
 safeClick("menu-btn-produccion", () => {
   resetMenuStyles();
   viewProduccion?.classList.remove("hidden");
   if (menuBtnProduccion) menuBtnProduccion.className = CLASE_ACTIVO_PASTILLA;
   renderProduccionView();
 });
-
 safeClick("menu-btn-procurement", () => {
   resetMenuStyles();
   viewProcurement?.classList.remove("hidden");
   if (menuBtnProcurement) menuBtnProcurement.className = CLASE_ACTIVO_PASTILLA;
   renderProcurementView();
 });
-
 safeClick("menu-btn-tarjetas", () => {
   resetMenuStyles();
   viewTarjetas?.classList.remove("hidden");
   if (menuBtnTarjetas) menuBtnTarjetas.className = CLASE_ACTIVO_PASTILLA;
   initModuloTarjetas();
 });
-
 safeClick("menu-btn-solicitudes", () => {
   resetMenuStyles();
   viewSolicitudes?.classList.remove("hidden");
   if (menuBtnSolicitudes) menuBtnSolicitudes.className = CLASE_ACTIVO_PASTILLA;
   renderHelpDeskView();
 });
-
 safeClick("menu-btn-usuarios", () => {
   if (!esSuperAdmin()) {
     alert("Acceso denegado.");
